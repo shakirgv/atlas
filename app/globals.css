@@ -1,0 +1,293 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   Design tokens — "editorial travel journal meets modern dashboard"
+   --------------------------------------------------------------------------- */
+:root {
+  --bg: #f5f2ec;
+  --surface: #ffffff;
+  --surface-2: #fbf9f5;
+  --border: #e7e1d6;
+  --ink: #15181e;
+  /* Slightly darker than #6B6F78 so muted text passes AA on the paper background. */
+  --muted: #61656e;
+  --accent: #e8532f;
+  --accent-soft: rgb(232 83 47 / 0.12);
+  /* Primary button fill: darker vermilion so white text passes WCAG AA. */
+  --primary: #c9421f;
+  --primary-hover: #b33a1b;
+  --primary-fg: #ffffff;
+  --visited: #0e7c7b;
+  --visited-soft: rgb(14 124 123 / 0.12);
+  --planned: #f2a93b;
+  --planned-soft: rgb(242 169 59 / 0.16);
+  --wishlist: #7c8db5;
+  --wishlist-soft: rgb(124 141 181 / 0.16);
+  --danger: #d64545;
+  --danger-soft: rgb(214 69 69 / 0.12);
+  --land: #e6e0d4;
+  --land-stroke: #f5f2ec;
+  --ocean: #efeae1;
+  --ring: rgb(232 83 47 / 0.45);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px rgb(0 0 0 / 0.06);
+  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.05), 0 14px 32px rgb(0 0 0 / 0.09);
+  --overlay: rgb(21 24 30 / 0.45);
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #0d1117;
+  --surface: #151b23;
+  --surface-2: #1b232d;
+  --border: #263140;
+  --ink: #eceff4;
+  --muted: #8e99a8;
+  --accent: #ff6b45;
+  --accent-soft: rgb(255 107 69 / 0.14);
+  --primary: #ff6b45;
+  --primary-hover: #ff825f;
+  --primary-fg: #0d1117;
+  --visited: #2cc4b8;
+  --visited-soft: rgb(44 196 184 / 0.14);
+  --planned: #f5b84b;
+  --planned-soft: rgb(245 184 75 / 0.16);
+  --wishlist: #8fa2cf;
+  --wishlist-soft: rgb(143 162 207 / 0.16);
+  --danger: #f2706f;
+  --danger-soft: rgb(242 112 111 / 0.14);
+  --land: #1c2530;
+  --land-stroke: #0d1117;
+  --ocean: #10161e;
+  --ring: rgb(255 107 69 / 0.5);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px rgb(0 0 0 / 0.25);
+  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.35), 0 14px 32px rgb(0 0 0 / 0.35);
+  --overlay: rgb(0 0 0 / 0.6);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-visited: var(--visited);
+  --color-visited-soft: var(--visited-soft);
+  --color-planned: var(--planned);
+  --color-planned-soft: var(--planned-soft);
+  --color-wishlist: var(--wishlist);
+  --color-wishlist-soft: var(--wishlist-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-land: var(--land);
+  --color-ocean: var(--ocean);
+  --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
+
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Type scale 12 / 14 / 16 / 20 / 28 / 40 / 56 */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 20px;
+  --text-xl: 28px;
+  --text-2xl: 40px;
+  --text-3xl: 56px;
+
+  --radius-card: 16px;
+  --radius-control: 10px;
+
+  --shadow-card: var(--shadow-card);
+  --shadow-lift: var(--shadow-lift);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    font-feature-settings: "ss01", "cv11";
+  }
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: var(--font-serif);
+    letter-spacing: -0.015em;
+    line-height: 1.1;
+    font-optical-sizing: auto;
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--accent-soft);
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    opacity: 0.6;
+  }
+  .dark input[type="date"]::-webkit-calendar-picker-indicator,
+  .dark input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
+}
+
+@layer components {
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+  }
+  .card-hover {
+    transition:
+      transform 150ms ease,
+      box-shadow 150ms ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lift);
+  }
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+  .photo-gradient {
+    background: linear-gradient(180deg, rgb(0 0 0 / 0) 35%, rgb(0 0 0 / 0.72) 100%);
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Route arcs: draw on load, then a slow dashed flow. */
+@keyframes arc-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes arc-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+.arc-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: arc-draw 1.4s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+.arc-flow {
+  stroke-dasharray: 4 8;
+  animation: arc-flow 2.4s linear infinite;
+}
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+.pulse-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+/* Leaflet theming */
+.leaflet-container {
+  font-family: var(--font-sans) !important;
+  background: var(--ocean) !important;
+  border-radius: inherit;
+}
+.leaflet-control-attribution {
+  font-size: 10px !important;
+  background: color-mix(in srgb, var(--surface) 85%, transparent) !important;
+  color: var(--muted) !important;
+}
+.leaflet-control-attribution a {
+  color: var(--muted) !important;
+}
+.leaflet-bar a {
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  border-color: var(--border) !important;
+}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  border-radius: 12px !important;
+}
+.atlas-marker {
+  background: transparent;
+  border: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .arc-draw {
+    stroke-dashoffset: 0;
+  }
+  .card-hover:hover {
+    transform: none;
+  }
+}
+
+/* Print: used by the printable itinerary */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-break {
+    break-inside: avoid;
+  }
+}
