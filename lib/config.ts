@@ -17,3 +17,11 @@ export const DOCUMENT_URL_TTL = 60 * 5; // 5 minutes
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
 export const BUCKETS = { photos: "photos", documents: "documents" } as const;
+
+/**
+ * Basemap for Leaflet maps (city, place, day, memories). OpenStreetMap's standard tiles need no API key;
+ * the app restyles them with CSS filters for light/dark (see `.atlas-tiles` in globals.css).
+ * To use another provider, change these two values only.
+ */
+export const MAP_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+export const MAP_TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';

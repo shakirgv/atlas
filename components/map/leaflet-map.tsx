@@ -3,7 +3,7 @@ import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo } from "react";
 import L from "leaflet";
 import { MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
-import { useTheme } from "next-themes";
+import { MAP_TILE_ATTRIBUTION, MAP_TILE_URL } from "@/lib/config";
 
 export type MapMarker = {
   id: string;
@@ -30,9 +30,6 @@ export type LeafletMapProps = {
   className?: string;
   fitKey?: string;
 };
-
-const ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -83,10 +80,8 @@ function ClickHandler({ onMapClick }: { onMapClick?: (lat: number, lng: number) 
   return null;
 }
 
-/** Leaflet map with CARTO basemap (light_all / dark_all). Load via next/dynamic with ssr:false. */
+/** Leaflet map on OpenStreetMap tiles, restyled for light/dark via CSS. Load via next/dynamic with ssr:false. */
 export default function LeafletMap({ markers, polyline, onMarkerClick, onMapClick, center, zoom = 12, className, fitKey }: LeafletMapProps) {
-  const { resolvedTheme } = useTheme();
-  const style = resolvedTheme === "dark" ? "dark_all" : "light_all";
   const initial = useMemo<[number, number]>(
     () => center ?? (markers[0] ? [markers[0].lat, markers[0].lng] : [20, 10]),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -94,7 +89,7 @@ export default function LeafletMap({ markers, polyline, onMarkerClick, onMapClic
   );
   return (
     <MapContainer center={initial} zoom={markers.length || center ? zoom : 2} scrollWheelZoom className={className} style={{ height: "100%", width: "100%" }} attributionControl>
-      <TileLayer key={style} url={`https://{s}.basemaps.cartocdn.com/${style}/{z}/{x}/{y}{r}.png`} attribution={ATTRIBUTION} subdomains="abcd" maxZoom={19} />
+      <TileLayer url={MAP_TILE_URL} attribution={MAP_TILE_ATTRIBUTION} maxZoom={19} className="atlas-tiles" />
       {polyline && markers.length > 1 && (
         <Polyline positions={markers.map((m) => [m.lat, m.lng] as [number, number])} pathOptions={{ color: "#E8532F", weight: 3, opacity: 0.85, dashArray: "6 8" }} />
       )}

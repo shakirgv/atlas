@@ -2,7 +2,7 @@
 
 A private, single-user app for planning and tracking a trip around the world: countries, cities, itineraries, places, budget, memories and documents in one calm, photo-forward place. It works on the phone while travelling (installable as a PWA).
 
-Built with **Next.js 16** (App Router, React 19, TypeScript strict), **Tailwind CSS v4** with hand-built shadcn-style components, **Supabase** (Postgres, Auth, Storage via `@supabase/ssr`), **d3-geo** for the world map, **Leaflet + CARTO** for city and day maps, and **Recharts**.
+Built with **Next.js 16** (App Router, React 19, TypeScript strict), **Tailwind CSS v4** with hand-built shadcn-style components, **Supabase** (Postgres, Auth, Storage via `@supabase/ssr`), **d3-geo** for the world map, **Leaflet + OpenStreetMap tiles** for city and day maps, and **Recharts**.
 
 ---
 
@@ -128,10 +128,11 @@ proxy.ts                   Next 16 "proxy" (formerly middleware): session refres
 - **Top bar title** fades in once the page's own large heading scrolls away (to avoid showing the same title twice).
 - **Verification** was done against a real local Supabase (Docker) with Playwright screenshots at 1440 px and 390 px in light and dark mode, so the optional `/dev/preview` fixture route from the brief was not needed.
 - **JSON import** adds everything as new rows with remapped ids; nothing is overwritten.
+- **Map tiles come from OpenStreetMap, not CARTO.** CARTO's basemap server now answers with "API key required" watermark tiles, so Leaflet maps use `tile.openstreetmap.org` (no key) and restyle it with CSS filters: softened and warm in light mode, inverted in dark mode. The URL and attribution live in `lib/config.ts` (`MAP_TILE_URL`) if you ever want another provider. OSM's tile policy is fine for a single-user personal app.
 
 ## Known limitations
 
 - Photo and document **files are not included in the JSON export/import** (metadata only); covers and attachments must be re-added after an import.
-- External services (Photon, Wikipedia/Wikimedia, open.er-api, CARTO tiles) were **not reachable from the build sandbox**, so live lookups were exercised only through their fallbacks there (gradient covers, "type a name", approximate FX snapshot, blank map tiles). They work normally on Vercel and on your machine.
+- External services (Photon, Wikipedia/Wikimedia, open.er-api, map tiles) were **not reachable from the build sandbox**, so live lookups were exercised only through their fallbacks there (gradient covers, "type a name", approximate FX snapshot, blank map tiles). They work normally on Vercel and on your machine.
 - The service worker only caches static assets; Atlas needs a connection for data (offline sync is out of scope).
 - HEIC documents are stored and downloadable but most browsers cannot preview them inline.

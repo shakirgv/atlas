@@ -254,6 +254,13 @@
   color: var(--ink) !important;
   border-radius: 12px !important;
 }
+/* OpenStreetMap tiles, softened to the warm palette (light) and inverted to a calm night map (dark). */
+.atlas-tiles {
+  filter: grayscale(0.6) sepia(0.12) saturate(0.85) brightness(1.04) contrast(0.92);
+}
+.dark .atlas-tiles {
+  filter: invert(1) hue-rotate(180deg) grayscale(0.55) brightness(0.82) contrast(0.88);
+}
 .atlas-marker {
   background: transparent;
   border: none;
