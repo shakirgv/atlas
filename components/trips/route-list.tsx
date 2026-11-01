@@ -76,7 +76,7 @@ export function RouteList({ countries }: { countries: CountryVM[] }) {
     });
   };
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+    <DndContext id="route-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
         <ol className="flex flex-col gap-2">
           {items.map((c, i) => (

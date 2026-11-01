@@ -41,7 +41,7 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
   return (
     <aside
       className={cn(
-        "sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-border bg-bg/80 px-3 pb-3 pt-4 transition-[width] duration-200 md:flex",
+        "no-print sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-border bg-bg/80 px-3 pb-3 pt-4 transition-[width] duration-200 md:flex",
         collapsed ? "w-[72px]" : "w-64",
       )}
       aria-label="Main navigation"

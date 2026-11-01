@@ -170,7 +170,7 @@ export function CountriesView({
             </div>
           </div>
           {filtered.length ? (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <DndContext id="route-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
               <SortableContext items={filtered.map((c) => c.id)} strategy={rectSortingStrategy}>
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {filtered.map((c) => (
