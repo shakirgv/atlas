@@ -51,8 +51,8 @@ export function primaryCurrency(cca2: string | null | undefined) {
 
 export const CONTINENTS = ["Africa", "Americas", "Asia", "Europe", "Oceania", "Antarctic"] as const;
 
-/** Number of countries used as the denominator for "% of world" (UN members + observers). */
-export const WORLD_COUNTRY_COUNT = COUNTRIES.filter((c) => c.unMember).length + 2;
+/** Denominator for "% of world": 193 UN members + 2 observer states. */
+export const WORLD_COUNTRY_COUNT = 195;
 
 export function searchCountries(query: string) {
   const q = query.trim().toLowerCase();

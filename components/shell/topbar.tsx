@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Compass, Search } from "lucide-react";
 import { titleForPath } from "@/lib/nav";
 import { Kbd } from "@/components/ui/misc";
@@ -12,13 +13,22 @@ export function Topbar() {
   const pathname = usePathname();
   const ws = useWorkspace();
   const title = titleForPath(pathname);
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 72);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [pathname]);
+  // The page's own big heading covers the title at the top; reveal it once scrolled (map has no heading).
+  const showTitle = scrolled || pathname === "/map";
   return (
     <header className="no-print sticky top-0 z-30 border-b border-border/70 bg-bg/75 backdrop-blur-xl supports-[backdrop-filter]:bg-bg/65">
       <div className="mx-auto flex h-14 max-w-[1280px] items-center gap-3 px-4 md:h-16 md:px-8">
         <Link href="/" className="grid size-8 place-items-center rounded-lg bg-ink text-bg md:hidden" aria-label="Home">
           <Compass className="size-4" />
         </Link>
-        <p className="truncate font-display text-lg font-semibold md:text-xl" aria-live="polite">
+        <p className={`truncate font-display text-lg font-semibold transition-opacity duration-200 md:text-xl ${showTitle ? "opacity-100" : "opacity-0"}`} aria-hidden={!showTitle}>
           {title}
         </p>
         <div className="ml-auto flex items-center gap-2">

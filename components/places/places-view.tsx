@@ -103,8 +103,8 @@ export function PlacesView({
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
               <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search places" className="pl-9" aria-label="Search places" />
             </div>
-            <div className="flex gap-2">
-              <NativeSelect value={city} onChange={(e) => setCity(e.target.value)} aria-label="City" className="flex-1 sm:w-44">
+            <div className="flex flex-wrap gap-2">
+              <NativeSelect value={city} onChange={(e) => setCity(e.target.value)} aria-label="City" className="min-w-[140px] flex-1 sm:w-44 sm:flex-none">
                 <option value="all">All cities</option>
                 {cities.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -112,7 +112,7 @@ export function PlacesView({
                   </option>
                 ))}
               </NativeSelect>
-              <NativeSelect value={status} onChange={(e) => setStatus(e.target.value as PlaceStatus | "all")} aria-label="Status" className="flex-1 sm:w-36">
+              <NativeSelect value={status} onChange={(e) => setStatus(e.target.value as PlaceStatus | "all")} aria-label="Status" className="min-w-[140px] flex-1 sm:w-36 sm:flex-none">
                 <option value="all">Any status</option>
                 {PLACE_STATUSES.map((s) => (
                   <option key={s} value={s}>

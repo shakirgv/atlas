@@ -103,9 +103,9 @@ export function DayCard({
         <span className="num">{day.day_number}</span>
       </button>
       <div className={cn("card p-4 transition-shadow sm:p-5", selected && "ring-2 ring-accent/50", isOver && "ring-2 ring-visited/60")}>
-        <header className="flex flex-wrap items-start gap-x-3 gap-y-2">
+        <header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
           <div className="min-w-0 flex-1">
-            <p className="eyebrow flex items-center gap-2">
+            <p className="eyebrow flex flex-wrap items-center gap-2">
               {day.date ? fmtDate(day.date, "EEEE, dd MMM") : `Day ${day.day_number}`}
               {isToday && <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-white">TODAY</span>}
             </p>
@@ -120,7 +120,7 @@ export function DayCard({
             />
           </div>
           <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-            <NativeSelect value={day.city_id ?? ""} onChange={(e) => save({ city_id: e.target.value || null })} aria-label="City" className="w-36 [&_select]:h-9">
+            <NativeSelect value={day.city_id ?? ""} onChange={(e) => save({ city_id: e.target.value || null })} aria-label="City" className="flex-1 sm:w-36 sm:flex-none [&_select]:h-9">
               <option value="">No city</option>
               {cities.map((c) => (
                 <option key={c.id} value={c.id}>

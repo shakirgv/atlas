@@ -8,7 +8,7 @@ const PUBLIC_PATHS = ["/login"];
 function isPublic(pathname: string) {
   if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
   // PWA assets must be reachable without a session.
-  if (pathname === "/manifest.webmanifest" || pathname === "/sw.js" || pathname.startsWith("/icons/")) return true;
+  if (pathname === "/manifest.webmanifest" || pathname === "/sw.js" || pathname.startsWith("/icons/") || pathname === "/icon.svg" || pathname === "/apple-icon.png") return true;
   return false;
 }
 
