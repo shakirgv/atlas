@@ -1,0 +1,44 @@
+// Drives the core flow through the real UI: new trip → bulk-add countries → add a city (manual) → open pages.
+import { chromium } from "playwright";
+const BASE = "http://localhost:3000";
+const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+const errors = [];
+page.on("pageerror", (e) => errors.push(e.message));
+page.on("console", (m) => m.type() === "error" && errors.push(m.text().slice(0, 200)));
+await page.goto(`${BASE}/login`);
+await page.fill("#email", "me@atlas.test");
+await page.fill("#password", "atlas-dev-123");
+await Promise.all([page.waitForURL(`${BASE}/`), page.click("button[type=submit]")]);
+await page.goto(`${BASE}/trips`);
+await page.getByRole("button", { name: /New trip|Create your first trip/ }).first().click();
+await page.fill("#trip-title", "World Tour 2027");
+await page.fill("#trip-start", "2027-03-01");
+await page.fill("#trip-end", "2027-06-30");
+await page.getByRole("button", { name: "Create trip" }).click();
+await page.waitForURL(/\/trips\/[0-9a-f-]+/, { timeout: 20000 });
+console.log("trip created", page.url());
+await page.getByRole("button", { name: "Add countries" }).first().click();
+for (const name of ["Georgia", "Türkiye", "Greece", "Italy", "Portugal", "Morocco", "Egypt", "India", "Thailand", "Vietnam", "Japan"]) {
+  await page.getByLabel("Search countries").fill(name);
+  await page.getByRole("option", { name: new RegExp(name) }).first().click();
+}
+await page.getByRole("button", { name: /Add 11 countries/ }).click();
+await page.waitForTimeout(2500);
+console.log("countries added");
+await page.screenshot({ path: ".screens/e2e-trip.png", fullPage: true });
+await page.goto(`${BASE}/countries`);
+await page.waitForTimeout(800);
+await page.screenshot({ path: ".screens/e2e-countries.png", fullPage: true });
+await page.locator('a[href^="/countries/"]').first().click();
+await page.waitForURL(/\/countries\/[0-9a-f-]+/);
+await page.getByRole("tab", { name: "Cities" }).click();
+await page.getByRole("button", { name: "Add cities" }).first().click();
+await page.getByLabel("Search cities").fill("Tbilisi");
+await page.waitForTimeout(1500);
+await page.getByRole("button", { name: /Add “Tbilisi” without a map pin/ }).click();
+await page.getByRole("button", { name: /Add 1 city/ }).click();
+await page.waitForTimeout(2000);
+await page.screenshot({ path: ".screens/e2e-country.png", fullPage: true });
+console.log("ERRORS", errors.filter((e) => !/Failed to load resource|ERR_TUNNEL/.test(e)));
+await browser.close();

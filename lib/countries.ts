@@ -57,12 +57,17 @@ export const WORLD_COUNTRY_COUNT = COUNTRIES.filter((c) => c.unMember).length + 
 export function searchCountries(query: string) {
   const q = query.trim().toLowerCase();
   if (!q) return COUNTRIES;
-  return COUNTRIES.filter(
-    (c) =>
-      c.name.toLowerCase().includes(q) ||
-      c.official.toLowerCase().includes(q) ||
-      c.cca2.toLowerCase() === q ||
-      c.cca3.toLowerCase() === q ||
-      c.capital.some((cap) => cap.toLowerCase().includes(q)),
-  );
+  const score = (c: CountryInfo) => {
+    const name = c.name.toLowerCase();
+    if (name === q || c.cca2.toLowerCase() === q || c.cca3.toLowerCase() === q) return 0;
+    if (name.startsWith(q)) return 1;
+    if (name.split(/[\s-]+/).some((w) => w.startsWith(q))) return 2;
+    if (name.includes(q) || c.official.toLowerCase().includes(q)) return 3;
+    if (c.capital.some((cap) => cap.toLowerCase().includes(q))) return 4;
+    return 9;
+  };
+  return COUNTRIES.map((c) => ({ c, s: score(c) }))
+    .filter((x) => x.s < 9)
+    .sort((a, b) => a.s - b.s || a.c.name.localeCompare(b.c.name))
+    .map((x) => x.c);
 }
