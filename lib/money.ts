@@ -12,7 +12,8 @@ const formatters = new Map<string, Intl.NumberFormat>();
 
 export function formatMoney(amount: number | null | undefined, currency = "USD", opts: { compact?: boolean; decimals?: number } = {}) {
   const value = Number(amount ?? 0);
-  const key = `${currency}-${opts.compact ? "c" : "f"}-${opts.decimals ?? "d"}`;
+  const digits = opts.decimals ?? (opts.compact ? 1 : Math.abs(value) >= 1000 ? 0 : 2);
+  const key = `${currency}-${opts.compact ? "c" : "f"}-${digits}`;
   let f = formatters.get(key);
   if (!f) {
     try {
@@ -20,7 +21,7 @@ export function formatMoney(amount: number | null | undefined, currency = "USD",
         style: "currency",
         currency,
         notation: opts.compact ? "compact" : "standard",
-        maximumFractionDigits: opts.decimals ?? (opts.compact ? 1 : Math.abs(value) >= 1000 ? 0 : 2),
+        maximumFractionDigits: digits,
         minimumFractionDigits: 0,
       });
     } catch {

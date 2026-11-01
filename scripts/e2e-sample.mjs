@@ -1,0 +1,18 @@
+import { chromium } from "playwright";
+const BASE = "http://localhost:3000";
+const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+const page = await (await browser.newContext({ viewport: { width: 1440, height: 1000 } })).newPage();
+await page.goto(`${BASE}/login`);
+await page.fill("#email", "me@atlas.test");
+await page.fill("#password", "atlas-dev-123");
+await Promise.all([page.waitForURL(`${BASE}/`), page.click("button[type=submit]")]);
+await page.goto(`${BASE}/settings`);
+await page.getByRole("button", { name: "Delete sample data" }).click();
+await page.getByRole("button", { name: "Delete sample data" }).last().click();
+await page.getByText("Sample data deleted").waitFor({ timeout: 20000 });
+console.log("deleted");
+await page.waitForTimeout(1000);
+await page.getByRole("button", { name: "Load sample data" }).click();
+await page.waitForURL(/\/trips\//, { timeout: 30000 });
+console.log("reloaded", page.url());
+await browser.close();

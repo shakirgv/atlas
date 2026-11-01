@@ -1,21 +1,137 @@
 # Atlas — personal travel dashboard
 
-A private, single-user app for planning and tracking a trip around the world: countries, cities, itineraries, places, budget, memories and documents in one place.
+A private, single-user app for planning and tracking a trip around the world: countries, cities, itineraries, places, budget, memories and documents in one calm, photo-forward place. It works on the phone while travelling (installable as a PWA).
 
-Built with Next.js 16 (App Router, React 19, TypeScript strict), Tailwind CSS v4, Supabase (Postgres, Auth, Storage), d3-geo, Leaflet + CARTO and Recharts.
+Built with **Next.js 16** (App Router, React 19, TypeScript strict), **Tailwind CSS v4** with hand-built shadcn-style components, **Supabase** (Postgres, Auth, Storage via `@supabase/ssr`), **d3-geo** for the world map, **Leaflet + CARTO** for city and day maps, and **Recharts**.
 
 ---
 
 ## What you must do manually
 
-1. **Create a Supabase project** at [supabase.com](https://supabase.com) → *New project*. Open **Project Settings → API** and copy the **Project URL** and the **anon public** key into `.env.local` (copy `.env.example`):
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-   ```
-   Never put the service-role key in this app.
-2. **Run the SQL**: Supabase dashboard → **SQL Editor** → *New query* → paste the whole of `supabase/migrations/001_init.sql` → **Run**. Then do the same with `supabase/migrations/002_extras.sql`.
-3. **Create your user**: **Authentication → Users → Add user → Create new user** (email + password, tick *Auto Confirm User*). Then **Authentication → Sign In / Providers** (or *Settings*) → turn off **Allow new users to sign up** → Save.
-4. **Run it**: `npm install && npm run dev`, open http://localhost:3000, sign in. Then deploy to Vercel with the same two env vars (see below).
+1. **Create a Supabase project, then copy the Project URL and anon key into `.env.local`.**
+   - [supabase.com](https://supabase.com) → **New project** (any name, pick a region near you, save the database password somewhere).
+   - When it is ready: **Project Settings → API** (or **Connect → App frameworks**). Copy **Project URL** and the **anon public** key.
+   - In this folder: `cp .env.example .env.local`, then paste:
+     ```
+     NEXT_PUBLIC_SUPABASE_URL=https://YOUR-REF.supabase.co
+     NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
+     ```
+   - Never put the `service_role` key in this app.
+2. **Run `supabase/migrations/001_init.sql` in the Supabase SQL editor (and `002_extras.sql` later).**
+   - Dashboard → **SQL Editor** → **New query** → paste the *whole* file `supabase/migrations/001_init.sql` → **Run**.
+   - Then a new query with `supabase/migrations/002_extras.sql` → **Run** (bookings, packing lists, packing templates).
+   - This creates every table, row-level security, the two **private** storage buckets (`photos`, `documents`) and their storage policies.
+3. **In Supabase Auth: create your user, and turn off "Allow new users to sign up".**
+   - **Authentication → Users → Add user → Create new user**: your email + a password, tick **Auto Confirm User**.
+   - **Authentication → Sign In / Providers** (older dashboards: **Authentication → Settings**) → turn **off** "Allow new users to sign up" → **Save**.
+4. **`npm install && npm run dev`. Then deploy to Vercel with the same two env vars.**
+   - Open http://localhost:3000 and sign in. A welcome dialog asks for your name and base currency.
+   - To see everything filled in: **Settings → Load sample data** (and **Delete sample data** when done).
+   - Deploy: see [Deploy to Vercel](#deploy-to-vercel).
 
 Until the two env vars exist, the app shows a friendly **Setup required** screen instead of crashing.
+
+---
+
+## Run locally
+
+```bash
+npm install
+npm run dev
+```
+
+Other scripts: `npm run build`, `npm run start`, `npm run lint`, `npx tsc --noEmit`.
+
+### Optional: fully local Supabase (Docker)
+
+The repo includes the Supabase CLI as a dev dependency.
+
+```bash
+npx supabase start          # starts Postgres, Auth, Storage, REST locally
+npx supabase db reset       # applies supabase/migrations/*.sql
+```
+
+`supabase start` prints a local API URL and anon key; put those in `.env.local`. Create a user in the local Studio (http://127.0.0.1:54323) or with the Auth admin API. If image pulls from `ghcr.io` are blocked on your network, prefix the start command with `SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io`.
+
+## Deploy to Vercel
+
+1. Push this repository to GitHub (already done if you are reading this there).
+2. [vercel.com/new](https://vercel.com/new) → **Import** the repository. Framework preset: **Next.js** (auto-detected). Leave build settings as they are.
+3. Under **Environment Variables** add exactly:
+   - `NEXT_PUBLIC_SUPABASE_URL` = your Project URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = your anon key
+4. Click **Deploy**. Open the deployment URL on your phone and sign in.
+5. Optional but recommended: in Supabase → **Authentication → URL Configuration**, set **Site URL** to your Vercel URL.
+6. Install on your phone: Safari → Share → **Add to Home Screen** (iOS) or Chrome → **Install app** (Android).
+
+CLI alternative: `npx vercel` (link the project), `npx vercel env add NEXT_PUBLIC_SUPABASE_URL`, `npx vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY`, then `npx vercel --prod`.
+
+---
+
+## What's inside
+
+**Phase 1**
+- **Dashboard** — greeting, next-stop hero with countdown (or "Day 5 of 10 in Italy"), count-up stat tiles, compact world map with animated great-circle route arcs, up next, budget snapshot donut, heads-up alerts (expiring documents, passport validity, undated countries, over-budget countries), recent memories, quick actions.
+- **World map** — custom SVG (d3-geo `geoNaturalEarth1`, d3-zoom), status fills, hover tooltip, click to open or "Add to trip", numbered route, city dots when zoomed in, layer toggles, route panel (bottom sheet on mobile).
+- **Trips** — cover cards, trip page with progress, *Next steps* checklist, route timeline date bar + drag-to-reorder list, stats, budget and memories shortcuts.
+- **Countries** — bulk add (searchable list of ~250 countries with flags), filters (status, continent, trip), search, sort, drag reorder; country page with Overview, Cities, Itinerary, Places, Budget, Memories, Documents and Notes tabs.
+- **Cities** — search-as-you-type (Photon, Nominatim fallback) multi-select, auto pin + auto cover; city page with places list/map, days here, memories, notes.
+- **Places** — card / table / map views, filters, mark visited, right-side detail drawer (bottom sheet on mobile) with photos, rating, status, map, itinerary links.
+- **Itinerary** — generate days from dates (never deletes days with content), quick add ("10:00 Senso-ji temple" parses time and type, auto-links a matching place), drag stops within and between days, duplicate / move / delete days, create place from a stop, day map with numbered markers and polyline.
+- **Budget** — fast add sheet (Enter saves and stays open, live "≈ $12.40"), automatic FX rates with manual override, summary cards, donut / grouped bars / cumulative line charts, country caps, sortable/filterable table with inline edit, CSV export.
+- **Memories** — composer with markdown, mood, tags and drag-and-drop multi-photo upload; timeline (by month), masonry gallery with lightbox, map.
+- **Documents** — private uploads (PDF, JPG, PNG, HEIC, DOCX up to 25 MB), grouped by type, preview modal and download via 5-minute signed URLs, expiry chips, passport 6-month rule.
+- **Settings** — display name, base currency (converts all expenses), theme, JSON + CSV export, JSON import, sample data load/delete, sign out.
+
+**Phase 2**
+- Command palette (Ctrl/Cmd+K): search everything, quick actions, navigation.
+- Bookings (flights, trains, stays…) shown inside the itinerary on their dates, with confirmation numbers, linked documents and "also add as expense".
+- Packing lists per trip with built-in templates, saved templates and "copy from another trip".
+- Memories map tab (photo GPS, else linked place/city) and EXIF-based "photo taken near X — link it?" suggestion.
+- Cover picker with up to 8 Wikimedia Commons candidates.
+- Travel stats (continents, % of world, longest trip, most visited, spend per day).
+- Printable itinerary (print stylesheet → Save as PDF).
+- JSON import, "On this day" memories widget, PWA (manifest, icons, service worker).
+
+## Project structure
+
+```
+app/(auth)/login           sign-in page (no sign-up)
+app/(app)/...              all signed-in pages (layout = sidebar, top bar, trip switcher)
+app/api/geocode|cover|fx   server routes (zod-validated, https allow-list, no open proxy)
+app/api/export|import      data portability
+actions/                   server actions per module (each calls supabase.auth.getUser())
+components/                ui/, shell/, forms/, map/, charts/, photos/, and one folder per module
+lib/                       supabase clients, countries, dates, money, fx, status, data loaders, config (APP_NAME)
+supabase/migrations/       001_init.sql (Phase 1) and 002_extras.sql (Phase 2)
+proxy.ts                   Next 16 "proxy" (formerly middleware): session refresh + redirect to /login
+```
+
+---
+
+## Decisions
+
+- **Next.js 16 with Cache Components turned off.** The scaffold enables `cacheComponents`; every page here is private and per-request (cookies + Supabase session), so the classic dynamic model is simpler and avoids Suspense-boundary build errors. `middleware.ts` is named `proxy.ts`, as Next 16 requires.
+- **shadcn/ui components are written by hand** (same Radix + cva + tailwind-merge approach) because the shadcn registry was unreachable from the build environment. They live in `components/ui`.
+- **Muted text colour is `#61656E`** instead of `#6B6F78`: the original was just under WCAG AA (4.45:1) on the warm paper background. Primary buttons use a deeper vermilion (`#C9421F`, white text) in light mode and `#FF6B45` with dark text in dark mode, so button labels pass AA; `#E8532F` stays the accent for highlights, rings and arcs.
+- **Status chips always carry an icon and a label** (never colour alone). "Ongoing" is derived from dates and never stored.
+- **Map colours across trips:** a country is shown with its strongest status across all trips (visited > planned > wishlist); routes, city dots and click-through follow the active trip filter.
+- **Places require a city** (`city_id not null`) so every place belongs to a trip through its city; "Create place from this stop" uses the day's city, else the country's first city.
+- **Memories and expenses belong to a trip** (`trip_id not null`, cascade). Documents can be global (e.g. passport) and have `is_sample` so sample documents can be deleted cleanly.
+- **Packing templates**: built-in templates live in code; your own are saved in a small `packing_templates` table in `002_extras.sql` (not in the original spec, added for "reusable templates").
+- **Auto covers** run from the browser right after creating a country, city or place (`POST /api/cover`, two at a time), then the page refreshes. Countries try "Tourism in {country}", then the capital; places try "{name}, {city}", then "{name}"; flags/locator maps are skipped. Images are resized to WebP with `sharp` and stored with a `photos` row (`source = wikimedia`) and attribution (shown via the ⓘ button on covers and in the lightbox).
+- **Exchange rates**: `amount_base = amount × fx_rate`, where `fx_rate` converts 1 unit of the expense currency into the base currency. Rates come from open.er-api.com (cached 24 h). Fallback order: in-memory last known rates → a bundled approximate snapshot (labelled "approximate" in the UI) → manual rate. Changing the base currency in Settings re-converts all expenses.
+- **Uploads go straight from the browser to private Storage**; Storage policies require the first path segment to equal `auth.uid()`. Server actions then save rows and double-check the path prefix. Photos are compressed in the browser (1920 px WebP ≈ 0.82 quality, plus a 480 px thumbnail).
+- **Signed URLs** are created server-side in batches (1 hour for photos, 5 minutes for documents) and never logged.
+- **"Move a day"** swaps the day's position (number and date) with the target day, so contents travel together. Deleting a day renumbers the rest.
+- **Destructive actions** use a confirmation dialog; inside drawers/dialogs an inline "click again to confirm" button is used instead, to avoid a modal inside a modal.
+- **Top bar title** fades in once the page's own large heading scrolls away (to avoid showing the same title twice).
+- **Verification** was done against a real local Supabase (Docker) with Playwright screenshots at 1440 px and 390 px in light and dark mode, so the optional `/dev/preview` fixture route from the brief was not needed.
+- **JSON import** adds everything as new rows with remapped ids; nothing is overwritten.
+
+## Known limitations
+
+- Photo and document **files are not included in the JSON export/import** (metadata only); covers and attachments must be re-added after an import.
+- External services (Photon, Wikipedia/Wikimedia, open.er-api, CARTO tiles) were **not reachable from the build sandbox**, so live lookups were exercised only through their fallbacks there (gradient covers, "type a name", approximate FX snapshot, blank map tiles). They work normally on Vercel and on your machine.
+- The service worker only caches static assets; Atlas needs a connection for data (offline sync is out of scope).
+- HEIC documents are stored and downloadable but most browsers cannot preview them inline.
