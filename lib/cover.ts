@@ -127,7 +127,8 @@ export async function coverQueries(supabase: ServerSupabase, kind: CoverKind, id
     if (!data) return null;
     const tc = data.trip_countries as unknown as { country_code: string } | null;
     const country = getCountry(tc?.country_code)?.name;
-    return { queries: country ? [data.name, `${data.name}, ${country}`] : [data.name], label: data.name };
+    // Country-qualified first so "Batman" finds the city in Türkiye, not the superhero.
+    return { queries: country ? [`${data.name}, ${country}`, `${data.name} (city)`, data.name] : [data.name], label: country ? `${data.name}, ${country}` : data.name };
   }
   if (kind === "place") {
     const { data } = await supabase.from("places").select("name, cities(name)").eq("id", id).maybeSingle();
