@@ -94,11 +94,12 @@ export function WorldMap({
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const initial = useMemo(() => (fitRoute ? fitTransform(routes, compact ? 2.2 : 3) : { k: 1, x: 0, y: 0 }), [fitRoute, routes, compact]);
   const [t, setT] = useState(initial);
-  const [hover, setHover] = useState<{ code: string; x: number; y: number } | null>(null);
+  const [hover, setHover] = useState<{ code: string; x: number; y: number; w?: number } | null>(null);
   const reduce = useReducedMotion();
 
   useEffect(() => {
-    if (compact || !svgRef.current) return;
+    const svg = svgRef.current;
+    if (compact || !svg) return;
     const z = d3zoom<SVGSVGElement, unknown>()
       .scaleExtent([1, 14])
       .translateExtent([
@@ -107,10 +108,10 @@ export function WorldMap({
       ])
       .on("zoom", (e) => setT({ k: e.transform.k, x: e.transform.x, y: e.transform.y }));
     zoomRef.current = z;
-    select(svgRef.current).call(z).on("dblclick.zoom", null);
-    select(svgRef.current).call(z.transform, zoomIdentity.translate(initial.x, initial.y).scale(initial.k));
+    select(svg).call(z).on("dblclick.zoom", null);
+    select(svg).call(z.transform, zoomIdentity.translate(initial.x, initial.y).scale(initial.k));
     return () => {
-      if (svgRef.current) select(svgRef.current).on(".zoom", null);
+      select(svg).on(".zoom", null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compact]);
@@ -155,7 +156,7 @@ export function WorldMap({
 
   const localPoint = (e: React.MouseEvent | React.PointerEvent) => {
     const r = wrapRef.current!.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
+    return { x: e.clientX - r.left, y: e.clientY - r.top, w: r.width };
   };
 
   return (
@@ -242,7 +243,7 @@ export function WorldMap({
       {hover && hoverShape && !compact && (
         <div
           className="pointer-events-none absolute z-10 min-w-40 rounded-xl border border-border bg-surface px-3 py-2 text-sm shadow-lg"
-          style={{ left: Math.min(hover.x + 14, (wrapRef.current?.clientWidth ?? 0) - 200), top: hover.y + 14 }}
+          style={{ left: Math.min(hover.x + 14, (hover.w ?? 0) - 200), top: hover.y + 14 }}
         >
           <div className="flex items-center gap-2 font-medium">
             <span className="text-lg leading-none">{hoverShape.flag}</span> {hoverShape.name}
