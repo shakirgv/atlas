@@ -216,7 +216,7 @@ export function ItineraryPlanner({
       ) : (
         <div className="grid gap-6 lg:grid-cols-12">
           <DndContext id="itinerary-dnd" sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
-            <ol className="relative flex flex-col gap-5 before:absolute before:bottom-6 before:left-5 before:top-6 before:w-0.5 before:rounded-full before:bg-border sm:before:left-[22px] lg:col-span-7">
+            <ol className="relative flex flex-col gap-5 before:absolute before:bottom-6 before:left-5 before:top-6 before:w-0.5 before:rounded-full before:bg-border sm:before:left-[22px] min-w-0 lg:col-span-7">
               {days.map((d) => (
                 <li key={d.id}>
                   <DayCard
@@ -244,7 +244,7 @@ export function ItineraryPlanner({
               ) : null}
             </DragOverlay>
           </DndContext>
-          <aside className="lg:col-span-5">
+          <aside className="min-w-0 lg:col-span-5">
             <div className="card sticky top-24 overflow-hidden">
               <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
                 <div className="min-w-0">

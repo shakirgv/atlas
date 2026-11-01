@@ -244,7 +244,7 @@ export function CountryDetail({
 
         <TabsContent value="overview">
           <div className="grid gap-6 lg:grid-cols-12">
-            <div className="flex flex-col gap-6 lg:col-span-7">
+            <div className="flex min-w-0 flex-col gap-6 lg:col-span-7">
               <section className="card overflow-hidden">
                 <MapView className="h-72" markers={markers} polyline emptyLabel="Add cities to pin them here" onMarkerClick={(id) => router.push(`/cities/${id}`)} />
                 <div className="flex flex-col gap-2 p-5">
@@ -268,7 +268,7 @@ export function CountryDetail({
                 </section>
               )}
             </div>
-            <section className="card p-5 lg:col-span-5">
+            <section className="card min-w-0 p-5 lg:col-span-5">
               <SectionTitle>Quick facts</SectionTitle>
               <dl className="flex flex-col divide-y divide-border">
                 {facts.map((f) => (

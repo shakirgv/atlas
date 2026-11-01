@@ -127,7 +127,7 @@ export function TripDetail({
         </div>
       </Hero>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatTile icon={Flag} label="Countries" value={countries.length} />
         <StatTile icon={Building2} label="Cities" value={stats.cities} tone="var(--visited)" />
         <StatTile icon={CalendarDays} label="Days planned" value={stats.days} tone="var(--planned)" />
@@ -135,7 +135,7 @@ export function TripDetail({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-12">
-        <div className="flex flex-col gap-6 lg:col-span-8">
+        <div className="flex min-w-0 flex-col gap-6 lg:col-span-8">
           <section className="card p-5" aria-labelledby="route-title">
             <SectionTitle
               action={
@@ -190,7 +190,7 @@ export function TripDetail({
           )}
         </div>
 
-        <div className="flex flex-col gap-6 lg:col-span-4">
+        <div className="flex min-w-0 flex-col gap-6 lg:col-span-4">
           <NextSteps steps={steps} tripId={trip.id} onEditTrip={() => setEditOpen(true)} />
           <section className="card p-5" aria-labelledby="budget-title">
             <SectionTitle

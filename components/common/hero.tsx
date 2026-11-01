@@ -32,7 +32,8 @@ export function Hero({
       flag={flag}
       icon={icon}
       eager
-      className={cn("min-h-[300px] overflow-hidden rounded-[20px] shadow-card sm:min-h-[340px] md:min-h-[380px] [&>div:first-child_span]:text-[96px]", className)}
+      glyphClassName="inset-auto right-6 top-16 opacity-90 sm:right-12 sm:top-1/4 [&_span]:text-[64px] sm:[&_span]:text-[96px] [&_svg]:size-14 sm:[&_svg]:size-20"
+      className={cn("min-h-[300px] overflow-hidden rounded-[20px] shadow-card sm:min-h-[340px] md:min-h-[380px]", className)}
     >
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgb(0_0_0/0.25)_0%,rgb(0_0_0/0)_30%,rgb(0_0_0/0.15)_55%,rgb(0_0_0/0.78)_100%)]" />
       <div className="absolute inset-x-4 top-4 flex items-start justify-between gap-2 sm:inset-x-5 sm:top-5">

@@ -15,6 +15,7 @@ export function Cover({
   imgClassName,
   children,
   eager,
+  glyphClassName,
 }: {
   src: string | null | undefined;
   alt: string;
@@ -25,6 +26,8 @@ export function Cover({
   imgClassName?: string;
   children?: React.ReactNode;
   eager?: boolean;
+  /** Position/size override for the fallback flag or icon. */
+  glyphClassName?: string;
 }) {
   return (
     <div className={cn("relative overflow-hidden bg-surface-2", className)}>
@@ -39,7 +42,7 @@ export function Cover({
       ) : (
         <div aria-hidden className="absolute inset-0" style={{ background: gradientFor(seed) }}>
           <div className="absolute inset-0 opacity-[0.18] [background-image:radial-gradient(circle_at_20%_20%,white_0,transparent_45%),radial-gradient(circle_at_80%_70%,white_0,transparent_40%)]" />
-          <div className="absolute inset-0 grid place-items-center">
+          <div className={cn("absolute inset-0 grid place-items-center", glyphClassName)}>
             {flag ? (
               <span className="text-[56px] leading-none drop-shadow-sm [filter:saturate(1.05)]">{flag}</span>
             ) : Icon ? (

@@ -109,7 +109,7 @@ export function CityDetail({
       </Hero>
 
       <div className="grid gap-6 lg:grid-cols-12">
-        <section className="lg:col-span-8" aria-labelledby="places-title">
+        <section className="min-w-0 lg:col-span-8" aria-labelledby="places-title">
           <SectionTitle
             action={
               <div className="flex items-center gap-2">
@@ -134,7 +134,7 @@ export function CityDetail({
             </div>
           )}
         </section>
-        <aside className="flex flex-col gap-6 lg:col-span-4">
+        <aside className="flex min-w-0 flex-col gap-6 lg:col-span-4">
           <section className="card p-5" aria-labelledby="days-title">
             <SectionTitle>
               <span id="days-title" className="flex items-center gap-2">

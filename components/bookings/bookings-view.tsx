@@ -108,7 +108,7 @@ export function BookingsView({
                     {day === "No date" ? day : fmtDate(day, "EEEE, dd MMM yyyy")}
                     {day === today && <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold text-white">TODAY</span>}
                   </h2>
-                  <Stagger className="grid gap-3 md:grid-cols-2">
+                  <Stagger className="grid gap-3 md:grid-cols-2 [&>*]:min-w-0">
                     {list.map((b) => {
                       const meta = BOOKING_TYPE_META[b.type as BookingType] ?? BOOKING_TYPE_META.other;
                       const country = countries.find((c) => c.id === b.trip_country_id);
