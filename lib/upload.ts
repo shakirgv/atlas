@@ -13,14 +13,15 @@ const isHeic = (f: File) => /image\/hei[cf]/i.test(f.type) || /\.(heic|heif)$/i.
 async function readExif(file: File) {
   try {
     const exifr = (await import("exifr")).default;
-    const data = (await exifr.parse(file, { gps: true, pick: ["DateTimeOriginal", "CreateDate", "latitude", "longitude"] })) as
-      | { DateTimeOriginal?: Date; CreateDate?: Date; latitude?: number; longitude?: number }
-      | undefined;
-    const taken = data?.DateTimeOriginal ?? data?.CreateDate;
+    const [meta, gps] = await Promise.all([
+      exifr.parse(file, ["DateTimeOriginal", "CreateDate"]).catch(() => undefined) as Promise<{ DateTimeOriginal?: Date; CreateDate?: Date } | undefined>,
+      exifr.gps(file).catch(() => undefined) as Promise<{ latitude?: number; longitude?: number } | undefined>,
+    ]);
+    const taken = meta?.DateTimeOriginal ?? meta?.CreateDate;
     return {
       taken_at: taken instanceof Date && !Number.isNaN(taken.getTime()) ? taken.toISOString() : null,
-      lat: typeof data?.latitude === "number" && Number.isFinite(data.latitude) ? data.latitude : null,
-      lng: typeof data?.longitude === "number" && Number.isFinite(data.longitude) ? data.longitude : null,
+      lat: typeof gps?.latitude === "number" && Number.isFinite(gps.latitude) ? gps.latitude : null,
+      lng: typeof gps?.longitude === "number" && Number.isFinite(gps.longitude) ? gps.longitude : null,
     };
   } catch {
     return { taken_at: null, lat: null, lng: null };

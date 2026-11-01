@@ -47,7 +47,7 @@ export function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
 
-export type FxRates = { base: string; rates: Record<string, number>; updatedAt: string | null; stale: boolean };
+export type FxRates = { base: string; rates: Record<string, number>; updatedAt: string | null; stale: boolean; approximate?: boolean };
 
 /** Rate that converts 1 unit of `currency` into the base currency. */
 export function rateToBase(rates: FxRates | null, currency: string): number | null {

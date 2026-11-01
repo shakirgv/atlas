@@ -45,6 +45,7 @@ export function PhotoGrid({
   canUpload = true,
   columns = "grid-cols-3",
   setCoverOnUpload = false,
+  addVariant = "tile",
 }: {
   photos: PhotoView[];
   entityType: PhotoEntityType;
@@ -52,6 +53,7 @@ export function PhotoGrid({
   canUpload?: boolean;
   columns?: string;
   setCoverOnUpload?: boolean;
+  addVariant?: "tile" | "pill";
 }) {
   const ws = useWorkspace();
   const router = useRouter();
@@ -141,7 +143,7 @@ export function PhotoGrid({
             </DropdownMenu>
           </div>
         ))}
-        {canUpload && (
+        {canUpload && addVariant === "tile" && (
           <button
             type="button"
             onClick={() => input.current?.click()}
@@ -162,6 +164,17 @@ export function PhotoGrid({
           </button>
         )}
       </div>
+      {canUpload && addVariant === "pill" && (
+        <button
+          type="button"
+          onClick={() => input.current?.click()}
+          disabled={uploading > 0}
+          className="inline-flex h-8 items-center gap-1.5 rounded-full border border-dashed border-border px-3 text-xs font-medium text-muted transition-colors hover:border-accent/50 hover:text-ink"
+        >
+          {uploading ? <Loader2 className="size-3.5 animate-spin text-accent" /> : <ImagePlus className="size-3.5 text-accent" />}
+          {uploading ? `Uploading ${done}/${uploading}` : "Add photos"}
+        </button>
+      )}
       <input
         ref={input}
         type="file"

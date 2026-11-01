@@ -116,6 +116,7 @@ export function ExpenseSheet({
 
   const onSubmit = handleSubmit((values) =>
     start(async () => {
+      if (values.currency !== base && needsManual && !manualRate) return void toast.error(`Enter a rate for ${values.currency} → ${base}`);
       const res = expense ? await updateExpense(expense.id, values) : await createExpense(values);
       if (!res.ok) return void toast.error(res.error);
       localStorage.setItem(LAST_CURRENCY_KEY, values.currency);
@@ -192,7 +193,7 @@ export function ExpenseSheet({
                   ≈ <span className="font-medium text-ink">{formatMoney(round2(amount * fxRate), base)}</span>
                   <span className="ml-1.5 text-xs">
                     (1 {currency} = {fxRate ? fxRate.toFixed(fxRate < 0.01 ? 6 : 4) : "?"} {base}
-                    {rates?.stale ? ", last known" : ""})
+                    {rates?.approximate ? ", approximate — override if needed" : rates?.stale ? ", last known" : ""})
                   </span>
                 </>
               )}
