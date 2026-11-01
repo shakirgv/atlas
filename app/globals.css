@@ -93,8 +93,8 @@
   --color-ring: var(--ring);
   --color-overlay: var(--overlay);
 
-  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-sans: var(--font-flags), var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-flags), var(--font-fraunces), ui-serif, Georgia, serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   /* Type scale 12 / 14 / 16 / 20 / 28 / 40 / 56 */
@@ -119,6 +119,14 @@
   }
   html {
     -webkit-tap-highlight-color: transparent;
+  }
+  /* Form controls don't inherit fonts by default; inherit so flags in <select> options render too. */
+  input,
+  select,
+  option,
+  textarea,
+  button {
+    font-family: inherit;
   }
   body {
     background: var(--bg);

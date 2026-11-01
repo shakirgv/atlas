@@ -128,6 +128,7 @@ proxy.ts                   Next 16 "proxy" (formerly middleware): session refres
 - **Top bar title** fades in once the page's own large heading scrolls away (to avoid showing the same title twice).
 - **Verification** was done against a real local Supabase (Docker) with Playwright screenshots at 1440 px and 390 px in light and dark mode, so the optional `/dev/preview` fixture route from the brief was not needed.
 - **JSON import** adds everything as new rows with remapped ids; nothing is overwritten.
+- **Flags render the same everywhere.** Windows has no flag emoji (Chrome and Edge show "TR", "IT"…), so the app self-hosts the small *Twemoji Country Flags* font (`app/fonts/`, Twemoji art under CC-BY-4.0, code MIT) and puts it first in the font stack with a `unicode-range` limited to flag code points. Only flags use it; all other text stays Geist/Fraunces.
 - **Map tiles come from OpenStreetMap, not CARTO.** CARTO's basemap server now answers with "API key required" watermark tiles, so Leaflet maps use `tile.openstreetmap.org` (no key) and restyle it with CSS filters: softened and warm in light mode, inverted in dark mode. The URL and attribution live in `lib/config.ts` (`MAP_TILE_URL`) if you ever want another provider. OSM's tile policy is fine for a single-user personal app.
 
 ## Known limitations
