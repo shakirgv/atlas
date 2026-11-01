@@ -35,8 +35,8 @@ export function Topbar() {
           <div className="hidden md:block">
             <QuickAddMenu />
           </div>
-          <div className="w-40 md:hidden">
-            <TripSwitcher />
+          <div className="md:hidden">
+            <TripSwitcher collapsed />
           </div>
         </div>
       </div>

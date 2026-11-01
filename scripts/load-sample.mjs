@@ -1,0 +1,15 @@
+import { chromium } from "playwright";
+const BASE = "http://localhost:3000";
+const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium" });
+const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+const errors = [];
+page.on("pageerror", (e) => errors.push(e.message));
+await page.goto(`${BASE}/login`);
+await page.fill("#email", "me@atlas.test");
+await page.fill("#password", "atlas-dev-123");
+await Promise.all([page.waitForURL(`${BASE}/`), page.click("button[type=submit]")]);
+await page.goto(`${BASE}/settings`);
+await page.getByRole("button", { name: "Load sample data" }).click();
+await page.waitForURL(/\/trips\//, { timeout: 30000 });
+console.log("sample loaded", page.url(), errors);
+await browser.close();

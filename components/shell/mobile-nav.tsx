@@ -24,6 +24,7 @@ export function MobileNav() {
       <button
         type="button"
         onClick={() => setAddOpen(true)}
+        hidden={pathname === "/map"}
         className="no-print fixed bottom-[calc(76px+env(safe-area-inset-bottom))] right-4 z-40 grid size-14 place-items-center rounded-full bg-primary text-primary-fg shadow-[0_10px_30px_rgb(201_66_31/0.4)] transition-transform active:scale-95 md:hidden"
         aria-label="Quick add"
       >
