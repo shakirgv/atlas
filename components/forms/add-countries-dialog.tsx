@@ -47,6 +47,17 @@ export function AddCountriesDialog({
   const toggle = (code: string) =>
     setSelected((s) => (s.includes(code) ? s.filter((c) => c !== code) : [...s, code]));
 
+  // "Select all" acts on what is visible right now: everything, one continent, or the search results.
+  const selectable = list.filter((c) => !existing.has(c.cca2));
+  const allVisibleSelected = selectable.length > 0 && selectable.every((c) => selected.includes(c.cca2));
+  const scopeLabel = query.trim() ? "results" : region === "All" ? "countries" : `in ${region}`;
+  const toggleAllVisible = () => {
+    const codes = selectable.map((c) => c.cca2);
+    if (allVisibleSelected) setSelected((s) => s.filter((c) => !codes.includes(c)));
+    else setSelected((s) => [...s, ...codes.filter((c) => !s.includes(c))]);
+  };
+  const SHOWN = 12;
+
   const submit = () =>
     start(async () => {
       if (!activeTrip) return void toast.error("Create a trip first");
@@ -79,7 +90,7 @@ export function AddCountriesDialog({
       }
     >
       {ws.trips.length > 1 && (
-        <NativeSelect value={activeTrip ?? ""} onChange={(e) => setTripId(e.target.value)} aria-label="Trip">
+        <NativeSelect value={activeTrip ?? ""} onChange={(e) => setTripId(e.target.value)} aria-label="Trip" className="shrink-0">
           {ws.trips.map((t) => (
             <option key={t.id} value={t.id}>
               {t.title}
@@ -87,15 +98,16 @@ export function AddCountriesDialog({
           ))}
         </NativeSelect>
       )}
-      <div className="relative">
+      <div className="relative shrink-0">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
         <Input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search countries or capitals…" className="pl-9" aria-label="Search countries" />
       </div>
-      <div className="scrollbar-none -mx-1 flex gap-1.5 overflow-x-auto px-1">
+      <div className="scrollbar-none -mx-1 flex shrink-0 gap-1.5 overflow-x-auto px-1 py-0.5" role="group" aria-label="Continent">
         {REGIONS.map((r) => (
           <button
             key={r}
             type="button"
+            aria-pressed={region === r}
             onClick={() => setRegion(r)}
             className={cn(
               "h-8 shrink-0 rounded-full border px-3 text-[13px] font-medium",
@@ -106,9 +118,28 @@ export function AddCountriesDialog({
           </button>
         ))}
       </div>
+      <div className="flex shrink-0 items-center justify-between gap-2 text-sm">
+        <span className="text-muted">
+          {selected.length ? (
+            <>
+              <span className="num font-medium text-ink">{selected.length}</span> selected ·{" "}
+              <button type="button" onClick={() => setSelected([])} className="font-medium text-accent hover:underline">
+                Clear
+              </button>
+            </>
+          ) : (
+            <span className="num">{selectable.length} available</span>
+          )}
+        </span>
+        <Button size="sm" variant="secondary" onClick={toggleAllVisible} disabled={!selectable.length}>
+          {allVisibleSelected ? <X /> : <Check />}
+          {allVisibleSelected ? `Unselect ${scopeLabel}` : `Select all ${scopeLabel}`}
+          <span className="num text-muted">{selectable.length}</span>
+        </Button>
+      </div>
       {selected.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 rounded-xl bg-surface-2 p-2">
-          {selected.map((code, i) => {
+        <div className="flex max-h-24 shrink-0 flex-wrap gap-1.5 overflow-y-auto rounded-xl bg-surface-2 p-2">
+          {selected.slice(0, SHOWN).map((code, i) => {
             const c = getCountry(code)!;
             return (
               <button
@@ -124,9 +155,10 @@ export function AddCountriesDialog({
               </button>
             );
           })}
+          {selected.length > SHOWN && <span className="inline-flex h-7 items-center px-2 text-xs font-medium text-muted">+{selected.length - SHOWN} more</span>}
         </div>
       )}
-      <ul className="-mx-1 flex max-h-[44vh] flex-col overflow-y-auto md:max-h-[380px]" role="listbox" aria-multiselectable aria-label="Countries">
+      <ul className="-mx-1 flex min-h-40 flex-col overflow-y-auto max-md:max-h-[40vh] md:max-h-[340px]" role="listbox" aria-multiselectable aria-label="Countries">
         {list.map((c) => {
           const already = existing.has(c.cca2);
           const checked = selected.includes(c.cca2);
