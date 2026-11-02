@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { effectiveRate, planExchange, planWithdrawal, totalPaid, walletBalance } from "@/lib/cash";
 import { round2 } from "@/lib/money";
 import { insertFeeExpense, midMarket, walletForCurrency } from "@/lib/server/cash";
+import { cleanupEntityPhotos } from "@/lib/storage";
 import { cashEntrySchema, cashTxPatchSchema, exchangeSchema, walletSchema, withdrawalSchema, type CashEntryInput, type CashTxPatch, type ExchangeInputRaw, type WalletInput, type WithdrawalInputRaw } from "@/lib/validation";
 import { fail, must, ok, refreshAll } from "@/actions/_util";
 import type { ActionResult } from "@/lib/types";
@@ -207,7 +208,10 @@ export async function deleteCashTransaction(id: string): Promise<ActionResult> {
     const linked = tx.linked_transaction_id ? must(await supabase.from("cash_transactions").select("id, fee_expense_id").eq("id", tx.linked_transaction_id).maybeSingle()) : null;
     const expenseIds = [tx.expense_id, tx.fee_expense_id, linked?.fee_expense_id].filter((x): x is string => Boolean(x));
     must(await supabase.from("cash_transactions").delete().in("id", [tx.id, ...(linked ? [linked.id] : [])]));
-    if (expenseIds.length) must(await supabase.from("expenses").delete().in("id", expenseIds));
+    if (expenseIds.length) {
+      must(await supabase.from("expenses").delete().in("id", expenseIds));
+      await cleanupEntityPhotos(supabase, expenseIds);
+    }
     refreshAll();
     return ok();
   } catch (e) {

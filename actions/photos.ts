@@ -2,7 +2,7 @@
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { photoMetaSchema, type PhotoMeta } from "@/lib/validation";
-import { removeFiles } from "@/lib/storage";
+import { removeFiles, signPhotoPaths } from "@/lib/storage";
 import { fail, must, ok, refreshAll } from "@/actions/_util";
 import { PHOTO_ENTITY_TYPES, type ActionResult, type PhotoEntityType } from "@/lib/types";
 
@@ -68,6 +68,7 @@ export async function setPhotoAsCover(id: string): Promise<ActionResult> {
     const { supabase } = await requireUser();
     const photo = must(await supabase.from("photos").select("*").eq("id", z.uuid().parse(id)).single());
     const type = photo.entity_type as PhotoEntityType;
+    if (type === "expense") throw new Error("A receipt can't be a cover.");
     if (type === "memory") {
       const mem = must(await supabase.from("memories").select("trip_id, city_id, trip_country_id").eq("id", photo.entity_id).single());
       if (mem.city_id) must(await supabase.from("cities").update({ cover_path: photo.path }).eq("id", mem.city_id));
@@ -79,6 +80,19 @@ export async function setPhotoAsCover(id: string): Promise<ActionResult> {
     }
     refreshAll();
     return ok();
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Fresh signed URLs for the ZIP download, because a page may have been open longer than the URLs last. */
+export async function receiptDownloadUrls(ids: string[]): Promise<ActionResult<Record<string, string>>> {
+  try {
+    const { supabase } = await requireUser();
+    const list = z.array(z.uuid()).max(1000).parse(ids);
+    const rows = must(await supabase.from("photos").select("id, path").eq("entity_type", "expense").in("id", list));
+    const urls = await signPhotoPaths(supabase, rows.map((r) => r.path));
+    return ok(Object.fromEntries(rows.flatMap((r) => (urls[r.path] ? [[r.id, urls[r.path]!]] : []))));
   } catch (e) {
     return fail(e);
   }

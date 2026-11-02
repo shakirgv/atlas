@@ -5,7 +5,7 @@ import type { BudgetSummary } from "@/lib/budget";
 import type { CashSummary } from "@/lib/cash";
 import { CashTab } from "@/components/cash/cash-tab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Expense } from "@/lib/types";
+import type { Expense, PhotoView } from "@/lib/types";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { CategoryDonut, CumulativeSpend, DonutLegend, PlannedVsActual } from "@/components/charts/charts";
@@ -24,7 +24,9 @@ export function BudgetView({
   expenses,
   summary: s,
   countries,
+  cities,
   baseCurrency,
+  receipts,
   cash,
   allTrips,
   defaultTripId,
@@ -36,6 +38,7 @@ export function BudgetView({
   cities: { id: string; name: string; trip_country_id: string }[];
   trips: { id: string; title: string }[];
   baseCurrency: string;
+  receipts: Record<string, PhotoView[]>;
   cash: CashSummary;
   allTrips: { id: string; title: string }[];
   defaultTripId: string | null;
@@ -166,12 +169,12 @@ export function BudgetView({
             </section>
           </div>
 
-          <ExpenseTable expenses={expenses} countries={countries} base={baseCurrency} onEdit={setEditing} />
+          <ExpenseTable expenses={expenses} countries={countries} cities={cities} base={baseCurrency} receipts={receipts} userId={ws.userId} onEdit={setEditing} />
         </>
       )}
         </TabsContent>
       </Tabs>
-      {editing && <ExpenseSheet open onOpenChange={(o) => !o && setEditing(null)} expense={editing} />}
+      {editing && <ExpenseSheet open onOpenChange={(o) => !o && setEditing(null)} expense={editing} receiptCount={receipts[editing.id]?.length ?? 0} />}
       {spendFrom && <ExpenseSheet open onOpenChange={(o) => !o && setSpendFrom(null)} cashFrom={spendFrom} />}
     </PageTransition>
   );

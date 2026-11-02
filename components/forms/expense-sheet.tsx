@@ -18,6 +18,8 @@ import { Field, Input, NativeSelect } from "@/components/ui/input";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { useDefaultTripId, useWorkspace } from "@/components/shell/workspace";
 import { ChoiceChips, MoreDetails, SubmitButton } from "./form-bits";
+import { addReceipts, pickReceiptFiles } from "@/components/budget/receipts";
+import { Camera, Paperclip, X } from "lucide-react";
 
 type In = z.input<typeof expenseSchema>;
 type Out = z.output<typeof expenseSchema>;
@@ -29,6 +31,7 @@ export function ExpenseSheet({
   expense,
   tripCountryId,
   cashFrom,
+  receiptCount = 0,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -36,6 +39,8 @@ export function ExpenseSheet({
   tripCountryId?: string | null;
   /** Opened from a wallet's "Spend": starts as a cash payment from that wallet. */
   cashFrom?: { id: string; currency: string } | null;
+  /** Receipts the expense being edited already has. */
+  receiptCount?: number;
 }) {
   const ws = useWorkspace();
   const defaultTrip = useDefaultTripId();
@@ -85,6 +90,7 @@ export function ExpenseSheet({
   const kind = watch("kind");
   const walletId = watch("wallet_id");
   const [wallets, setWallets] = useState<WalletOption[]>([]);
+  const [pendingReceipts, setPendingReceipts] = useState<File[]>([]);
   const cashPaid = payment === "cash" && kind === "actual";
   const walletChoices = wallets.filter((w) => w.currency === currency);
   const wallet = walletChoices.find((w) => w.id === walletId) ?? walletChoices[0] ?? null;
@@ -160,17 +166,29 @@ export function ExpenseSheet({
       const negative = cashPaid && afterSpend !== null && afterSpend < 0 ? `Your ${values.currency} wallet is now at ${formatMoney(afterSpend, values.currency)}.` : null;
       if (negative) toast.warning(negative);
       void listWalletOptions().then((r) => r.ok && setWallets(r.data));
+      const savedId = expense?.id ?? (res.data as { id: string } | undefined)?.id;
+      const attach = (files: File[]) => {
+        if (!savedId || !files.length) return;
+        void addReceipts(ws.userId, savedId, files).then((n) => {
+          if (n) toast.success(`${n} receipt${n === 1 ? "" : "s"} attached`);
+        });
+      };
+      attach(pendingReceipts);
+      const hadReceipts = pendingReceipts.length > 0;
+      setPendingReceipts([]);
+      // A second chance right after saving; the picker stays usable once the form is closed.
+      const receiptAction = !hadReceipts && savedId ? { label: "Add receipt", onClick: () => pickReceiptFiles(attach) } : undefined;
       if (expense) {
-        toast.success("Expense updated");
+        toast.success("Expense updated", { action: receiptCount ? undefined : receiptAction });
         onOpenChange(false);
         return;
       }
       if (cashFrom) {
-        toast.success(`Spent ${formatMoney(values.amount, values.currency)} in cash`);
+        toast.success(`Spent ${formatMoney(values.amount, values.currency)} in cash`, { action: receiptAction });
         onOpenChange(false);
         return;
       }
-      toast.success(`Saved ${formatMoney(values.amount, values.currency)}`, { description: "Ready for the next one." });
+      toast.success(`Saved ${formatMoney(values.amount, values.currency)}`, { description: "Ready for the next one.", action: receiptAction });
       setCount((n) => n + 1);
       // Stay open for the next entry; keep trip/country/currency/kind/date.
       setValue("amount", "");
@@ -340,6 +358,23 @@ export function ExpenseSheet({
             <Field label="Note" htmlFor="exp-title">
               <Input id="exp-title" placeholder="Ramen in Shibuya" {...register("title")} />
             </Field>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <Button type="button" variant="secondary" size="sm" className="md:hidden" onClick={() => pickReceiptFiles((f) => setPendingReceipts((p) => [...p, ...f]), true)}>
+              <Camera /> Snap receipt
+            </Button>
+            <Button type="button" variant="secondary" size="sm" onClick={() => pickReceiptFiles((f) => setPendingReceipts((p) => [...p, ...f]))}>
+              <Paperclip /> Add receipt
+            </Button>
+            {receiptCount > 0 && <span className="text-xs text-muted">{receiptCount} attached</span>}
+            {pendingReceipts.length > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-surface-2 py-0.5 pl-2.5 pr-1 text-xs ring-1 ring-border">
+                {pendingReceipts.length} to attach on save
+                <button type="button" onClick={() => setPendingReceipts([])} className="grid size-6 place-items-center rounded-full text-muted hover:bg-ink/5" aria-label="Remove receipts to attach">
+                  <X className="size-3" />
+                </button>
+              </span>
+            )}
           </div>
           <MoreDetails defaultOpen={Boolean(expense?.trip_country_id) || ws.trips.length > 1}>
             {ws.trips.length > 1 && (

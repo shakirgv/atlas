@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { BUCKETS, MAX_UPLOAD_BYTES } from "@/lib/config";
 import type { PhotoMeta } from "@/lib/validation";
 import type { PhotoEntityType } from "@/lib/types";
+import { IMAGE_PRESETS, type ImagePreset } from "@/lib/receipts";
 
 export type UploadProgress = { name: string; progress: number; status: "queued" | "processing" | "uploading" | "done" | "error"; error?: string };
 
@@ -47,23 +48,25 @@ async function dimensions(blob: Blob) {
   }
 }
 
-/** EXIF → HEIC convert → compress (1920px WebP + 480px thumb). */
-export async function processImage(file: File) {
+/** EXIF → HEIC convert → compress to WebP + thumbnail, sized by the preset. A receipt never keeps a location. */
+export async function processImage(file: File, preset: ImagePreset = "photo") {
   if (file.size > MAX_UPLOAD_BYTES) throw new Error("File is larger than 25 MB");
-  const exif = await readExif(file);
+  const p = IMAGE_PRESETS[preset];
+  const read = await readExif(file);
+  const exif = preset === "receipt" ? { ...read, lat: null, lng: null } : read;
   const source = await toJpegIfHeic(file);
   const full = await imageCompression(source, {
-    maxWidthOrHeight: 1920,
+    maxWidthOrHeight: p.side,
     fileType: "image/webp",
-    initialQuality: 0.82,
-    maxSizeMB: 0.45,
+    initialQuality: p.quality,
+    maxSizeMB: p.maxMB,
     useWebWorker: true,
   });
   const thumb = await imageCompression(source, {
-    maxWidthOrHeight: 480,
+    maxWidthOrHeight: p.thumbSide,
     fileType: "image/webp",
-    initialQuality: 0.78,
-    maxSizeMB: 0.08,
+    initialQuality: p.thumbQuality,
+    maxSizeMB: p.thumbMB,
     useWebWorker: true,
   });
   const dims = await dimensions(full);
@@ -91,7 +94,7 @@ export async function uploadPhotos(
       const report = (p: Partial<UploadProgress>) => onProgress?.(i, { name: file.name, progress: 0, status: "processing", ...p });
       try {
         report({ status: "processing", progress: 0.15 });
-        const img = await processImage(file);
+        const img = await processImage(file, entityType === "expense" ? "receipt" : "photo");
         report({ status: "uploading", progress: 0.55 });
         const id = crypto.randomUUID();
         const base = `${userId}/${entityType}/${entityId}/${id}`;

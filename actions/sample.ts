@@ -1,12 +1,14 @@
 "use server";
 import { cookies } from "next/headers";
+import sharp from "sharp";
 import { requireUser } from "@/lib/auth";
 import { cleanupTrips } from "@/lib/entities";
 import { removeFiles } from "@/lib/storage";
 import { getRates } from "@/lib/fx";
 import { rateToBase, round2 } from "@/lib/money";
 import { shiftIso, todayIso } from "@/lib/dates";
-import { ACTIVE_TRIP_COOKIE } from "@/lib/config";
+import { ACTIVE_TRIP_COOKIE, BUCKETS } from "@/lib/config";
+import type { ServerSupabase } from "@/lib/supabase/server";
 import { fail, must, mustMaybe, ok, refreshAll } from "@/actions/_util";
 import type { ActionResult, ExpenseCategory, PlaceCategory, PlaceStatus, StopType } from "@/lib/types";
 
@@ -37,6 +39,24 @@ const PLACES: PlaceSeed[] = [
   { key: "inari", city: "kyoto", name: "Fushimi Inari Taisha", category: "sight", lat: 34.9671, lng: 135.7727, status: "want" },
   { key: "arashiyama", city: "kyoto", name: "Arashiyama Bamboo Grove", category: "nature", lat: 35.017, lng: 135.6713, status: "want" },
 ];
+
+/** A plain generated receipt, so the sample expense has a real file to open. Best effort: sample data works without it. */
+async function seedReceipt(supabase: ServerSupabase, userId: string, expenseId: string, title: string, amount: string) {
+  try {
+    const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="600" height="800" fill="#fffdf8"/><text x="300" y="90" font-family="monospace" font-size="30" text-anchor="middle" fill="#222">SAMPLE RECEIPT</text><text x="60" y="210" font-family="monospace" font-size="26" fill="#222">${esc(title)}</text><line x1="60" y1="260" x2="540" y2="260" stroke="#222" stroke-dasharray="6 6"/><text x="60" y="330" font-family="monospace" font-size="34" font-weight="bold" fill="#222">TOTAL ${esc(amount)}</text></svg>`;
+    const image = sharp(Buffer.from(svg));
+    const [full, thumb] = await Promise.all([image.clone().webp({ quality: 80 }).toBuffer(), image.clone().resize({ width: 400 }).webp({ quality: 75 }).toBuffer()]);
+    const base = `${userId}/expense/${expenseId}/${crypto.randomUUID()}`;
+    const bucket = supabase.storage.from(BUCKETS.photos);
+    const a = await bucket.upload(`${base}.webp`, full, { contentType: "image/webp" });
+    const b = await bucket.upload(`${base}_thumb.webp`, thumb, { contentType: "image/webp" });
+    if (a.error || b.error) return;
+    await supabase.from("photos").insert({ entity_type: "expense", entity_id: expenseId, path: `${base}.webp`, thumb_path: `${base}_thumb.webp`, width: 600, height: 800, source: "upload" });
+  } catch {
+    // Only the sample receipt is missing then.
+  }
+}
 
 export async function loadSampleData(): Promise<ActionResult<{ tripId: string }>> {
   try {
@@ -225,6 +245,13 @@ export async function loadSampleData(): Promise<ActionResult<{ tripId: string }>
           };
         }),
       ).select("id, title"),
+    );
+
+    await Promise.all(
+      [
+        ["Lunch at Roscioli", "62.00 EUR"],
+        ["Colosseum + Forum tickets", "44.00 EUR"],
+      ].map(([title, amount]) => seedReceipt(supabase, user.id, sampleExpenses.find((x) => x.title === title)!.id, title!, amount!)),
     );
 
     // Two cash wallets. Skipped for a currency that already has a real wallet, so nothing of mine is touched.

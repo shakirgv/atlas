@@ -5,6 +5,7 @@ import { expenseSchema, type ExpenseInput } from "@/lib/validation";
 import { round2 } from "@/lib/money";
 import { getRates } from "@/lib/fx";
 import { syncExpenseSpend, walletForCurrency } from "@/lib/server/cash";
+import { cleanupEntityPhotos } from "@/lib/storage";
 import type { ServerSupabase } from "@/lib/supabase/server";
 import { fail, must, ok, refreshAll } from "@/actions/_util";
 import type { FxRatesResult } from "@/lib/action-types";
@@ -69,6 +70,7 @@ export async function deleteExpense(id: string): Promise<ActionResult> {
     must(await supabase.from("cash_transactions").delete().eq("expense_id", expenseId).eq("type", "spend"));
     must(await supabase.from("cash_transactions").update({ fee_amount: null, fee_currency: null }).eq("fee_expense_id", expenseId));
     must(await supabase.from("expenses").delete().eq("id", expenseId));
+    await cleanupEntityPhotos(supabase, [expenseId]);
     refreshAll();
     return ok();
   } catch (e) {

@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Budget" };
 export default async function BudgetPage({ searchParams }: PageProps<"/budget">) {
   const sp = await searchParams;
   const { supabase, scope } = await getScope();
-  const [g, cash] = await Promise.all([loadGraph(supabase, scope.trips, scope.tripIds, { expenses: true }), loadCash(supabase, scope.baseCurrency)]);
+  const [g, cash] = await Promise.all([loadGraph(supabase, scope.trips, scope.tripIds, { expenses: true, receipts: true }), loadCash(supabase, scope.baseCurrency)]);
   return (
     <BudgetView
       expenses={g.expenses}
@@ -20,6 +20,7 @@ export default async function BudgetPage({ searchParams }: PageProps<"/budget">)
       trips={g.trips.map((t) => ({ id: t.id, title: t.title }))}
       baseCurrency={scope.baseCurrency}
       cash={cash}
+      receipts={g.receipts}
       allTrips={scope.trips.map((t) => ({ id: t.id, title: t.title }))}
       defaultTripId={scope.activeTrip?.id ?? null}
       initialTab={sp.tab === "cash" ? "cash" : "overview"}

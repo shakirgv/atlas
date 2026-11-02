@@ -1,9 +1,12 @@
 "use client";
 import { useMemo, useState, useTransition } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, Banknote, Download, MoreHorizontal, Pencil, Search, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Banknote, Download, FileArchive, Loader2, MoreHorizontal, Paperclip, Pencil, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteExpense, updateExpense } from "@/actions/expenses";
-import { EXPENSE_CATEGORIES, type Expense, type ExpenseCategory } from "@/lib/types";
+import { receiptDownloadUrls } from "@/actions/photos";
+import { buildReceiptsZip, isMissingReceipt, receiptFileName, uniqueNames } from "@/lib/receipts";
+import { ReceiptCell, ReceiptsDialog } from "./receipts";
+import { EXPENSE_CATEGORIES, type Expense, type ExpenseCategory, type PhotoView } from "@/lib/types";
 import { EXPENSE_CATEGORY_META, formatMoney, round2 } from "@/lib/money";
 import { EXPENSE_CATEGORY_ICON } from "@/lib/icons";
 import { fmtDate } from "@/lib/dates";
@@ -53,7 +56,23 @@ function Th({ k, sort, onSort, children, className }: { k: SortKey; sort: Sort; 
   );
 }
 
-export function ExpenseTable({ expenses, countries, base, onEdit }: { expenses: Expense[]; countries: Opt[]; base: string; onEdit: (e: Expense) => void }) {
+export function ExpenseTable({
+  expenses,
+  countries,
+  cities = [],
+  base,
+  receipts = {},
+  userId,
+  onEdit,
+}: {
+  expenses: Expense[];
+  countries: Opt[];
+  cities?: Opt[];
+  base: string;
+  receipts?: Record<string, PhotoView[]>;
+  userId: string;
+  onEdit: (e: Expense) => void;
+}) {
   const confirm = useConfirm();
   const [, start] = useTransition();
   const [sort, setSort] = useState<Sort>({ key: "date", dir: -1 });
@@ -64,6 +83,10 @@ export function ExpenseTable({ expenses, countries, base, onEdit }: { expenses: 
   const [kind, setKind] = useState("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [receiptFilter, setReceiptFilter] = useState("all");
+  const [over, setOver] = useState("");
+  const [managing, setManaging] = useState<string | null>(null);
+  const [zipping, setZipping] = useState<{ done: number; total: number } | null>(null);
   const [editing, setEditing] = useState<{ id: string; field: "title" | "amount" | "date" } | null>(null);
   const [draft, setDraft] = useState("");
 
@@ -75,6 +98,8 @@ export function ExpenseTable({ expenses, countries, base, onEdit }: { expenses: 
         (kind === "all" || e.kind === kind) &&
         (!from || e.date >= from) &&
         (!to || e.date <= to) &&
+        (receiptFilter === "all" ||
+          (receiptFilter === "has" ? Boolean(receipts[e.id]?.length) : isMissingReceipt(e, receipts[e.id]?.length ?? 0, Number(over.replace(",", ".")) || null))) &&
         (!q || `${e.title ?? ""} ${e.notes ?? ""}`.toLowerCase().includes(q.toLowerCase())),
     );
     return [...list].sort((a, b) => {
@@ -82,7 +107,7 @@ export function ExpenseTable({ expenses, countries, base, onEdit }: { expenses: 
       const bv = b[sort.key] ?? "";
       return (typeof av === "number" && typeof bv === "number" ? av - bv : String(av).localeCompare(String(bv))) * sort.dir;
     });
-  }, [expenses, country, category, kind, from, to, q, sort]);
+  }, [expenses, country, category, kind, from, to, q, sort, receiptFilter, over, receipts]);
   const total = rows.reduce((s, e) => s + Number(e.amount_base), 0);
 
   const save = (e: Expense, patch: Partial<Expense>) =>
@@ -105,9 +130,9 @@ export function ExpenseTable({ expenses, countries, base, onEdit }: { expenses: 
 
   const exportCsv = () => {
     const name = new Map(countries.map((c) => [c.id, c.name]));
-    const head = ["date", "title", "category", "kind", "amount", "currency", "fx_rate", `amount_${base}`, "country", "notes"];
+    const head = ["date", "title", "category", "kind", "amount", "currency", "fx_rate", `amount_${base}`, "country", "notes", "has_receipt"];
     const lines = [head.join(",")].concat(
-      rows.map((e) => [e.date, e.title, e.category, e.kind, e.amount, e.currency, e.fx_rate, e.amount_base, e.trip_country_id ? name.get(e.trip_country_id) : "", e.notes].map(csvCell).join(",")),
+      rows.map((e) => [e.date, e.title, e.category, e.kind, e.amount, e.currency, e.fx_rate, e.amount_base, e.trip_country_id ? name.get(e.trip_country_id) : "", e.notes, receipts[e.id]?.length ? "yes" : "no"].map(csvCell).join(",")),
     );
     const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -118,15 +143,54 @@ export function ExpenseTable({ expenses, countries, base, onEdit }: { expenses: 
     URL.revokeObjectURL(url);
   };
 
+  const placeOf = (e: Expense) => cities.find((c) => c.id === e.city_id)?.name ?? countries.find((c) => c.id === e.trip_country_id)?.name ?? null;
+  const zipRows = rows.filter((e) => receipts[e.id]?.length);
+
+  const downloadZip = async () => {
+    const list = zipRows.flatMap((e) => receipts[e.id]!.map((r) => ({ id: r.id, name: receiptFileName(e, placeOf(e)) })));
+    const names = uniqueNames(list.map((x) => x.name));
+    setZipping({ done: 0, total: list.length });
+    try {
+      const res = await receiptDownloadUrls(list.map((x) => x.id));
+      if (!res.ok) throw new Error(res.error);
+      const { zip, failed } = await buildReceiptsZip(
+        list.map((x, i) => ({ id: x.id, name: names[i]! })),
+        async (id) => {
+          const url = res.data[id];
+          if (!url) throw new Error("No link");
+          const r = await fetch(url);
+          if (!r.ok) throw new Error(String(r.status));
+          return r.arrayBuffer();
+        },
+        (done, total) => setZipping({ done, total }),
+      );
+      if (failed.length === list.length) throw new Error("Could not download the receipts.");
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `receipts-${new Date().toISOString().slice(0, 10)}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      if (failed.length) toast.warning(`${failed.length} receipt${failed.length === 1 ? "" : "s"} could not be added to the ZIP`);
+      else toast.success(`Saved ${list.length} receipt${list.length === 1 ? "" : "s"}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not build the ZIP");
+    } finally {
+      setZipping(null);
+    }
+  };
+  const managed = managing ? expenses.find((e) => e.id === managing) : null;
+
   return (
     <section className="card overflow-hidden" aria-label="Expenses">
       <div className="flex flex-col gap-2 border-b border-border p-4">
-        <div className="flex flex-col gap-2 lg:flex-row">
-          <div className="relative flex-1">
+        <div className="flex flex-col gap-2">
+          <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search expenses" className="pl-9" aria-label="Search expenses" />
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:flex">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:flex lg:flex-wrap">
             <NativeSelect value={country} onChange={(e) => setCountry(e.target.value)} aria-label="Country" className="lg:w-40">
               <option value="all">All countries</option>
               <option value="none">Whole trip</option>
@@ -151,15 +215,24 @@ export function ExpenseTable({ expenses, countries, base, onEdit }: { expenses: 
             </NativeSelect>
             <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From date" className="lg:w-40" />
             <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="To date" className="lg:w-40" />
+            <NativeSelect value={receiptFilter} onChange={(e) => setReceiptFilter(e.target.value)} aria-label="Receipts" className="lg:w-40">
+              <option value="all">Any receipt</option>
+              <option value="has">Has receipt</option>
+              <option value="missing">Missing receipt</option>
+            </NativeSelect>
+            {receiptFilter === "missing" && <Input inputMode="decimal" value={over} onChange={(e) => setOver(e.target.value)} placeholder={`Over ${base}`} aria-label={`Only above this amount in ${base}`} className="lg:w-28" />}
             <Button variant="secondary" onClick={exportCsv} disabled={!rows.length}>
               <Download /> CSV
+            </Button>
+            <Button variant="secondary" onClick={downloadZip} disabled={!zipRows.length || Boolean(zipping)}>
+              {zipping ? <Loader2 className="animate-spin" /> : <FileArchive />} {zipping ? `${zipping.done}/${zipping.total}` : "Receipts ZIP"}
             </Button>
           </div>
         </div>
       </div>
       {rows.length ? (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-sm">
+        <div className="relative overflow-x-auto">
+          <table className="w-full min-w-[760px] text-sm">
             <thead className="border-b border-border bg-surface-2 text-left text-xs uppercase tracking-wider text-muted">
               <tr>
                 <Th k="date" sort={sort} onSort={onSort}>Date</Th>
@@ -170,6 +243,10 @@ export function ExpenseTable({ expenses, countries, base, onEdit }: { expenses: 
                 <Th k="amount_base" sort={sort} onSort={onSort} className="text-right">
                   {base}
                 </Th>
+                <th className="px-1 py-3 font-medium">
+                  <Paperclip className="size-3.5" />
+                  <span className="sr-only">Receipts</span>
+                </th>
                 <th className="w-10" />
               </tr>
             </thead>
@@ -240,6 +317,9 @@ export function ExpenseTable({ expenses, countries, base, onEdit }: { expenses: 
                       )}
                     </td>
                     <td className="num whitespace-nowrap px-3 py-2 text-right font-medium">{formatMoney(Number(e.amount_base), base)}</td>
+                    <td className="px-1 py-2">
+                      <ReceiptCell receipts={receipts[e.id] ?? []} onManage={() => setManaging(e.id)} />
+                    </td>
                     <td className="px-2 py-2">
                       <DropdownMenu>
                         <DropdownMenuTrigger className="grid size-8 place-items-center rounded-lg text-muted hover:bg-ink/5" aria-label="Expense actions">
@@ -248,6 +328,9 @@ export function ExpenseTable({ expenses, countries, base, onEdit }: { expenses: 
                         <DropdownMenuContent>
                           <DropdownMenuItem onSelect={() => onEdit(e)}>
                             <Pencil /> Edit all fields
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => setManaging(e.id)}>
+                            <Paperclip /> Receipts
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -277,6 +360,7 @@ export function ExpenseTable({ expenses, countries, base, onEdit }: { expenses: 
                 </td>
                 <td className="num px-3 py-3 text-right font-semibold">{formatMoney(total, base)}</td>
                 <td />
+                <td />
               </tr>
             </tfoot>
           </table>
@@ -284,6 +368,7 @@ export function ExpenseTable({ expenses, countries, base, onEdit }: { expenses: 
       ) : (
         <p className="px-4 py-12 text-center text-sm text-muted">No expenses match these filters.</p>
       )}
+      {managed && <ReceiptsDialog expense={managed} receipts={receipts[managed.id] ?? []} userId={userId} onOpenChange={(o) => !o && setManaging(null)} />}
     </section>
   );
 }

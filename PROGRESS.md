@@ -37,8 +37,11 @@ Delete this file when the whole pack is finished.
 ## Done: 3.8 Cash wallets
 - `lib/cash.ts` (plans, tested), `lib/server/cash.ts`, `actions/cash.ts`, `components/cash/*`, Budget tab "Cash", expense form payment + wallet, dashboard cash rows.
 
+## Done: 3.9 Receipts
+- `lib/receipts.ts`, `components/budget/receipts.tsx`, expense table cell + filter + ZIP, expense form picker, `photos` preset in `lib/upload.ts`.
+
 ## Next steps (build order from IMPROVEMENTS.md §5)
-3.9 Receipts → 3.7 Photo pins → 3.10 MFA + PIN vault → 3.5 Map export
+3.7 Photo pins → 3.10 MFA + PIN vault → 3.5 Map export
 → 3.11 On this day + Recap → 3.12 Share links → polish/README/final report.
 
 ## Notes for a fresh session

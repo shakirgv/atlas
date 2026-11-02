@@ -47,6 +47,8 @@ export type Graph = {
   bookings: Booking[];
   packing: PackingItem[];
   entries: EntryRequirement[];
+  /** Receipts per expense id, with signed URLs. */
+  receipts: Record<string, PhotoView[]>;
   photoCount: number;
 };
 
@@ -59,6 +61,7 @@ type Opts = {
   bookings?: boolean;
   packing?: boolean;
   entries?: boolean;
+  receipts?: boolean;
   photoCount?: boolean;
 };
 
@@ -99,7 +102,7 @@ export async function loadGraph(supabase: ServerSupabase, allTrips: Trip[], trip
     opts.bookings && !none ? safe(supabase.from("bookings").select("*").in("trip_id", tripIds).order("start_at"), [] as Booking[]) : Promise.resolve([] as Booking[]),
     opts.packing && !none ? safe(supabase.from("packing_items").select("*").in("trip_id", tripIds).order("order_index"), [] as PackingItem[]) : Promise.resolve([] as PackingItem[]),
     opts.entries && tcIds.length ? safe(supabase.from("entry_requirements").select("*").in("trip_country_id", tcIds), [] as EntryRequirement[]) : Promise.resolve([] as EntryRequirement[]),
-    opts.photoCount ? supabase.from("photos").select("id", { count: "exact", head: true }).eq("source", "upload").then((r) => r.count ?? 0) : Promise.resolve(0),
+    opts.photoCount ? supabase.from("photos").select("id", { count: "exact", head: true }).eq("source", "upload").neq("entity_type", "expense").then((r) => r.count ?? 0) : Promise.resolve(0),
   ]);
 
   const dayIds = days.map((d) => d.id);
@@ -110,13 +113,18 @@ export async function loadGraph(supabase: ServerSupabase, allTrips: Trip[], trip
     ? await safe(supabase.from("photos").select("*").eq("entity_type", "memory").in("entity_id", memIds).order("order_index"), [] as Photo[])
     : [];
 
-  // One batched signing call for every cover + memory photo.
+  // Filtered here rather than with a long `in` list: a single user's receipts are a short list anyway.
+  const expenseIds = new Set(expenses.map((e) => e.id));
+  const receiptPhotos = opts.receipts ? (await safe(supabase.from("photos").select("*").eq("entity_type", "expense").order("order_index"), [] as Photo[])).filter((p) => expenseIds.has(p.entity_id)) : [];
+
+  // One batched signing call for every cover + memory photo + receipt.
   const urls = await signPhotoPaths(supabase, [
     ...trips.map((t) => t.cover_path),
     ...tcs.map((t) => t.cover_path),
     ...cities.map((c) => c.cover_path),
     ...places.map((p) => p.cover_path),
     ...memPhotos.flatMap((p) => [p.path, p.thumb_path]),
+    ...receiptPhotos.flatMap((p) => [p.path, p.thumb_path]),
   ]);
   const u = (p: string | null) => (p ? (urls[p] ?? null) : null);
 
@@ -153,6 +161,8 @@ export async function loadGraph(supabase: ServerSupabase, allTrips: Trip[], trip
     country_code: cityMap.get(p.city_id)?.country_code ?? "",
   }));
   const photoViews: PhotoView[] = memPhotos.map((p) => ({ ...p, url: u(p.path), thumb_url: u(p.thumb_path) ?? u(p.path) }));
+  const receipts: Record<string, PhotoView[]> = {};
+  for (const p of receiptPhotos) (receipts[p.entity_id] ??= []).push({ ...p, url: u(p.path), thumb_url: u(p.thumb_path) ?? u(p.path) });
   const memoryVMs: MemoryVM[] = memories.map((m) => ({ ...m, photos: photoViews.filter((p) => p.entity_id === m.id) }));
 
   return {
@@ -168,6 +178,7 @@ export async function loadGraph(supabase: ServerSupabase, allTrips: Trip[], trip
     bookings,
     packing,
     entries,
+    receipts,
     photoCount,
   };
 }

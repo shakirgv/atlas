@@ -7,6 +7,9 @@ import { EssentialsTab } from "@/components/countries/essentials-tab";
 import { EntryTab } from "@/components/entry/entry-tab";
 import { EntryTable } from "@/components/entry/entry-table";
 import { CashTab } from "@/components/cash/cash-tab";
+import { ExpenseTable } from "@/components/budget/expense-table";
+import { useState } from "react";
+import type { Expense, PhotoView } from "@/lib/types";
 import { planExchange, planSpend, planWithdrawal, summarizeCash } from "@/lib/cash";
 import { entryOverview } from "@/lib/entry";
 import { shiftIso, todayIso } from "@/lib/dates";
@@ -74,6 +77,34 @@ function cashFixtures() {
 }
 
 const CASH = cashFixtures();
+
+const RECEIPT_IMG = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect width="300" height="400" fill="#fffdf8"/><text x="150" y="60" font-size="18" font-family="monospace" text-anchor="middle">RECEIPT</text></svg>')}`;
+const expenseRow = (id: string, title: string, category: string, amount: number, currency: string, base: number, kind = "actual", payment = "card") => ({ id, title, category, amount, currency, amount_base: base, kind, payment_method: payment, date: todayIso(), fx_rate: 1, trip_id: "t", trip_country_id: null, city_id: "c", wallet_id: null, notes: null, user_id: "u", created_at: "" }) as unknown as Expense;
+const EXPENSES = [expenseRow("a", "Ramen in Shibuya", "food", 3500, "JPY", 25.9, "actual", "cash"), expenseRow("b", "Hotel in Shinjuku", "accommodation", 168000, "JPY", 1244), expenseRow("c", "Taxi", "transport", 2200, "JPY", 16.3), expenseRow("d", "Ryokan in Kyoto", "accommodation", 120000, "JPY", 889, "planned")];
+const RECEIPTS = { a: [{ id: "r1", thumb_url: RECEIPT_IMG, url: RECEIPT_IMG, width: 300, height: 400 } as unknown as PhotoView, { id: "r2", thumb_url: RECEIPT_IMG, url: RECEIPT_IMG, width: 300, height: 400 } as unknown as PhotoView] };
+
+/** Runs a file through the real compression pipeline, so the size target can be checked without Storage. */
+function ReceiptProbe() {
+  const [out, setOut] = useState("");
+  return (
+    <label className="text-sm">
+      Compress a receipt:{" "}
+      <input
+        data-testid="receipt-probe"
+        type="file"
+        accept="image/*"
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const { processImage } = await import("@/lib/upload");
+          const r = await processImage(file, "receipt");
+          setOut(JSON.stringify({ input: file.size, full: r.full.size, thumb: r.thumb.size, width: r.width, height: r.height, type: r.full.type, lat: r.exif.lat }));
+        }}
+      />
+      <output data-testid="receipt-probe-out" className="ml-2 font-mono text-xs">{out}</output>
+    </label>
+  );
+}
 const ENTRY_REQUIREMENT = {
   requirement_type: "e_visa",
   status: "to_apply",
@@ -127,6 +158,10 @@ export function PreviewClient({ liveClimate, liveForecast }: { liveClimate: { ba
               <div className="card flex h-44 flex-col gap-3 p-5">{liveClimate.bangkok && <NormalsView months={liveClimate.bangkok} stop={{ ...TOKYO, name: "Bangkok" }} />}</div>
             </div>
           </div>
+        </Section>
+        <Section title="Expenses with receipts">
+          <ReceiptProbe />
+          <ExpenseTable expenses={EXPENSES} countries={[]} cities={[{ id: "c", name: "Tokyo" }]} base="USD" receipts={RECEIPTS} userId="u" onEdit={() => {}} />
         </Section>
         <Section title="Cash wallets">
           <CashTab cash={CASH} baseCurrency="USD" trips={[{ id: "t", title: "Sample trip" }]} defaultTripId="t" startOpen />
