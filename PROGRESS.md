@@ -30,8 +30,12 @@ Delete this file when the whole pack is finished.
 - `data/country-extras.json` (filled), `lib/country-info.ts`, `actions/country-info.ts`, `components/countries/essentials-tab.tsx`,
   `/countries/[id]/card` (`print-country-card.tsx`).
 
+## Done: 3.1 Visa and entry
+- `lib/entry.ts` (rules, starter checklist), `actions/entry.ts`, `components/entry/*`, Country tab "Entry", Documents tab "Visas & entry", Dashboard heads-up
+  (plus a jet lag note). The Entry tab links documents with a plain `/documents?open=` link; 3.10 must gate it.
+
 ## Next steps (build order from IMPROVEMENTS.md §5)
-3.1 Visa/entry → 3.8 Cash → 3.9 Receipts → 3.7 Photo pins → 3.10 MFA + PIN vault → 3.5 Map export
+3.8 Cash → 3.9 Receipts → 3.7 Photo pins → 3.10 MFA + PIN vault → 3.5 Map export
 → 3.11 On this day + Recap → 3.12 Share links → polish/README/final report.
 
 ## Notes for a fresh session

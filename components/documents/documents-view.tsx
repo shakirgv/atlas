@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { AlertTriangle, Download, ExternalLink, FileText, Loader2, MoreHorizontal, Paperclip, Pencil, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Download, ExternalLink, FileText, Loader2, MoreHorizontal, Paperclip, Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteDocument, getDocumentUrl } from "@/actions/documents";
 import type { Alert } from "@/lib/alerts";
+import type { EntryRow } from "@/lib/entry";
 import { DOCUMENT_TYPES, type DocumentRow, type DocumentType } from "@/lib/types";
 import { DOCUMENT_TYPE_META } from "@/lib/icons";
 import { fmtDate } from "@/lib/dates";
@@ -13,6 +14,8 @@ import { EmptyState } from "@/components/common/empty-state";
 import { PageHeader } from "@/components/common/page-header";
 import { PageTransition, Stagger, StaggerItem } from "@/components/common/motion";
 import { DocumentDialog } from "@/components/forms/document-dialog";
+import { EntryTable } from "@/components/entry/entry-table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -114,12 +117,18 @@ export function DocumentsView({
   trips,
   countries,
   openId,
+  initialTab,
+  entryRows,
+  showTrip,
 }: {
   documents: DocumentRow[];
   warnings: Alert[];
   trips: { id: string; title: string }[];
   countries: { id: string; name: string; flag: string }[];
   openId: string | null;
+  initialTab: "documents" | "entry";
+  entryRows: EntryRow[];
+  showTrip: boolean;
 }) {
   const ws = useWorkspace();
   const router = useRouter();
@@ -139,6 +148,12 @@ export function DocumentsView({
   const filtered = documents.filter((d) => type === "all" || d.type === type);
   const groups = DOCUMENT_TYPES.map((t) => ({ t, list: filtered.filter((d) => d.type === t) })).filter((g) => g.list.length);
   const expiring = documents.filter((d) => ["soon", "urgent"].includes(expiryLevel(d.expiry_date))).length;
+  const entryProblems = entryRows.filter((r) => r.warnings.some((w) => w.level !== "info")).length;
+  const changeTab = (v: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", v);
+    window.history.replaceState(null, "", url);
+  };
 
   return (
     <PageTransition className="flex flex-col gap-6">
@@ -164,6 +179,20 @@ export function DocumentsView({
           </Button>
         </div>
       ))}
+      <Tabs defaultValue={initialTab} onValueChange={changeTab}>
+        <TabsList aria-label="Documents sections">
+          <TabsTrigger value="documents">
+            <FileText /> All documents
+          </TabsTrigger>
+          <TabsTrigger value="entry">
+            <ShieldCheck /> Visas &amp; entry
+            {entryProblems > 0 && <span className="num rounded-full bg-danger-soft px-1.5 text-xs text-ink">{entryProblems}</span>}
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="entry">
+          <EntryTable rows={entryRows} showTrip={showTrip} />
+        </TabsContent>
+        <TabsContent value="documents" className="flex flex-col gap-6">
       {!documents.length ? (
         <EmptyState icon={FileText} title="No documents yet" description="Upload your passport first — Atlas checks it stays valid 6 months after each trip." action={<Button onClick={() => ws.openQuickAdd("document")}><Plus /> Upload your passport</Button>} />
       ) : (
@@ -256,6 +285,8 @@ export function DocumentsView({
           </div>
         </>
       )}
+        </TabsContent>
+      </Tabs>
       {open && <Preview key={open.id} doc={open} onClose={() => setOpen(null)} />}
       {editing && <DocumentDialog open onOpenChange={(o) => !o && setEditing(null)} document={editing} />}
     </PageTransition>

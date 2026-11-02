@@ -4,6 +4,7 @@ import { getScope } from "@/lib/scope";
 import { coverAttribution, loadGraph } from "@/lib/data";
 import { CountryDetail } from "@/components/countries/country-detail";
 import { climateStopsFor, tripRoute } from "@/lib/server/route-data";
+import { latestPassportExpiry } from "@/lib/entry";
 
 export const metadata: Metadata = { title: "Country" };
 
@@ -13,7 +14,7 @@ export default async function CountryPage({ params, searchParams }: PageProps<"/
   const { supabase, scope } = await getScope();
   const { data: tc } = await supabase.from("trip_countries").select("trip_id").eq("id", id).maybeSingle();
   if (!tc) notFound();
-  const g = await loadGraph(supabase, scope.trips, [tc.trip_id], { days: true, places: true, expenses: true, memories: true, documents: true });
+  const g = await loadGraph(supabase, scope.trips, [tc.trip_id], { days: true, places: true, expenses: true, memories: true, documents: true, entries: true });
   const country = g.countries.find((c) => c.id === id);
   if (!country) notFound();
   const cities = g.cities.filter((c) => c.trip_country_id === id);
@@ -27,6 +28,12 @@ export default async function CountryPage({ params, searchParams }: PageProps<"/
       legs={route.legs.filter((l) => l.tripCountryId === id)}
       climateStops={climateStopsFor(route.stops, id)}
       infoOverride={infoOverride}
+      entry={{
+        requirement: g.entries.find((e) => e.trip_country_id === id) ?? null,
+        passportCountry: scope.settings?.passport_country ?? null,
+        passportExpiry: latestPassportExpiry(g.documents),
+        documents: g.documents.map((d) => ({ id: d.id, title: d.title, type: d.type })),
+      }}
       country={country}
       attribution={await coverAttribution(supabase, country.cover_path)}
       cities={cities}

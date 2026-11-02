@@ -2,6 +2,7 @@ import { getScope } from "@/lib/scope";
 import { loadGraph } from "@/lib/data";
 import { loadMapData } from "@/lib/map-data";
 import { buildAlerts } from "@/lib/alerts";
+import { entryOverview, latestPassportExpiry } from "@/lib/entry";
 import { summarizeBudget } from "@/lib/budget";
 import { daysOnTheRoad } from "@/lib/trip";
 import { daysUntil, todayIso } from "@/lib/dates";
@@ -12,7 +13,7 @@ import { homeStop, routesForTrips } from "@/lib/server/route-data";
 export default async function DashboardPage() {
   const { supabase, scope } = await getScope();
   const [g, map] = await Promise.all([
-    loadGraph(supabase, scope.trips, scope.tripIds, { days: true, places: true, expenses: true, memories: true, documents: true, photoCount: true, bookings: true }),
+    loadGraph(supabase, scope.trips, scope.tripIds, { days: true, places: true, expenses: true, memories: true, documents: true, photoCount: true, bookings: true, entries: true }),
     loadMapData(supabase, scope),
   ]);
   const today = todayIso();
@@ -86,7 +87,14 @@ export default async function DashboardPage() {
       memories={g.memories.slice(0, 3)}
       onThisDay={onThisDay}
       setup={{ missingHome: !scope.settings?.home_city, missingPassport: !scope.settings?.passport_country }}
-      alerts={buildAlerts({ documents: g.documents, trips: g.trips, countries: g.countries, expenses: g.expenses })}
+      alerts={buildAlerts({
+        documents: g.documents,
+        trips: g.trips,
+        countries: g.countries,
+        expenses: g.expenses,
+        entries: entryOverview(g.countries, g.entries, { today, passportExpiry: latestPassportExpiry(g.documents) }),
+        legs: route.legs,
+      })}
     />
   );
 }

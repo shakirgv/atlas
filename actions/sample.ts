@@ -260,13 +260,52 @@ export async function loadSampleData(): Promise<ActionResult<{ tripId: string }>
       ]),
     );
 
-    must(
+    const sampleDocs = must(
       await supabase.from("documents").insert([
         { type: "passport", title: "Passport", reference_no: "C01234567", issue_date: d(-3500), expiry_date: d(150), notes: "Expires less than 6 months after this trip ends — renew soon.", is_sample: true },
         { type: "visa", title: "Japan eVisa", trip_id: trip.id, trip_country_id: tc("JP"), reference_no: "JPN-2026-0045", issue_date: d(-25), expiry_date: d(20), is_sample: true },
         { type: "insurance", title: "World travel insurance", trip_id: trip.id, reference_no: "WT-889120", issue_date: d(-20), expiry_date: d(75), notes: "Emergency line +44 20 0000 0000", is_sample: true },
-      ]),
+      ]).select("id, title"),
     );
+
+    // Sample states only: not a statement about what any real passport needs.
+    await supabase.from("entry_requirements").insert([
+      {
+        trip_country_id: tc("TR"),
+        country_code: "TR",
+        requirement_type: "visa_free",
+        status: "not_needed",
+        allowed_stay_days: 90,
+        last_verified_on: d(-30),
+        checklist: [{ id: "starter-passport", label: "Passport valid for 6+ months", done: true }, { id: "starter-ticket", label: "Onward or return ticket", done: true }],
+      },
+      {
+        trip_country_id: tc("IT"),
+        country_code: "IT",
+        requirement_type: "other",
+        status: "applied",
+        allowed_stay_days: 7,
+        applied_on: d(-40),
+        fee: 90,
+        fee_currency: "EUR",
+        notes: "Sample: the planned stay is longer than allowed, so this shows a red chip.",
+        checklist: [{ id: "starter-passport", label: "Passport valid for 6+ months", done: true }, { id: "starter-photo", label: "Passport photo", done: false }],
+      },
+      {
+        trip_country_id: tc("JP"),
+        country_code: "JP",
+        requirement_type: "e_visa",
+        status: "approved",
+        applied_on: d(-40),
+        valid_from: d(-25),
+        valid_until: d(20),
+        fee: 25,
+        fee_currency: "USD",
+        last_verified_on: d(-25),
+        document_id: sampleDocs.find((x) => x.title === "Japan eVisa")?.id ?? null,
+        checklist: [{ id: "starter-passport", label: "Passport valid for 6+ months", done: true }, { id: "starter-photo", label: "Passport photo", done: true }, { id: "starter-ticket", label: "Onward or return ticket", done: true }],
+      },
+    ]);
 
     // Phase 2 tables are optional (002_extras.sql may not be applied yet).
     await supabase.from("bookings").insert([

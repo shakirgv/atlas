@@ -1,9 +1,12 @@
 import { addMonths } from "date-fns";
 import { daysUntil, fmtDate, isoDate, todayIso, toDate } from "@/lib/dates";
+import type { EntryRow } from "@/lib/entry";
+import { JETLAG_STRONG_HOURS, jetLagLabel } from "@/lib/jetlag";
+import type { LegView } from "@/lib/server/route-data";
 import type { CountryVM } from "@/lib/data";
 import type { DocumentRow, Expense, Trip } from "@/lib/types";
 
-export type Alert = { id: string; level: "danger" | "warning" | "info"; title: string; detail: string; href: string; kind: "passport" | "document" | "dates" | "budget" };
+export type Alert = { id: string; level: "danger" | "warning" | "info"; title: string; detail: string; href: string; kind: "passport" | "document" | "dates" | "budget" | "entry" | "jetlag" };
 
 /** Passport must be valid 6 months after a trip's end date. */
 export function passportWarnings(documents: DocumentRow[], trips: Trip[]): Alert[] {
@@ -27,8 +30,43 @@ export function passportWarnings(documents: DocumentRow[], trips: Trip[]): Alert
   return out;
 }
 
-export function buildAlerts({ documents, trips, countries, expenses }: { documents: DocumentRow[]; trips: Trip[]; countries: CountryVM[]; expenses: Expense[] }): Alert[] {
-  const alerts: Alert[] = [...passportWarnings(documents, trips)];
+/**
+ * Visa and entry items for the heads-up list. The passport rule is skipped because `passportWarnings`
+ * already reports it per trip, and re-check reminders fold into one line so they can't crowd out real problems.
+ */
+export function entryAlerts(rows: EntryRow[]): Alert[] {
+  const out: Alert[] = [];
+  for (const r of rows) {
+    for (const w of r.warnings) {
+      if (w.id === "passport" || w.level === "info") continue;
+      out.push({ id: `entry-${r.tripCountryId}-${w.id}`, level: w.level, kind: "entry", title: `${r.flag} ${r.name}: ${w.label}`, detail: "Visa and entry", href: `/countries/${r.tripCountryId}?tab=entry` });
+    }
+  }
+  const recheck = rows.filter((r) => r.warnings.some((w) => w.id === "recheck"));
+  if (recheck.length) {
+    out.push({
+      id: "entry-recheck",
+      level: "info",
+      kind: "entry",
+      title: recheck.length === 1 ? `Re-check entry rules for ${recheck[0]!.name}` : `Re-check entry rules for ${recheck.length} countries`,
+      detail: "Last verified over 90 days ago, or never",
+      href: "/documents?tab=entry",
+    });
+  }
+  return out;
+}
+
+/** A note for big time shifts in the next two weeks. */
+export function jetLagAlerts(legs: LegView[], today = todayIso()): Alert[] {
+  return legs.flatMap((l) => {
+    const left = daysUntil(l.arrive, toDate(today)!);
+    if (left === null || left < 0 || left > 14 || !l.jetlag || Math.abs(l.jetlag.shift) < JETLAG_STRONG_HOURS) return [];
+    return [{ id: `jetlag-${l.key}`, level: "info" as const, kind: "jetlag" as const, title: `Big time shift arriving in ${l.toName}`, detail: jetLagLabel(l.jetlag), href: `/itinerary?country=${l.tripCountryId}` }];
+  });
+}
+
+export function buildAlerts({ documents, trips, countries, expenses, entries = [], legs = [] }: { documents: DocumentRow[]; trips: Trip[]; countries: CountryVM[]; expenses: Expense[]; entries?: EntryRow[]; legs?: LegView[] }): Alert[] {
+  const alerts: Alert[] = [...passportWarnings(documents, trips), ...entryAlerts(entries), ...jetLagAlerts(legs)];
   for (const d of documents) {
     const n = daysUntil(d.expiry_date);
     if (n === null || n >= 90) continue;

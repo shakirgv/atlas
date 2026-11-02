@@ -21,6 +21,7 @@ import {
   Pencil,
   Phone,
   Plus,
+  ShieldCheck,
   Sparkles,
   Trash2,
   Wallet,
@@ -65,9 +66,12 @@ import type { ClimateStop } from "@/lib/climate";
 import { CityVerdicts } from "@/components/climate/city-verdicts";
 import type { InfoOverride } from "@/lib/country-info";
 import { EssentialsTab } from "./essentials-tab";
+import { EntryTab, type EntryDocument } from "@/components/entry/entry-tab";
+import type { EntryRequirement } from "@/lib/types";
 
 const TABS = [
   { value: "overview", label: "Overview", icon: Info },
+  { value: "entry", label: "Entry", icon: ShieldCheck },
   { value: "essentials", label: "Essentials", icon: LifeBuoy },
   { value: "cities", label: "Cities", icon: Building2 },
   { value: "itinerary", label: "Itinerary", icon: CalendarDays },
@@ -126,6 +130,7 @@ export function CountryDetail({
   legs,
   climateStops,
   infoOverride,
+  entry,
   country,
   attribution,
   cities,
@@ -142,6 +147,7 @@ export function CountryDetail({
   legs: LegView[];
   climateStops: ClimateStop[];
   infoOverride: InfoOverride;
+  entry: { requirement: EntryRequirement | null; passportCountry: string | null; passportExpiry: string | null; documents: EntryDocument[] };
   country: CountryVM;
   attribution: string | null;
   cities: CityVM[];
@@ -320,6 +326,10 @@ export function CountryDetail({
               </dl>
             </section>
           </div>
+        </TabsContent>
+
+        <TabsContent value="entry">
+          <EntryTab tripCountryId={country.id} arrive={country.arrive_date} depart={country.depart_date} {...entry} />
         </TabsContent>
 
         <TabsContent value="essentials">

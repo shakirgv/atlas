@@ -8,6 +8,7 @@ import type {
   City,
   DisplayStatus,
   DocumentRow,
+  EntryRequirement,
   Expense,
   ItineraryDay,
   ItineraryItem,
@@ -45,6 +46,7 @@ export type Graph = {
   documents: DocumentRow[];
   bookings: Booking[];
   packing: PackingItem[];
+  entries: EntryRequirement[];
   photoCount: number;
 };
 
@@ -56,6 +58,7 @@ type Opts = {
   documents?: boolean;
   bookings?: boolean;
   packing?: boolean;
+  entries?: boolean;
   photoCount?: boolean;
 };
 
@@ -79,7 +82,7 @@ export async function loadGraph(supabase: ServerSupabase, allTrips: Trip[], trip
   const cities = tcIds.length ? await safe(supabase.from("cities").select("*").in("trip_country_id", tcIds).order("order_index"), [] as City[]) : [];
   const cityIds = cities.map((c) => c.id);
 
-  const [places, days, expenses, memories, documents, bookings, packing, photoCount] = await Promise.all([
+  const [places, days, expenses, memories, documents, bookings, packing, entries, photoCount] = await Promise.all([
     opts.places && cityIds.length ? safe(supabase.from("places").select("*").in("city_id", cityIds).order("created_at"), [] as Place[]) : Promise.resolve([] as Place[]),
     opts.days && tcIds.length ? safe(supabase.from("itinerary_days").select("*").in("trip_country_id", tcIds).order("day_number"), [] as ItineraryDay[]) : Promise.resolve([] as ItineraryDay[]),
     opts.expenses && !none ? safe(supabase.from("expenses").select("*").in("trip_id", tripIds).order("date", { ascending: false }), [] as Expense[]) : Promise.resolve([] as Expense[]),
@@ -95,6 +98,7 @@ export async function loadGraph(supabase: ServerSupabase, allTrips: Trip[], trip
     opts.documents ? safe(supabase.from("documents").select("*").order("expiry_date", { ascending: true, nullsFirst: false }), [] as DocumentRow[]) : Promise.resolve([] as DocumentRow[]),
     opts.bookings && !none ? safe(supabase.from("bookings").select("*").in("trip_id", tripIds).order("start_at"), [] as Booking[]) : Promise.resolve([] as Booking[]),
     opts.packing && !none ? safe(supabase.from("packing_items").select("*").in("trip_id", tripIds).order("order_index"), [] as PackingItem[]) : Promise.resolve([] as PackingItem[]),
+    opts.entries && tcIds.length ? safe(supabase.from("entry_requirements").select("*").in("trip_country_id", tcIds), [] as EntryRequirement[]) : Promise.resolve([] as EntryRequirement[]),
     opts.photoCount ? supabase.from("photos").select("id", { count: "exact", head: true }).eq("source", "upload").then((r) => r.count ?? 0) : Promise.resolve(0),
   ]);
 
@@ -163,6 +167,7 @@ export async function loadGraph(supabase: ServerSupabase, allTrips: Trip[], trip
     documents,
     bookings,
     packing,
+    entries,
     photoCount,
   };
 }

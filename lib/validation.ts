@@ -3,11 +3,13 @@ import {
   BOOKING_STATUSES,
   BOOKING_TYPES,
   DOCUMENT_TYPES,
+  ENTRY_STATUSES,
   EXPENSE_CATEGORIES,
   EXPENSE_KINDS,
   GEO_STATUSES,
   PLACE_CATEGORIES,
   PLACE_STATUSES,
+  REQUIREMENT_TYPES,
   STOP_TYPES,
   TRANSPORT_MODES,
   TRIP_STATUSES,
@@ -238,6 +240,38 @@ export const homeSchema = z.object({
   passport_country: countryCode,
 });
 export type HomeInput = z.input<typeof homeSchema>;
+
+/** Every field is optional: the Entry tab saves one field at a time, and unknown keys are refused. */
+export const entryPatchSchema = z
+  .object({
+    requirement_type: z.enum(REQUIREMENT_TYPES),
+    status: z.enum(ENTRY_STATUSES),
+    allowed_stay_days: optNumber.refine((v) => v === null || (Number.isInteger(v) && v > 0), "Allowed stay is a whole number of days"),
+    apply_by: dateStr,
+    applied_on: dateStr,
+    valid_from: dateStr,
+    valid_until: dateStr,
+    fee: optNumber.refine((v) => v === null || v >= 0, "The fee can't be negative"),
+    fee_currency: z
+      .string()
+      .nullish()
+      .transform((v) => (v ? v : null))
+      .pipe(currency.nullable()),
+    official_url: z
+      .string()
+      .trim()
+      .max(500)
+      .nullish()
+      .transform((v) => (v ? v : null))
+      .refine((v) => !v || /^https?:\/\//i.test(v), "Link must start with http(s)://"),
+    notes: optText(5000),
+    last_verified_on: dateStr,
+    checklist: z.array(z.object({ id: z.string().min(1).max(64), label: z.string().trim().min(1).max(200), done: z.boolean() })).max(50),
+    document_id: optUuid,
+  })
+  .partial()
+  .strict();
+export type EntryPatch = z.input<typeof entryPatchSchema>;
 
 export const bookingSchema = z.object({
   trip_id: z.uuid("Pick a trip"),
