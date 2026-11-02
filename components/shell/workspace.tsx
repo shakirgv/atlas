@@ -25,6 +25,7 @@ export type Workspace = {
   countries: CountryOption[];
   cities: CityOption[];
   vault: VaultState;
+  sharingEnabled: boolean;
 };
 
 type Ctx = Workspace & {

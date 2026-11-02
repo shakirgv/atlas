@@ -24,6 +24,15 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
         ],
       },
+      // Later rules win. Public share pages: never indexed, never leak the URL as a referrer.
+      {
+        source: "/s/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+        ],
+      },
+      { source: "/s/:token", headers: [{ key: "Cache-Control", value: "private, no-store" }] },
     ];
   },
 };

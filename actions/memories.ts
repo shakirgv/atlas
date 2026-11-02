@@ -48,6 +48,7 @@ export async function deleteMemory(id: string): Promise<ActionResult> {
     const mid = z.uuid().parse(id);
     await cleanupEntityPhotos(supabase, [mid]);
     must(await supabase.from("memories").delete().eq("id", mid));
+    must(await supabase.from("shares").delete().eq("target_id", mid));
     refreshAll();
     return ok();
   } catch (e) {

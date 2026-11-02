@@ -7,6 +7,7 @@ import { countryFlag, countryName } from "@/lib/countries";
 import type { CityOption, CountryOption } from "@/lib/types";
 import { fillMissingTimezones } from "@/lib/server/backfill";
 import { getVaultState } from "@/lib/vault";
+import { isSharingEnabled } from "@/lib/supabase/admin";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   if (!isSupabaseConfigured) return <SetupRequired />;
@@ -47,6 +48,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         countries,
         cities: cityOptions,
         vault: await getVaultState(),
+        sharingEnabled: isSharingEnabled(),
       }}
     >
       {children}

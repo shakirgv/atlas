@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
 import { SUPABASE_ANON_KEY, SUPABASE_URL, isSupabaseConfigured } from "@/lib/config";
+import { createRateLimiter, isLikelyBot } from "@/lib/share";
 
 const PUBLIC_PATHS = ["/login"];
 
@@ -14,8 +15,26 @@ function isPublic(pathname: string) {
   return false;
 }
 
+const shareRateLimit = createRateLimiter(120, 60_000);
+
+/** Public share links skip the session entirely. Only here can a page load be marked as a countable view. */
+function shareResponse(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  if (!shareRateLimit(ip)) return new NextResponse("Too many requests", { status: 429, headers: { "Retry-After": "60", "Cache-Control": "no-store" } });
+  const headers = new Headers(request.headers);
+  // Whatever a visitor sends in this header is thrown away.
+  headers.delete("x-share-count");
+  const { pathname, searchParams } = request.nextUrl;
+  const isPage = /^\/s\/[^/]+\/?$/.test(pathname);
+  const prefetch = request.headers.has("next-router-prefetch") || request.headers.get("purpose") === "prefetch" || request.headers.get("sec-purpose")?.includes("prefetch");
+  if (isPage && request.method === "GET" && !prefetch && !searchParams.has("preview") && !isLikelyBot(request.headers.get("user-agent"))) headers.set("x-share-count", "1");
+  return NextResponse.next({ request: { headers } });
+}
+
 /** Refreshes the Supabase session cookie and redirects anonymous visitors to /login. */
 export async function updateSession(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith("/s/")) return shareResponse(request);
+
   // Without credentials the app renders a "Setup required" screen instead of crashing.
   if (!isSupabaseConfigured) return NextResponse.next({ request });
 

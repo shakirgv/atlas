@@ -39,6 +39,9 @@ export async function deleteTrip(id: string): Promise<ActionResult> {
     const { supabase } = await requireUser();
     const tripId = z.uuid().parse(id);
     await cleanupTrips(supabase, [tripId]);
+    // Links to this trip, or to its memories, end with it.
+    const memories = must(await supabase.from("memories").select("id").eq("trip_id", tripId));
+    must(await supabase.from("shares").delete().in("target_id", [tripId, ...memories.map((m) => m.id)]));
     must(await supabase.from("trips").delete().eq("id", tripId));
     const store = await cookies();
     if (store.get(ACTIVE_TRIP_COOKIE)?.value === tripId) store.delete(ACTIVE_TRIP_COOKIE);

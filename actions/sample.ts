@@ -1,4 +1,5 @@
 "use server";
+import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import sharp from "sharp";
 import { requireUser } from "@/lib/auth";
@@ -416,6 +417,11 @@ export async function loadSampleData(): Promise<ActionResult<{ tripId: string }>
       ].map(([label, category, packed], i) => ({ trip_id: trip.id, label: label as string, category: category as string, packed: packed as boolean, order_index: i })),
     );
 
+    // A link to look at while developing. Never created in production, where it would be a public page.
+    if (process.env.NODE_ENV !== "production") {
+      await supabase.from("shares").insert({ user_id: user.id, kind: "memory", target_id: memoryId("Lost in Monti"), token: randomBytes(32).toString("base64url"), expires_at: new Date(Date.now() + 30 * 86400000).toISOString(), config: { exact_locations: false, show_dates: true, include_itinerary: false, preview_image: true, excluded_photo_ids: [] } });
+    }
+
     (await cookies()).set(ACTIVE_TRIP_COOKIE, trip.id, { path: "/", maxAge: 31536000, sameSite: "lax", httpOnly: true, secure: process.env.NODE_ENV === "production" });
     refreshAll();
     return ok({ tripId: trip.id });
@@ -430,6 +436,8 @@ export async function deleteSampleData(): Promise<ActionResult> {
     const trips = must(await supabase.from("trips").select("id").eq("is_sample", true));
     const ids = trips.map((t) => t.id);
     if (ids.length) {
+      const sampleMemories = must(await supabase.from("memories").select("id").in("trip_id", ids));
+      must(await supabase.from("shares").delete().in("target_id", [...ids, ...sampleMemories.map((m) => m.id)]));
       await cleanupTrips(supabase, ids);
       must(await supabase.from("trips").delete().in("id", ids));
     }

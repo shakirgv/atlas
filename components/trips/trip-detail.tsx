@@ -2,7 +2,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Building2, CalendarDays, Camera, Crosshair, Flag, MapPin, MoreHorizontal, Pencil, Plus, Trash2, Wallet } from "lucide-react";
+import { ArrowRight, Building2, CalendarDays, Camera, Crosshair, Flag, MapPin, MoreHorizontal, Pencil, Plus, Trash2, Wallet, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteTrip } from "@/actions/trips";
 import { setActiveTrip } from "@/actions/workspace";
@@ -28,6 +28,7 @@ import { Progress } from "@/components/ui/misc";
 import { useWorkspace } from "@/components/shell/workspace";
 import { NextSteps } from "./next-steps";
 import { RouteList } from "./route-list";
+import { ShareDialog } from "@/components/share/share-dialog";
 import { RouteTimeline } from "./route-timeline";
 import type { LegView } from "@/lib/server/route-data";
 import type { ClimateStop } from "@/lib/climate";
@@ -67,6 +68,7 @@ export function TripDetail({
   const router = useRouter();
   const confirm = useConfirm();
   const [editOpen, setEditOpen] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [, start] = useTransition();
   const money = (n: number) => formatMoney(n, baseCurrency);
   const totalDays = daysBetween(trip.start_date, trip.end_date);
@@ -107,6 +109,9 @@ export function TripDetail({
               <DropdownMenuContent>
                 <DropdownMenuItem onSelect={() => setEditOpen(true)}>
                   <Pencil /> Edit trip
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setSharing(true)}>
+                  <Share2 /> Share trip story
                 </DropdownMenuItem>
                 {!isActive && (
                   <DropdownMenuItem onSelect={() => start(async () => void (await setActiveTrip(trip.id)))}>
@@ -278,6 +283,7 @@ export function TripDetail({
         </div>
       </div>
       {editOpen && <TripDialog open onOpenChange={setEditOpen} trip={trip} />}
+      {sharing && <ShareDialog kind="trip" targetId={trip.id} title={trip.title} enabled={ws.sharingEnabled} onOpenChange={setSharing} />}
     </PageTransition>
   );
 }

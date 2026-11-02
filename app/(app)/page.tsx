@@ -24,9 +24,6 @@ export default async function DashboardPage() {
     loadRecapYears(supabase, todayDate),
   ]);
   const today = todayDate;
-  // The dashboard map only needs what can be sent to the browser.
-  const { routeFor: _routeFor, ...mapProps } = map;
-  void _routeFor;
   const ongoing = g.countries.find((c) => c.display === "ongoing");
   const upcoming = g.countries.filter((c) => c.arrive_date && c.arrive_date > today).sort((a, b) => a.arrive_date!.localeCompare(b.arrive_date!))[0];
   const nextStop = ongoing ?? upcoming ?? null;
@@ -91,7 +88,7 @@ export default async function DashboardPage() {
       }}
       budget={summarizeBudget(g.expenses, g.trips, g.countries)}
       cash={cash.wallets.length ? { onHand: cash.cashOnHand, fees: cash.feesPaid } : null}
-      map={mapProps}
+      map={{ states: map.states, routes: map.routes, cities: map.cities }}
       upcomingDays={upcomingDays}
       memories={g.memories.slice(0, 3)}
       onThisDay={onThisDay}

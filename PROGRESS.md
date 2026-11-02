@@ -53,8 +53,11 @@ Delete this file when the whole pack is finished.
 ## Done: 3.11 On this day + Recap
 - `lib/recap.ts`, `lib/server/recap.ts`, `components/recap/*`, `components/dashboard/on-this-day.tsx`, `/recap/[year]`.
 
+## Done: 3.12 Share links
+- `lib/share.ts` (validity, whitelisted views, tested), `lib/supabase/admin.ts`, `lib/server/share-data.ts`, `actions/shares.ts`, `components/share/*`, `/s/[token]` + `/photo/[id]` + `/og`.
+
 ## Next steps (build order from IMPROVEMENTS.md §5)
-3.12 Share links → polish/README/final report.
+Polish, README and the final report.
 
 ## Notes for a fresh session
 - Dashboard bento needs rebalancing once Weather/Cash/On this day/Recap tiles exist (Time tile is in a `GlanceColumn`).

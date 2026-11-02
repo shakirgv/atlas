@@ -12,6 +12,7 @@ import { PhotoMap } from "@/components/photos/photo-map";
 import { PinPad } from "@/components/vault/pin-pad";
 import { ExportDialog, type ExportTrip } from "@/components/map/export-dialog";
 import { RecapView } from "@/components/recap/recap-view";
+import { ShareDialog } from "@/components/share/share-dialog";
 import { OnThisDay } from "@/components/dashboard/on-this-day";
 import { computeRecap, recapSlides, type RecapInput } from "@/lib/recap";
 import { Button } from "@/components/ui/button";
@@ -176,6 +177,32 @@ const THIS_DAY = [
   { kind: "photo" as const, id: "p", date: "2023-11-03", yearsAgo: 3, title: "Trevi at dusk", place: "Rome", thumbUrl: swatch("#7c8db5"), url: swatch("#7c8db5"), caption: "Trevi at dusk" },
 ];
 
+const SHARE_ROWS = [{ id: "x", token: "sample-token", label: "Three Countries", view_count: 12, last_viewed_at: "2026-10-30T10:00:00Z", expires_at: "2030-01-01T00:00:00Z" } as never];
+
+function ShareDemo({ enabled, label }: { enabled: boolean; label: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button variant="secondary" onClick={() => setOpen(true)}>
+        {label}
+      </Button>
+      {open && (
+        <ShareDialog
+          kind="trip"
+          targetId="00000000-0000-4000-8000-000000000000"
+          title="Three Countries"
+          enabled={enabled}
+          onOpenChange={setOpen}
+          initial={{
+            photos: ["#d9774a", "#6f8f5f", "#7c8db5", "#c9a227", "#35506b"].map((c, i) => ({ id: `s${i}`, thumb: swatch(c) })),
+            rows: SHARE_ROWS,
+          }}
+        />
+      )}
+    </>
+  );
+}
+
 function ExportDemo() {
   const [open, setOpen] = useState(false);
   return (
@@ -283,6 +310,12 @@ export function PreviewClient({ liveClimate, liveForecast }: { liveClimate: { ba
               <p className="mb-1 mt-4 text-xs text-muted">Dashboard tile: normals (live API)</p>
               <div className="card flex h-44 flex-col gap-3 p-5">{liveClimate.bangkok && <NormalsView months={liveClimate.bangkok} stop={{ ...TOKYO, name: "Bangkok" }} />}</div>
             </div>
+          </div>
+        </Section>
+        <Section title="Share links">
+          <div className="flex flex-wrap gap-2">
+            <ShareDemo enabled label="Share dialog" />
+            <ShareDemo enabled={false} label="Share dialog, no server key" />
           </div>
         </Section>
         <Section title="Year recap">

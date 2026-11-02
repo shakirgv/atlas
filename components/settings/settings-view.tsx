@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Database, Download, FileJson, House, LockKeyhole, LogOut, Monitor, Moon, Palette, Sparkles, Sun, Trash2, Upload, User } from "lucide-react";
+import { Database, Download, FileJson, House, Link2, LockKeyhole, LogOut, Monitor, Moon, Palette, Sparkles, Sun, Trash2, Upload, User } from "lucide-react";
 import { toast } from "sonner";
 import { signOut } from "@/actions/auth";
 import { deleteSampleData, loadSampleData } from "@/actions/sample";
@@ -23,6 +23,7 @@ import { useConfirm } from "@/components/ui/confirm";
 import { Field, Input, NativeSelect } from "@/components/ui/input";
 import { HomeSection } from "./home-section";
 import { SecuritySection } from "./security-section";
+import { ShareLinksSection } from "@/components/share/share-dialog";
 
 type In = z.input<typeof settingsSchema>;
 type Out = z.output<typeof settingsSchema>;
@@ -41,7 +42,7 @@ function Section({ id, icon: Icon, title, description, children }: { id?: string
   );
 }
 
-export function SettingsView({ settings, email, hasSample, mfaEnabled, hasPin }: { settings: Settings | null; email: string | null; hasSample: boolean; mfaEnabled: boolean; hasPin: boolean }) {
+export function SettingsView({ settings, email, hasSample, mfaEnabled, hasPin, sharingEnabled }: { settings: Settings | null; email: string | null; hasSample: boolean; mfaEnabled: boolean; hasPin: boolean; sharingEnabled: boolean }) {
   const router = useRouter();
   const confirm = useConfirm();
   const { setTheme } = useTheme();
@@ -132,6 +133,10 @@ export function SettingsView({ settings, email, hasSample, mfaEnabled, hasPin }:
 
       <Section id="security" icon={LockKeyhole} title="Security" description="Protects your data even if your password leaks or your phone is unlocked.">
         <SecuritySection mfaEnabled={mfaEnabled} hasPin={hasPin} timeout={settings?.lock_timeout_minutes ?? 5} />
+      </Section>
+
+      <Section id="sharing" icon={Link2} title="Share links" description="Your links that still work. Revoking one stops it immediately.">
+        <ShareLinksSection enabled={sharingEnabled} />
       </Section>
 
       <Section icon={Sparkles} title="Year recap" description="Your travels as a story you can flip through and download.">

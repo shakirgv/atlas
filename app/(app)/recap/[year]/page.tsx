@@ -6,6 +6,7 @@ import { computeRecap, recapSlides, recapYears, type RecapPeriod } from "@/lib/r
 import { getScope } from "@/lib/scope";
 import { loadRecapInput } from "@/lib/server/recap";
 import { RecapView } from "@/components/recap/recap-view";
+import { RecapShareButton } from "@/components/share/share-button";
 
 export const metadata: Metadata = { title: "Recap" };
 
@@ -16,7 +17,7 @@ export default async function RecapPage({ params }: PageProps<"/recap/[year]">) 
   const { supabase, scope } = await getScope();
   // A recap covers every trip, whichever one is active.
   const g = await loadGraph(supabase, scope.trips, scope.trips.map((t) => t.id), { places: true, expenses: true, memories: true });
-  const input = await loadRecapInput(supabase, scope, g, todayIso());
+  const input = await loadRecapInput(supabase, scope.settings, g, todayIso());
   const stats = computeRecap(input, period);
-  return <RecapView stats={stats} slides={recapSlides(stats)} currency={scope.baseCurrency} years={recapYears(input)} />;
+  return <RecapView stats={stats} slides={recapSlides(stats)} currency={scope.baseCurrency} years={recapYears(input)} share={<RecapShareButton stats={stats} />} />;
 }

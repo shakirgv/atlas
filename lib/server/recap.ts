@@ -1,15 +1,14 @@
 import "server-only";
 import type { Graph } from "@/lib/data";
 import { onThisDay, recapYears, type RecapInput, type RecapPhoto } from "@/lib/recap";
-import type { Scope } from "@/lib/scope";
 import { routesForTrips } from "@/lib/server/route-data";
 import { signPhotoPaths, withPhotoUrls } from "@/lib/storage";
 import type { ServerSupabase } from "@/lib/supabase/server";
-import type { Photo } from "@/lib/types";
+import type { Photo, Settings } from "@/lib/types";
 
 /** Everything a recap reads. `g` must hold every trip, with places, expenses and memories. */
-export async function loadRecapInput(supabase: ServerSupabase, scope: Scope, g: Graph, today: string): Promise<RecapInput> {
-  const { stops } = routesForTrips(g.trips.map((t) => t.id), g.countries, g.cities, scope.settings);
+export async function loadRecapInput(supabase: ServerSupabase, settings: Settings | null, g: Graph, today: string): Promise<RecapInput> {
+  const { stops } = routesForTrips(g.trips.map((t) => t.id), g.countries, g.cities, settings);
   // Downloaded Wikimedia covers aren't my photos, so they never count here.
   const { data } = await supabase.from("photos").select("*").eq("source", "upload").in("entity_type", ["trip", "country", "city", "place"]);
   const inScope = new Set([...g.trips.map((t) => t.id), ...g.countries.map((c) => c.id), ...g.cities.map((c) => c.id), ...g.places.map((p) => p.id)]);

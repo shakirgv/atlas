@@ -16,7 +16,7 @@ Built with **Next.js 16** (App Router, React 19, TypeScript strict), **Tailwind 
      NEXT_PUBLIC_SUPABASE_URL=https://YOUR-REF.supabase.co
      NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
      ```
-   - Never put the `service_role` key in this app.
+   - The `service_role` key is optional and only for share links; see [Share links](#share-links). Never prefix it with `NEXT_PUBLIC_`.
 2. **Run the files in `supabase/migrations/` in order in the Supabase SQL editor: `001`, `002`, `003`, `004`.**
    - Dashboard → **SQL Editor** → **New query** → paste the *whole* file `supabase/migrations/001_init.sql` → **Run**.
    - Then a new query with `supabase/migrations/002_extras.sql` → **Run** (bookings, packing lists, packing templates).
@@ -32,6 +32,16 @@ Built with **Next.js 16** (App Router, React 19, TypeScript strict), **Tailwind 
 Until the two env vars exist, the app shows a friendly **Setup required** screen instead of crashing.
 
 ---
+
+## Share links
+
+Everything is private until you share one memory, trip story or year recap. Open **Share** on a memory, a trip's menu or a recap, pick the options and copy the link. Links default to 30 days, city-level locations and all photos.
+
+**Setup (once):** add `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project Settings → API) to `.env.local` and to Vercel's environment variables as a server-only secret. Without it the app runs normally and the Share dialog says sharing is off.
+
+**Revoke:** Settings → Share links, or the Share dialog. It takes effect on the next request, including for photos.
+
+**What a visitor can get:** only what the page shows. Budget, expenses, cash, documents, entry and visa data, private notes, your home and settings have no field in the public view at all, so they can't appear even by mistake. With exact locations off, the map shows cities rounded to about 11 km and no place names. The map is drawn on the server, so the page holds no coordinates either way. Photos are streamed through `/s/[token]/photo/[id]`, which checks the link and that the photo belongs to it on every request; no signed URL is exposed. Unknown, revoked and expired links all give the same plain 404.
 
 ## Lost your authenticator?
 
@@ -149,6 +159,8 @@ proxy.ts                   Next 16 "proxy" (formerly middleware): session refres
 - **The vault cookie holds a random token instead of a signed expiry.** The brief asks for a signed cookie, which would need a new secret to manage. The `httpOnly`, `secure`, `sameSite=strict` cookie `vault_unlocked` holds a token whose hash and expiry are in the database, so no secret is needed, the timeout slides on each check and Lock now takes effect at once. The server masks a locked document before sending it (reference `•••• 1234`, no notes, no file), including in the JSON export, and a storage policy stops a locked file being signed even by a direct API call.
 - **Map export draws an SVG, then a canvas.** The live preview is the SVG that gets exported, with its Fraunces and Geist files embedded as data URLs so the text looks the same outside the page. "% of the world" is visited countries out of the 195 UN-recognised ones (193 members plus two observers), the same on the Stats page; territories such as Hong Kong appear on the map but don't count. The long side is capped at 4096 px, shrinking evenly instead of cropping, so 3x can come out smaller than a true 3x.
 - **Recap slides are SVG, on screen and in the download,** so the 1080×1920 PNG is exactly what you see. Only things that already happened count: a stay's days up to today, spent (not planned) expenses, past memories and photos. Wishlist stays never count. Distance is the sum of straight lines between stops in the year, labelled approximate. A slide with no data is skipped. "On this day" looks across all trips, since last year's memories belong to a different trip than the active one.
+- **The service role key appears in one place only.** `lib/supabase/admin.ts` is imported only by the public share code. Every query there is scoped by the share's owner, and each public view is built field by field in `lib/share.ts`, so a new column can't reach a visitor by accident. A recap's money is left out by that same builder.
+- **View counts are set by the proxy.** It marks real GET page loads with a request header, stripping any sent by the visitor, and leaves out bots, link previews, prefetches and "Preview as visitor". No IP is stored; the rate limit keeps counts in memory only, per server instance, so on Vercel it is best effort.
 - **Map tiles come from OpenStreetMap, not CARTO.** CARTO's basemap server now answers with "API key required" watermark tiles, so Leaflet maps use `tile.openstreetmap.org` (no key) and restyle it with CSS filters: softened and warm in light mode, inverted in dark mode. The URL and attribution live in `lib/config.ts` (`MAP_TILE_URL`) if you ever want another provider. OSM's tile policy is fine for a single-user personal app.
 
 ## Known limitations

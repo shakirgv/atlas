@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { Camera, Images, Map as MapIcon, MapPin, MoreHorizontal, Pencil, Rows3, Trash2 } from "lucide-react";
+import { Camera, Images, Map as MapIcon, MapPin, MoreHorizontal, Pencil, Rows3, Share2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteMemory } from "@/actions/memories";
 import type { MemoryVM } from "@/lib/data";
@@ -16,6 +16,8 @@ import { MemoryComposerCard, type PlaceLite } from "@/components/forms/memory-co
 import { PhotoGrid, PhotoLightbox } from "@/components/photos/photo-grid";
 import { PhotoMap, type MemoryPin } from "@/components/photos/photo-map";
 import type { PhotoPin, UnlocatedPhoto } from "@/lib/photo-pins";
+import { ShareDialog } from "@/components/share/share-dialog";
+import { useWorkspace } from "@/components/shell/workspace";
 import { useConfirm } from "@/components/ui/confirm";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { NativeSelect } from "@/components/ui/input";
@@ -26,6 +28,8 @@ type CityLite = { id: string; name: string; trip_country_id: string; lat: number
 type CountryLite = { id: string; name: string; flag: string };
 
 function MemoryCard({ m, country, city, place, highlighted, onEdit }: { m: MemoryVM; country?: CountryLite; city?: CityLite; place?: PlaceLite; highlighted: boolean; onEdit: () => void }) {
+  const ws = useWorkspace();
+  const [sharing, setSharing] = useState(false);
   const confirm = useConfirm();
   const [, start] = useTransition();
   return (
@@ -51,6 +55,9 @@ function MemoryCard({ m, country, city, place, highlighted, onEdit }: { m: Memor
             <DropdownMenuContent>
               <DropdownMenuItem onSelect={onEdit}>
                 <Pencil /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setSharing(true)}>
+                <Share2 /> Share
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -87,6 +94,7 @@ function MemoryCard({ m, country, city, place, highlighted, onEdit }: { m: Memor
           <PhotoGrid photos={[]} entityType="memory" entityId={m.id} addVariant="pill" columns="hidden" />
         </div>
       </div>
+      {sharing && <ShareDialog kind="memory" targetId={m.id} title={m.title ?? "This memory"} enabled={ws.sharingEnabled} onOpenChange={setSharing} />}
     </article>
   );
 }
