@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Database, Download, FileJson, House, LogOut, Monitor, Moon, Palette, Sparkles, Sun, Trash2, Upload, User } from "lucide-react";
+import { Database, Download, FileJson, House, LockKeyhole, LogOut, Monitor, Moon, Palette, Sparkles, Sun, Trash2, Upload, User } from "lucide-react";
 import { toast } from "sonner";
 import { signOut } from "@/actions/auth";
 import { deleteSampleData, loadSampleData } from "@/actions/sample";
@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm";
 import { Field, Input, NativeSelect } from "@/components/ui/input";
 import { HomeSection } from "./home-section";
+import { SecuritySection } from "./security-section";
 
 type In = z.input<typeof settingsSchema>;
 type Out = z.output<typeof settingsSchema>;
@@ -39,7 +40,7 @@ function Section({ id, icon: Icon, title, description, children }: { id?: string
   );
 }
 
-export function SettingsView({ settings, email, hasSample }: { settings: Settings | null; email: string | null; hasSample: boolean }) {
+export function SettingsView({ settings, email, hasSample, mfaEnabled, hasPin }: { settings: Settings | null; email: string | null; hasSample: boolean; mfaEnabled: boolean; hasPin: boolean }) {
   const router = useRouter();
   const confirm = useConfirm();
   const { setTheme } = useTheme();
@@ -126,6 +127,10 @@ export function SettingsView({ settings, email, hasSample }: { settings: Setting
 
       <Section id="home" icon={House} title="Home & passport" description="Unlocks jet lag (first leg from home), the home-time clock and visa checks for your passport.">
         <HomeSection settings={settings} />
+      </Section>
+
+      <Section id="security" icon={LockKeyhole} title="Security" description="Protects your data even if your password leaks or your phone is unlocked.">
+        <SecuritySection mfaEnabled={mfaEnabled} hasPin={hasPin} timeout={settings?.lock_timeout_minutes ?? 5} />
       </Section>
 
       <Section icon={Download} title="Export & import" description="Your data, portable. JSON includes everything except photo and document files.">

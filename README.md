@@ -17,7 +17,7 @@ Built with **Next.js 16** (App Router, React 19, TypeScript strict), **Tailwind 
      NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
      ```
    - Never put the `service_role` key in this app.
-2. **Run `supabase/migrations/001_init.sql` in the Supabase SQL editor (and `002_extras.sql` later).**
+2. **Run the files in `supabase/migrations/` in order in the Supabase SQL editor: `001`, `002`, `003`, `004`.**
    - Dashboard → **SQL Editor** → **New query** → paste the *whole* file `supabase/migrations/001_init.sql` → **Run**.
    - Then a new query with `supabase/migrations/002_extras.sql` → **Run** (bookings, packing lists, packing templates).
    - This creates every table, row-level security, the two **private** storage buckets (`photos`, `documents`) and their storage policies.
@@ -32,6 +32,15 @@ Built with **Next.js 16** (App Router, React 19, TypeScript strict), **Tailwind 
 Until the two env vars exist, the app shows a friendly **Setup required** screen instead of crashing.
 
 ---
+
+## Lost your authenticator?
+
+If two-factor login locks you out, remove the factor as the project owner, then sign in with your password and set it up again. Either way works:
+
+- **Supabase SQL editor:** `delete from auth.mfa_factors where user_id = (select id from auth.users where email = 'you@example.com');`
+- **Admin API (server only, service role key):** `await supabase.auth.admin.mfa.deleteFactor({ id: factorId, userId })`
+
+A forgotten PIN needs no recovery: Settings → Security → Change PIN asks for your account password instead of the old PIN.
 
 ## Run locally
 
@@ -135,10 +144,15 @@ proxy.ts                   Next 16 "proxy" (formerly middleware): session refres
 - **Cash: getting it is not an expense, spending it is.** A withdrawal or exchange only moves money into a wallet; just its fee becomes an expense (category `fees`). A cash expense creates one linked `spend` transaction and keeps it in step on edit and delete. A planned expense takes nothing out until it is marked as spent. The ATM charge entered is the amount before the fee, and the fee counts toward the effective rate. Spending in a currency with no wallet creates the wallet, and an exchange into one does too. Wallets are per user, not per trip, because the cash in my pocket doesn't belong to a trip; a fee needs a trip because every expense does.
 - **Receipts are `photos` rows with `entity_type = 'expense'`,** on the same private bucket and signed URLs, but their own preset (2000 px, quality 0.85, 400 px thumbnail, capped at 450 KB, no cropping) and without GPS, since a receipt's location adds nothing and shouldn't be stored. They don't count as photos in stats. The ZIP is built in the browser from fresh signed URLs, one file at a time, and a failed file is reported instead of losing the archive.
 - **Photo pins resolve a location per photo:** its own GPS, else its linked place, else its linked city. Only your own uploads are pinned; Wikimedia covers and receipts stay out. Clicking a cluster shows its photos instead of zooming (a "Zoom in" button does that), so a pile of photos in one spot can be opened directly. A memory with no photos keeps a marker where it happened, as before. The world map's Photos layer counts a GPS photo with no linked city toward a trip city within 100 km; farther than that it isn't counted, rather than guessed.
+- **Two-factor login is enforced in the database, not only in the proxy.** The brief asks for the proxy to require `aal2`, but the anon key is public, so someone with a leaked password could skip the app and call the API directly. Migration 004 adds a restrictive policy to every table and to the two storage buckets: once a factor is verified, an `aal1` session sees no rows and no files. The proxy still handles the redirect to the code step.
+- **The PIN's secrets stay in the database.** The migration 003 functions gave the hash to the signed-in browser role, where a 4-digit PIN could be brute-forced offline, and let that role reset the attempt counter. Migration 004 replaces them: the server hashes an attempt with scrypt and the database compares it, counts failures and applies the 5-minute lockout. Setting the PIN needs a session whose password was entered in the last two minutes (the JWT's `amr` claim), obtained from a separate throwaway session so a two-factor session isn't downgraded.
+- **The vault cookie holds a random token instead of a signed expiry.** The brief asks for a signed cookie, which would need a new secret to manage. The `httpOnly`, `secure`, `sameSite=strict` cookie `vault_unlocked` holds a token whose hash and expiry are in the database, so no secret is needed, the timeout slides on each check and Lock now takes effect at once. The server masks a locked document before sending it (reference `•••• 1234`, no notes, no file), including in the JSON export, and a storage policy stops a locked file being signed even by a direct API call.
 - **Map tiles come from OpenStreetMap, not CARTO.** CARTO's basemap server now answers with "API key required" watermark tiles, so Leaflet maps use `tile.openstreetmap.org` (no key) and restyle it with CSS filters: softened and warm in light mode, inverted in dark mode. The URL and attribution live in `lib/config.ts` (`MAP_TILE_URL`) if you ever want another provider. OSM's tile policy is fine for a single-user personal app.
 
 ## Known limitations
 
+- **PIN vault against a signed-in browser:** someone with developer tools on an already signed-in session can't open a locked file, reset the PIN or read its hash, but could read the `reference_no` and `notes` columns of a locked document through the API, because row security works per row, not per column. The app never shows or sends them while locked.
+- **Unlocking is per account, not per device, on the database side.** The cookie is per browser and only that browser sees the documents as open, but the storage check looks at the account, so another signed-in browser could sign a file through a direct API call while the vault is open elsewhere.
 - **JSON import** restores trips and everything under them, but not cash wallets, entry requirements or country overrides (they are in the export, but importing them could collide with what you already have). Imported cash expenses keep "cash" as their payment method without a wallet.
 - Photo and document **files are not included in the JSON export/import** (metadata only); covers and attachments must be re-added after an import.
 - External services (Photon, Wikipedia/Wikimedia, open.er-api, map tiles) were **not reachable from the build sandbox**, so live lookups were exercised only through their fallbacks there (gradient covers, "type a name", approximate FX snapshot, blank map tiles). They work normally on Vercel and on your machine.

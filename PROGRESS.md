@@ -43,8 +43,12 @@ Delete this file when the whole pack is finished.
 ## Done: 3.7 Photo pins
 - `lib/photo-pins.ts`, `lib/server/photo-pins.ts`, `components/photos/photo-map*.tsx`, Memories tab "Map", city mini-map, world map Photos layer, `setPhotoLocation`.
 
+## Done: 3.10 MFA + PIN vault
+- `supabase/migrations/004_extra_lock.sql`, `lib/vault*.ts`, `actions/vault.ts`, `actions/mfa.ts`, `components/vault/*`, `components/settings/security-section.tsx`, `/login/mfa`.
+- The SQL was tested on PGlite (real Postgres, no Docker) with `auth` and `storage` stubbed; the Supabase Auth calls themselves were not run.
+
 ## Next steps (build order from IMPROVEMENTS.md §5)
-3.10 MFA + PIN vault → 3.5 Map export
+3.5 Map export
 → 3.11 On this day + Recap → 3.12 Share links → polish/README/final report.
 
 ## Notes for a fresh session

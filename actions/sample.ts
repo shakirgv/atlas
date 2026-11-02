@@ -352,9 +352,9 @@ export async function loadSampleData(): Promise<ActionResult<{ tripId: string }>
 
     const sampleDocs = must(
       await supabase.from("documents").insert([
-        { type: "passport", title: "Passport", reference_no: "C01234567", issue_date: d(-3500), expiry_date: d(150), notes: "Expires less than 6 months after this trip ends — renew soon.", is_sample: true },
-        { type: "visa", title: "Japan eVisa", trip_id: trip.id, trip_country_id: tc("JP"), reference_no: "JPN-2026-0045", issue_date: d(-25), expiry_date: d(20), is_sample: true },
-        { type: "insurance", title: "World travel insurance", trip_id: trip.id, reference_no: "WT-889120", issue_date: d(-20), expiry_date: d(75), notes: "Emergency line +44 20 0000 0000", is_sample: true },
+        { sensitive: true, type: "passport", title: "Passport", reference_no: "C01234567", issue_date: d(-3500), expiry_date: d(150), notes: "Expires less than 6 months after this trip ends — renew soon.", is_sample: true },
+        { sensitive: true, type: "visa", title: "Japan eVisa", trip_id: trip.id, trip_country_id: tc("JP"), reference_no: "JPN-2026-0045", issue_date: d(-25), expiry_date: d(20), is_sample: true },
+        { sensitive: true, type: "insurance", title: "World travel insurance", trip_id: trip.id, reference_no: "WT-889120", issue_date: d(-20), expiry_date: d(75), notes: "Emergency line +44 20 0000 0000", is_sample: true },
       ]).select("id, title"),
     );
 

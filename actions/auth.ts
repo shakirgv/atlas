@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/config";
+import { safeNextPath } from "@/lib/utils";
 
 const schema = z.object({
   email: z.email("Enter a valid email"),
@@ -23,8 +24,8 @@ export async function signIn(_prev: SignInState, formData: FormData): Promise<Si
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email: parsed.data.email, password: parsed.data.password });
   if (error) return { error: error.message === "Invalid login credentials" ? "Email or password is incorrect." : error.message };
-  const next = parsed.data.next && parsed.data.next.startsWith("/") && !parsed.data.next.startsWith("//") ? parsed.data.next : "/";
-  redirect(next);
+  // With two-factor on, the proxy sends this on to the code step.
+  redirect(safeNextPath(parsed.data.next));
 }
 
 export async function signOut() {

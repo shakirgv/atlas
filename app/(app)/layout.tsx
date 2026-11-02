@@ -6,6 +6,7 @@ import { getScope } from "@/lib/scope";
 import { countryFlag, countryName } from "@/lib/countries";
 import type { CityOption, CountryOption } from "@/lib/types";
 import { fillMissingTimezones } from "@/lib/server/backfill";
+import { getVaultState } from "@/lib/vault";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   if (!isSupabaseConfigured) return <SetupRequired />;
@@ -45,6 +46,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         isAll: scope.isAll,
         countries,
         cities: cityOptions,
+        vault: await getVaultState(),
       }}
     >
       {children}

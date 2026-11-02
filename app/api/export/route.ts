@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { apiUser } from "@/lib/server/api";
 import { APP_NAME } from "@/lib/config";
+import { getVaultState } from "@/lib/vault";
+import { maskDocument } from "@/lib/vault-mask";
+import type { DocumentRow } from "@/lib/types";
 
 const TABLES = ["settings", "trips", "trip_countries", "cities", "places", "itinerary_days", "itinerary_items", "expenses", "memories", "documents", "photos", "bookings", "packing_items", "packing_templates", "country_info_overrides", "entry_requirements", "cash_wallets", "cash_transactions"] as const;
 
@@ -44,6 +47,9 @@ export async function GET(req: Request) {
     const { data, error } = await supabase.from(table).select("*");
     out[table] = error ? [] : (data ?? []);
   }
+  // A locked vault stays locked in the export: unlock first to include those details.
+  const vault = await getVaultState();
+  out.documents = (out.documents as DocumentRow[]).map((d) => maskDocument(d, vault));
   return new NextResponse(JSON.stringify(out, null, 2), {
     headers: { "Content-Type": "application/json; charset=utf-8", "Content-Disposition": `attachment; filename="${APP_NAME.toLowerCase()}-export-${stamp}.json"` },
   });

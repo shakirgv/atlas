@@ -4,6 +4,7 @@ import { loadGraph } from "@/lib/data";
 import { passportWarnings } from "@/lib/alerts";
 import { todayIso } from "@/lib/dates";
 import { entryOverview, latestPassportExpiry } from "@/lib/entry";
+import { getVaultState } from "@/lib/vault";
 import { DocumentsView } from "@/components/documents/documents-view";
 
 export const metadata: Metadata = { title: "Documents" };
@@ -17,6 +18,7 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/docume
   return (
     <DocumentsView
       documents={docs}
+      vault={await getVaultState()}
       warnings={passportWarnings(g.documents, scope.trips)}
       trips={scope.trips.map((t) => ({ id: t.id, title: t.title }))}
       countries={g.countries.map((c) => ({ id: c.id, name: c.name, flag: c.flag }))}

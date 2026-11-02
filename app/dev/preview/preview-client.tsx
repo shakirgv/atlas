@@ -9,6 +9,9 @@ import { EntryTable } from "@/components/entry/entry-table";
 import { CashTab } from "@/components/cash/cash-tab";
 import { ExpenseTable } from "@/components/budget/expense-table";
 import { PhotoMap } from "@/components/photos/photo-map";
+import { PinPad } from "@/components/vault/pin-pad";
+import { SecuritySection } from "@/components/settings/security-section";
+import { MfaForm } from "@/app/(auth)/login/mfa/mfa-form";
 import type { PhotoPin, UnlocatedPhoto } from "@/lib/photo-pins";
 import { useState } from "react";
 import type { Expense, PhotoView } from "@/lib/types";
@@ -101,6 +104,27 @@ const TRAY: UnlocatedPhoto[] = [
   { tripId: "t", tripCountryId: "it", cityId: null, year: "2026", label: "No GPS 2", photo: pinPhoto("u2", "#6b4a2b", "") },
 ];
 
+/** The keypad on the same rules the database enforces (tested separately): PIN 1234, 5 tries. */
+function PinDemo() {
+  const [left, setLeft] = useState(5);
+  const [state, setState] = useState("locked");
+  return (
+    <div className="card max-w-sm p-6" data-testid="pin-demo" data-state={state}>
+      <PinPad
+        length={4}
+        onUnlocked={() => setState("unlocked")}
+        submit={async (pin) => {
+          if (pin === "1234") return { ok: true, data: { unlocked: true, lockedUntil: null, attemptsLeft: 5 } };
+          const next = left - 1;
+          setLeft(next);
+          return { ok: true, data: { unlocked: false, lockedUntil: next <= 0 ? new Date(Date.now() + 5 * 60000).toISOString() : null, attemptsLeft: next } };
+        }}
+      />
+      <p className="mt-3 text-center text-xs text-muted">State: {state}</p>
+    </div>
+  );
+}
+
 /** Runs a file through the real compression pipeline, so the size target can be checked without Storage. */
 function ReceiptProbe() {
   const [out, setOut] = useState("");
@@ -174,6 +198,23 @@ export function PreviewClient({ liveClimate, liveForecast }: { liveClimate: { ba
               </div>
               <p className="mb-1 mt-4 text-xs text-muted">Dashboard tile: normals (live API)</p>
               <div className="card flex h-44 flex-col gap-3 p-5">{liveClimate.bangkok && <NormalsView months={liveClimate.bangkok} stop={{ ...TOKYO, name: "Bangkok" }} />}</div>
+            </div>
+          </div>
+        </Section>
+        <Section title="Extra lock">
+          <div className="grid items-start gap-4 lg:grid-cols-3">
+            <PinDemo />
+            <div className="card p-6">
+              <h3 className="text-xl font-semibold">Two-factor code</h3>
+              <MfaForm next="/" onDone={() => {}} verify={async (code) => (code === "123456" ? { ok: true, data: undefined } : { ok: false, error: "That code didn't work. Codes change every 30 seconds, so try the new one." })} />
+            </div>
+            <div className="flex flex-col gap-4">
+              <div className="card p-6">
+                <SecuritySection mfaEnabled hasPin timeout={5} />
+              </div>
+              <div className="card p-6">
+                <SecuritySection mfaEnabled={false} hasPin={false} timeout={5} />
+              </div>
             </div>
           </div>
         </Section>

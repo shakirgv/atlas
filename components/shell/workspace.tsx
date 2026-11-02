@@ -1,6 +1,7 @@
 "use client";
 import * as React from "react";
 import type { CityOption, CountryOption, Settings, TripOption } from "@/lib/types";
+import type { VaultState } from "@/lib/vault-mask";
 
 export type QuickAddKind = "trip" | "country" | "city" | "place" | "expense" | "memory" | "document" | "booking";
 
@@ -23,6 +24,7 @@ export type Workspace = {
   isAll: boolean;
   countries: CountryOption[];
   cities: CityOption[];
+  vault: VaultState;
 };
 
 type Ctx = Workspace & {

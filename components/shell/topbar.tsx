@@ -8,6 +8,7 @@ import { Kbd } from "@/components/ui/misc";
 import { QuickAddMenu } from "./quick-add-menu";
 import { TripSwitcher } from "./trip-switcher";
 import { useWorkspace } from "./workspace";
+import { VaultLockButton } from "@/components/vault/vault-lock";
 
 export function Topbar() {
   const pathname = usePathname();
@@ -32,6 +33,7 @@ export function Topbar() {
           {title}
         </p>
         <div className="ml-auto flex items-center gap-2">
+          {ws.vault.unlocked && <VaultLockButton />}
           <button
             type="button"
             onClick={ws.openPalette}

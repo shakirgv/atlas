@@ -288,6 +288,7 @@ export const documentSchema = z
     expiry_date: dateStr,
     reference_no: optText(120),
     notes: optText(5000),
+    sensitive: z.boolean().optional(),
   })
   .superRefine(endAfterStart("issue_date", "expiry_date"));
 export type DocumentInput = z.input<typeof documentSchema>;

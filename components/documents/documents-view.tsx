@@ -1,11 +1,13 @@
 "use client";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { AlertTriangle, Download, ExternalLink, FileText, Loader2, MoreHorizontal, Paperclip, Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react";
+import { AlertTriangle, Download, ExternalLink, FileText, Loader2, Lock, MoreHorizontal, Paperclip, Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteDocument, getDocumentUrl } from "@/actions/documents";
 import type { Alert } from "@/lib/alerts";
 import type { EntryRow } from "@/lib/entry";
+import { isDocumentLocked, VAULT_LOCKED, type VaultState } from "@/lib/vault-mask";
+import { VaultGate } from "@/components/vault/pin-pad";
 import { DOCUMENT_TYPES, type DocumentRow, type DocumentType } from "@/lib/types";
 import { DOCUMENT_TYPE_META } from "@/lib/icons";
 import { fmtDate } from "@/lib/dates";
@@ -29,29 +31,36 @@ function fmtSize(n: number | null) {
   return n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.ceil(n / 1024)} KB`;
 }
 
-function Preview({ doc, onClose }: { doc: DocumentRow; onClose: () => void }) {
+function Preview({ doc, vault, onClose }: { doc: DocumentRow; vault: VaultState; onClose: () => void }) {
   const [state, setState] = useState<{ url: string; mime: string | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // The server has the last word: after a timeout this page still thinks it's open until a link is refused.
+  const [refused, setRefused] = useState(false);
+  const locked = isDocumentLocked(doc, vault) || refused;
   const [downloading, start] = useTransition();
   const meta = DOCUMENT_TYPE_META[doc.type as DocumentType] ?? DOCUMENT_TYPE_META.other;
 
   useEffect(() => {
-    if (!doc.file_path) return;
+    if (!doc.file_path || locked) return;
     let alive = true;
     void getDocumentUrl(doc.id).then((res) => {
       if (!alive) return;
       if (res.ok) setState({ url: res.data.url, mime: res.data.mime });
+      else if (res.error === VAULT_LOCKED) setRefused(true);
       else setError(res.error);
     });
     return () => {
       alive = false;
     };
-  }, [doc.id, doc.file_path]);
+  }, [doc.id, doc.file_path, locked]);
 
   const download = () =>
     start(async () => {
       const res = await getDocumentUrl(doc.id, true);
-      if (!res.ok) return void toast.error(res.error);
+      if (!res.ok) {
+        if (res.error === VAULT_LOCKED) return void setRefused(true);
+        return void toast.error(res.error);
+      }
       window.location.href = res.data.url;
     });
 
@@ -66,7 +75,7 @@ function Preview({ doc, onClose }: { doc: DocumentRow; onClose: () => void }) {
       description={[meta.label, doc.reference_no, doc.expiry_date ? `Expires ${fmtDate(doc.expiry_date)}` : null].filter(Boolean).join(" · ")}
       className="max-w-4xl"
       footer={
-        doc.file_path ? (
+        doc.file_path && !locked ? (
           <>
             {state && (
               <Button variant="secondary" asChild>
@@ -83,7 +92,9 @@ function Preview({ doc, onClose }: { doc: DocumentRow; onClose: () => void }) {
       }
     >
       <div className="pb-2">
-        {!doc.file_path ? (
+        {locked ? (
+          <VaultGate length={vault.pinLength} lockedUntil={vault.lockedUntil} onUnlocked={() => setRefused(false)} />
+        ) : !doc.file_path ? (
           <div className="flex flex-col items-center gap-2 rounded-xl bg-surface-2 px-6 py-12 text-center text-sm text-muted">
             <Paperclip className="size-6 text-accent" />
             No file attached. Edit the document to upload one.
@@ -104,8 +115,8 @@ function Preview({ doc, onClose }: { doc: DocumentRow; onClose: () => void }) {
             {doc.file_name} can’t be previewed here. Download it to open.
           </div>
         )}
-        {doc.notes && <p className="mt-4 whitespace-pre-wrap text-sm text-muted">{doc.notes}</p>}
-        <p className="mt-3 text-xs text-muted">Links expire after 5 minutes for privacy.</p>
+        {!locked && doc.notes && <p className="mt-4 whitespace-pre-wrap text-sm text-muted">{doc.notes}</p>}
+        {!locked && <p className="mt-3 text-xs text-muted">Links expire after 5 minutes for privacy.</p>}
       </div>
     </ResponsiveDialog>
   );
@@ -113,6 +124,7 @@ function Preview({ doc, onClose }: { doc: DocumentRow; onClose: () => void }) {
 
 export function DocumentsView({
   documents,
+  vault,
   warnings,
   trips,
   countries,
@@ -122,6 +134,7 @@ export function DocumentsView({
   showTrip,
 }: {
   documents: DocumentRow[];
+  vault: VaultState;
   warnings: Alert[];
   trips: { id: string; title: string }[];
   countries: { id: string; name: string; flag: string }[];
@@ -223,6 +236,7 @@ export function DocumentsView({
                       const level = expiryLevel(d.expiry_date);
                       const country = countries.find((c) => c.id === d.trip_country_id);
                       const trip = trips.find((x) => x.id === d.trip_id);
+                      const docLocked = isDocumentLocked(d, vault);
                       return (
                         <StaggerItem key={d.id}>
                           <div className={cn("card card-hover relative flex h-full flex-col gap-4 p-5", level === "urgent" && "border-danger/40", level === "soon" && "border-planned/50")}>
@@ -232,7 +246,15 @@ export function DocumentsView({
                                 <m.icon className="size-6 text-accent" />
                               </span>
                               <div className="min-w-0 flex-1">
-                                <h3 className="truncate font-display text-lg font-semibold">{d.title}</h3>
+                                <h3 className="flex items-center gap-1.5 font-display text-lg font-semibold">
+                                  <span className="truncate">{d.title}</span>
+                                  {docLocked && (
+                                    <>
+                                      <Lock className="size-3.5 shrink-0 text-accent" />
+                                      <span className="sr-only">Locked</span>
+                                    </>
+                                  )}
+                                </h3>
                                 <p className="truncate text-xs text-muted">
                                   {[d.reference_no, country ? `${country.flag} ${country.name}` : trip?.title].filter(Boolean).join(" · ") || m.label}
                                 </p>
@@ -242,13 +264,14 @@ export function DocumentsView({
                                   <MoreHorizontal className="size-4" />
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
-                                  <DropdownMenuItem onSelect={() => setEditing(d)}>
-                                    <Pencil /> Edit / replace file
+                                  <DropdownMenuItem onSelect={() => (docLocked ? setOpen(d.id) : setEditing(d))}>
+                                    {docLocked ? <Lock /> : <Pencil />} {docLocked ? "Unlock to edit" : "Edit / replace file"}
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem
                                     destructive
                                     onSelect={async () => {
+                                      if (docLocked) return setOpen(d.id);
                                       if (!(await confirm({ title: `Delete “${d.title}”?`, description: "The file is removed from storage too.", confirmLabel: "Delete document" }))) return;
                                       start(async () => {
                                         const res = await deleteDocument(d.id);
@@ -287,7 +310,7 @@ export function DocumentsView({
       )}
         </TabsContent>
       </Tabs>
-      {open && <Preview key={open.id} doc={open} onClose={() => setOpen(null)} />}
+      {open && <Preview key={open.id} doc={open} vault={vault} onClose={() => setOpen(null)} />}
       {editing && <DocumentDialog open onOpenChange={(o) => !o && setEditing(null)} document={editing} />}
     </PageTransition>
   );

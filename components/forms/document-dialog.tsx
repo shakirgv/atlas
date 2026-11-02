@@ -10,6 +10,8 @@ import { DOCUMENT_TYPES, type DocumentRow } from "@/lib/types";
 import { DOCUMENT_TYPE_META } from "@/lib/icons";
 import { MAX_UPLOAD_BYTES } from "@/lib/config";
 import { DOCUMENT_ACCEPT, uploadDocumentFile } from "@/lib/upload";
+import { SENSITIVE_TYPES } from "@/lib/vault-mask";
+import { Switch } from "@/components/ui/misc";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Field, Input, NativeSelect, Textarea } from "@/components/ui/input";
@@ -42,6 +44,7 @@ export function DocumentDialog({ open, onOpenChange, document }: { open: boolean
       expiry_date: document?.expiry_date ?? "",
       reference_no: document?.reference_no ?? "",
       notes: document?.notes ?? "",
+      sensitive: document?.sensitive ?? true,
     },
   });
   const { register, handleSubmit, control, watch, setValue, formState } = form;
@@ -149,13 +152,26 @@ export function DocumentDialog({ open, onOpenChange, document }: { open: boolean
             control={control}
             name="type"
             render={({ field }) => (
-              <ChoiceChips name="Document type" value={field.value} onChange={field.onChange} options={DOCUMENT_TYPES.map((t) => ({ value: t, label: DOCUMENT_TYPE_META[t].label, icon: DOCUMENT_TYPE_META[t].icon }))} />
+              <ChoiceChips name="Document type" value={field.value} onChange={(v) => { field.onChange(v); if (!document) setValue("sensitive", SENSITIVE_TYPES.includes(v)); }} options={DOCUMENT_TYPES.map((t) => ({ value: t, label: DOCUMENT_TYPE_META[t].label, icon: DOCUMENT_TYPE_META[t].icon }))} />
             )}
           />
         </Field>
         <Field label="Expiry date" htmlFor="doc-expiry" error={formState.errors.expiry_date?.message} hint="We'll warn you 90 and 30 days before.">
           <Input id="doc-expiry" type="date" {...register("expiry_date")} />
         </Field>
+        <Controller
+          control={control}
+          name="sensitive"
+          render={({ field }) => (
+            <label className="flex min-h-11 items-center justify-between gap-3 rounded-xl border border-border px-3.5 py-2 text-sm">
+              <span>
+                <span className="font-medium">Sensitive</span>
+                <span className="block text-xs text-muted">Needs your PIN to open, once you have set one.</span>
+              </span>
+              <Switch checked={field.value ?? false} onCheckedChange={field.onChange} aria-label="Sensitive document" />
+            </label>
+          )}
+        />
         <MoreDetails defaultOpen={Boolean(document?.reference_no || document?.trip_id)}>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Issue date" htmlFor="doc-issue">

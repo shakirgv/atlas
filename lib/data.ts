@@ -3,6 +3,8 @@ import type { ServerSupabase } from "@/lib/supabase/server";
 import { countryFlag, countryName, getCountry } from "@/lib/countries";
 import { displayStatus } from "@/lib/status";
 import { signPhotoPaths, withPhotoUrls } from "@/lib/storage";
+import { getVaultState } from "@/lib/vault";
+import { maskDocument } from "@/lib/vault-mask";
 import type {
   Booking,
   City,
@@ -85,7 +87,7 @@ export async function loadGraph(supabase: ServerSupabase, allTrips: Trip[], trip
   const cities = tcIds.length ? await safe(supabase.from("cities").select("*").in("trip_country_id", tcIds).order("order_index"), [] as City[]) : [];
   const cityIds = cities.map((c) => c.id);
 
-  const [places, days, expenses, memories, documents, bookings, packing, entries, photoCount] = await Promise.all([
+  const [places, days, expenses, memories, rawDocuments, bookings, packing, entries, photoCount] = await Promise.all([
     opts.places && cityIds.length ? safe(supabase.from("places").select("*").in("city_id", cityIds).order("created_at"), [] as Place[]) : Promise.resolve([] as Place[]),
     opts.days && tcIds.length ? safe(supabase.from("itinerary_days").select("*").in("trip_country_id", tcIds).order("day_number"), [] as ItineraryDay[]) : Promise.resolve([] as ItineraryDay[]),
     opts.expenses && !none ? safe(supabase.from("expenses").select("*").in("trip_id", tripIds).order("date", { ascending: false }), [] as Expense[]) : Promise.resolve([] as Expense[]),
@@ -104,6 +106,10 @@ export async function loadGraph(supabase: ServerSupabase, allTrips: Trip[], trip
     opts.entries && tcIds.length ? safe(supabase.from("entry_requirements").select("*").in("trip_country_id", tcIds), [] as EntryRequirement[]) : Promise.resolve([] as EntryRequirement[]),
     opts.photoCount ? supabase.from("photos").select("id", { count: "exact", head: true }).eq("source", "upload").neq("entity_type", "expense").then((r) => r.count ?? 0) : Promise.resolve(0),
   ]);
+
+  // Done here so every page gets it: a locked document's secrets never leave the server.
+  const vault = rawDocuments.length ? await getVaultState() : null;
+  const documents = vault ? rawDocuments.map((d) => maskDocument(d, vault)) : rawDocuments;
 
   const dayIds = days.map((d) => d.id);
   const items = dayIds.length ? await safe(supabase.from("itinerary_items").select("*").in("day_id", dayIds).order("order_index"), [] as ItineraryItem[]) : [];

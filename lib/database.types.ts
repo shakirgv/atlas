@@ -453,14 +453,14 @@ isOneToOne: false
                   ]
                 },"vault_secrets": {
                   Row: {
-                    "created_at": string,"pin_failed_attempts": number,"pin_hash": string | null,"pin_locked_until": string | null,"pin_salt": string | null,"user_id": string
+                    "created_at": string,"pin_failed_attempts": number,"pin_hash": string | null,"pin_length": number | null,"pin_locked_until": string | null,"pin_salt": string | null,"unlock_token_hash": string | null,"unlock_until": string | null,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"pin_failed_attempts"?: number,"pin_hash"?: string | null,"pin_locked_until"?: string | null,"pin_salt"?: string | null,"user_id"?: string
+                    "created_at"?: string,"pin_failed_attempts"?: number,"pin_hash"?: string | null,"pin_length"?: number | null,"pin_locked_until"?: string | null,"pin_salt"?: string | null,"unlock_token_hash"?: string | null,"unlock_until"?: string | null,"user_id"?: string
                   }
                   Update: {
-                    "created_at"?: string,"pin_failed_attempts"?: number,"pin_hash"?: string | null,"pin_locked_until"?: string | null,"pin_salt"?: string | null,"user_id"?: string
+                    "created_at"?: string,"pin_failed_attempts"?: number,"pin_hash"?: string | null,"pin_length"?: number | null,"pin_locked_until"?: string | null,"pin_salt"?: string | null,"unlock_token_hash"?: string | null,"unlock_until"?: string | null,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -471,13 +471,30 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "atlas_pin_state":
-{ Args: Record<PropertyKey, never>; Returns: {
-              "pin_failed_attempts": number,"pin_hash": string,"pin_locked_until": string,"pin_salt": string
+            "atlas_document_open":
+{ Args: { "p_path": string }; Returns: boolean
+                           },
+"atlas_mfa_ok":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"atlas_pin_check":
+{ Args: { "p_hash": string,"p_token_hash": string }; Returns: {
+              "attempts_left": number,"locked_until": string | null,"ok": boolean
             }[]
                            },
-"atlas_pin_write":
-{ Args: { "p_failed": number,"p_hash": string,"p_locked_until": string,"p_salt": string,"p_set_hash": boolean }; Returns: undefined
+"atlas_pin_set":
+{ Args: { "p_hash": string | null,"p_length": number | null,"p_salt": string | null }; Returns: undefined
+                           },
+"atlas_vault_lock":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
+"atlas_vault_status":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "has_pin": boolean,"locked_until": string | null,"pin_length": number | null,"pin_salt": string | null
+            }[]
+                           },
+"atlas_vault_touch":
+{ Args: { "p_token_hash": string }; Returns: boolean
                            }
           }
           Enums: {

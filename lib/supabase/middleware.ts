@@ -39,8 +39,27 @@ export async function updateSession(request: NextRequest) {
   const signedIn = Boolean(data?.claims?.sub);
   const { pathname, search } = request.nextUrl;
 
+  // Two-factor enrolled but not passed in this session. This is the friendly part; the database
+  // enforces the same rule (migration 004), since the API can be called without passing through here.
+  let needsMfa = false;
+  if (signedIn && !isPublic(pathname)) {
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    needsMfa = aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2";
+  }
+
   // API routes answer 401 themselves; never redirect them to an HTML page.
-  if (pathname.startsWith("/api/")) return response;
+  if (pathname.startsWith("/api/")) return needsMfa ? NextResponse.json({ error: "Two-factor verification required" }, { status: 401 }) : response;
+
+  if (needsMfa) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login/mfa";
+    url.search = "";
+    if (pathname !== "/") url.searchParams.set("next", `${pathname}${search}`);
+    const redirect = NextResponse.redirect(url);
+    // Keep any session refresh that happened above.
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+    return redirect;
+  }
 
   if (!signedIn && !isPublic(pathname)) {
     const url = request.nextUrl.clone();
