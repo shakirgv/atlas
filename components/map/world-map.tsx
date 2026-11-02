@@ -74,9 +74,14 @@ export type RoutePoint = {
   note?: string | null;
   /** The home point that starts a route (not numbered). */
   home?: boolean;
+  /** A later stop inside the same country (small dot instead of a number). */
+  minor?: boolean;
 };
 
-export type RouteLeg = { key: string; from: RoutePoint; to: RoutePoint; d: string; mid: [number, number]; mode: string | null; greatCircle: boolean };
+export type RouteLeg = { key: string; from: RoutePoint; to: RoutePoint; d: string; mid: [number, number]; mode: string | null; greatCircle: boolean; length: number };
+
+/** A leg shorter than this on screen hides its badge, so short hops do not pile up until I zoom in. */
+const MIN_BADGE_LENGTH = 34;
 
 /** Build drawable legs: flights follow the great circle, ground modes a straight projected line. */
 export function buildRouteLegs(route: RoutePoint[], proj = projection): RouteLeg[] {
@@ -90,7 +95,7 @@ export function buildRouteLegs(route: RoutePoint[], proj = projection): RouteLeg
     const d = gc ? (p({ type: "LineString", coordinates: [[from.lng, from.lat], [to.lng, to.lat]] }) ?? "") : `M${a[0]},${a[1]}L${b[0]},${b[1]}`;
     const m = gc ? arcMidpoint(from, to) : null;
     const mid = (m ? proj([m.lng, m.lat]) : [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]) ?? [0, 0];
-    return { key: `${from.id}-${to.id}`, from, to, d, mid: mid as [number, number], mode: to.mode ?? null, greatCircle: gc };
+    return { key: `${from.id}-${to.id}`, from, to, d, mid: mid as [number, number], mode: to.mode ?? null, greatCircle: gc, length: Math.hypot(a[0] - b[0], a[1] - b[1]) };
   });
 }
 
@@ -174,7 +179,7 @@ export function WorldMap({
         let n = 0;
         return r.map((p) => {
           const xy = projection([p.lng, p.lat]) ?? [0, 0];
-          return { ...p, n: p.home ? 0 : ++n, x: xy[0], y: xy[1] };
+          return { ...p, n: p.home || p.minor ? 0 : ++n, x: xy[0], y: xy[1] };
         });
       }),
     [routes],
@@ -271,7 +276,7 @@ export function WorldMap({
               </g>
             ))}
           {layers.route &&
-            arcs.flat().map((a) => {
+            arcs.flat().filter((a) => a.length * t.k >= MIN_BADGE_LENGTH).map((a) => {
               const meta = transportMeta(a.mode);
               const Icon = meta.icon;
               return (
@@ -296,6 +301,13 @@ export function WorldMap({
                   <g key={`home-${s.id}`} transform={`translate(${s.x},${s.y}) scale(${inv * (compact ? 0.9 : 1)})`} role="img" aria-label={`Home: ${s.name ?? ""}`}>
                     <circle r={8} fill="var(--surface)" stroke="var(--ink)" strokeWidth={1.5} />
                     <House x={-5} y={-5} width={10} height={10} color="var(--ink)" strokeWidth={2.2} />
+                  </g>
+                );
+              }
+              if (s.minor) {
+                return (
+                  <g key={`stop-${s.id}`} transform={`translate(${s.x},${s.y}) scale(${inv * (compact ? 0.9 : 1)})`} role="img" aria-label={s.name ?? "Stop"}>
+                    <circle r={4} fill="var(--ink)" stroke="var(--surface)" strokeWidth={1.5} />
                   </g>
                 );
               }

@@ -40,6 +40,7 @@ export function ItineraryPlanner({
   cities,
   places,
   bookings,
+  shiftDayIds,
   initialDayId,
   showTripName,
 }: {
@@ -50,6 +51,7 @@ export function ItineraryPlanner({
   cities: CityVM[];
   places: PlaceVM[];
   bookings: Booking[];
+  shiftDayIds: string[];
   initialDayId: string | null;
   showTripName: boolean;
 }) {
@@ -226,6 +228,7 @@ export function ItineraryPlanner({
                     places={places}
                     bookings={bookingsFor(d)}
                     allDays={days}
+                    bigTimeShift={shiftDayIds.includes(d.id)}
                     selected={selected === d.id}
                     highlightedStop={highlight}
                     onSelect={() => setSelected(d.id)}

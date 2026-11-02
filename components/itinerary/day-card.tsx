@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { ArrowRightLeft, Copy, CornerDownLeft, Loader2, MoreHorizontal, NotebookPen, Trash2 } from "lucide-react";
+import { ArrowRightLeft, Copy, CornerDownLeft, Loader2, MoonStar, MoreHorizontal, NotebookPen, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { addStop, deleteDay, duplicateDay, moveDay, updateDay } from "@/actions/itinerary";
 import { fmtDate, todayIso } from "@/lib/dates";
@@ -23,6 +23,7 @@ export function DayCard({
   places,
   bookings,
   allDays,
+  bigTimeShift,
   selected,
   highlightedStop,
   onSelect,
@@ -34,6 +35,7 @@ export function DayCard({
   places: PlaceVM[];
   bookings: Booking[];
   allDays: ItineraryDay[];
+  bigTimeShift?: boolean;
   selected: boolean;
   highlightedStop: string | null;
   onSelect: () => void;
@@ -172,6 +174,13 @@ export function DayCard({
             </DropdownMenu>
           </div>
         </header>
+
+        {bigTimeShift && (
+          <p className="mt-3 flex items-center gap-2 rounded-xl bg-planned-soft px-3 py-2 text-sm text-ink">
+            <MoonStar className="size-4 shrink-0 text-[#b57a14] dark:text-planned" />
+            Big time shift. Consider a light first day.
+          </p>
+        )}
 
         {notesOpen && (
           <Textarea

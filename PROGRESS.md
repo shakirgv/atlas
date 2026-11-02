@@ -11,8 +11,7 @@ Delete this file when the whole pack is finished.
   `lib/route.ts`, `lib/server/backfill.ts` (auto time zone backfill in the app layout),
   Settings → "Home & passport", dashboard setup banner, Vitest (`npm test`, `tests/jetlag.test.ts`).
 
-## In progress: 3.6 Transport icons + 3.3 Time zones / jet lag
-Done so far (work in progress, compiles and lints):
+## Done: 3.6 Transport icons + 3.3 Time zones / jet lag
 - World map: arc style per mode, midpoint icon badges, leg tooltip, flight plane glyph, home point, legend per mode.
 - `lib/server/route-data.ts` (stops, legs, jet lag per trip), `components/route/transport-chip.tsx` (inline edit),
   `jetlag-chip.tsx`, `transport-field.tsx` (used in the country and city edit dialogs; the city dialog also has a time zone field).
@@ -20,11 +19,8 @@ Done so far (work in progress, compiles and lints):
 - Map explorer: legend modes and a mode icon per country.
 - Dashboard "Time" tile (`components/dashboard/time-tile.tsx`).
 
-Still to do for this step:
-- Itinerary: soft banner on the arrival day when |shift| ≥ 6h ("Big time shift. Consider a light first day.").
-  Plan: in `app/(app)/itinerary/page.tsx`, compute `tripRoute(...)` for the selected country's trip and pass the arrival
-  dates of strong legs to the planner → `DayCard`.
-- Sample data: add transport modes to the stops; then build, screenshot and commit.
+- Itinerary: soft banner on the arrival day when |shift| ≥ 6h. Sample data has flight, train and ferry legs.
+- Map routes run stop by stop (`buildStops`), so legs between cities are drawn; only each country's first stop is numbered.
 
 ## Next steps (build order from IMPROVEMENTS.md §5)
 3.2 Weather → 3.4 Country essentials (`data/country-extras.json` is still an empty stub; `lib/country-extras.ts` is ready)
@@ -33,6 +29,6 @@ Still to do for this step:
 
 ## Notes for a fresh session
 - Dashboard bento needs rebalancing once Weather/Cash/On this day/Recap tiles exist (Time tile is in a `GlanceColumn`).
-- Local verification: `dockerd &`, then `npx supabase start -x studio,realtime,edge-runtime,logflare,vector,imgproxy,supavisor,mailpit,postgres-meta`
-  (some image pulls can be rate-limited; retry). Dev user: me@atlas.test / atlas-dev-123 (create via the Auth admin API).
-- `.env.local` is git-ignored; local keys come from the `supabase start` output.
+- The app runs on Vercel. Do NOT start Docker or a local Supabase for checks (the owner asked not to). Verify with
+  tsc, lint, tests, build and a fixture-based `/dev/preview` route (disabled in production, still to be added).
+- `IMPROVEMENTS.md` is not committed; the owner keeps a copy outside the repo.

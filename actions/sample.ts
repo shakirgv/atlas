@@ -75,9 +75,9 @@ export async function loadSampleData(): Promise<ActionResult<{ tripId: string }>
       await supabase
         .from("trip_countries")
         .insert([
-          { trip_id: trip.id, country_code: "TR", order_index: 0, status: "visited", arrive_date: d(-10), depart_date: d(-5), budget: round2(1500 * fx("USD")), notes: "Get an Istanbulkart on day one. Ferries are the best way to see the city." },
-          { trip_id: trip.id, country_code: "IT", order_index: 1, status: "planned", arrive_date: d(-4), depart_date: d(5), budget: round2(2600 * fx("USD")), notes: "Book Vatican Museums in advance. Many churches need covered shoulders." },
-          { trip_id: trip.id, country_code: "JP", order_index: 2, status: "planned", arrive_date: d(6), depart_date: d(18), budget: round2(4000 * fx("USD")), notes: "Activate the JR Pass at Haneda. Carry cash for small restaurants." },
+          { trip_id: trip.id, country_code: "TR", order_index: 0, status: "visited", arrive_date: d(-10), depart_date: d(-5), transport_mode: "flight", transport_note: "Turkish Airlines TK341", budget: round2(1500 * fx("USD")), notes: "Get an Istanbulkart on day one. Ferries are the best way to see the city." },
+          { trip_id: trip.id, country_code: "IT", order_index: 1, status: "planned", arrive_date: d(-4), depart_date: d(5), transport_mode: "flight", transport_note: "Pegasus PC1211, 09:40", budget: round2(2600 * fx("USD")), notes: "Book Vatican Museums in advance. Many churches need covered shoulders." },
+          { trip_id: trip.id, country_code: "JP", order_index: 2, status: "planned", arrive_date: d(6), depart_date: d(18), transport_mode: "flight", transport_note: "ITA AZ792", budget: round2(4000 * fx("USD")), notes: "Activate the JR Pass at Haneda. Carry cash for small restaurants." },
         ])
         .select("id, country_code"),
     );
@@ -87,11 +87,12 @@ export async function loadSampleData(): Promise<ActionResult<{ tripId: string }>
       await supabase
         .from("cities")
         .insert([
-          { trip_country_id: tc("TR"), name: "Istanbul", lat: 41.0082, lng: 28.9784, order_index: 0, status: "visited", arrive_date: d(-10), depart_date: d(-5) },
-          { trip_country_id: tc("IT"), name: "Rome", lat: 41.9028, lng: 12.4964, order_index: 0, status: "planned", arrive_date: d(-4), depart_date: d(1) },
-          { trip_country_id: tc("IT"), name: "Florence", lat: 43.7696, lng: 11.2558, order_index: 1, status: "planned", arrive_date: d(2), depart_date: d(5) },
-          { trip_country_id: tc("JP"), name: "Tokyo", lat: 35.6762, lng: 139.6503, order_index: 0, status: "planned", arrive_date: d(6), depart_date: d(12) },
-          { trip_country_id: tc("JP"), name: "Kyoto", lat: 35.0116, lng: 135.7681, order_index: 1, status: "planned", arrive_date: d(13), depart_date: d(18) },
+          { trip_country_id: tc("TR"), name: "Istanbul", lat: 41.0082, lng: 28.9784, timezone: "Europe/Istanbul", order_index: 0, status: "visited", arrive_date: d(-10), depart_date: d(-5) },
+          { trip_country_id: tc("IT"), name: "Rome", lat: 41.9028, lng: 12.4964, timezone: "Europe/Rome", order_index: 0, status: "planned", arrive_date: d(-4), depart_date: d(1) },
+          { trip_country_id: tc("IT"), name: "Florence", lat: 43.7696, lng: 11.2558, timezone: "Europe/Rome", order_index: 1, status: "planned", arrive_date: d(2), depart_date: d(5), transport_mode: "train", transport_note: "Frecciarossa 9420" },
+          { trip_country_id: tc("JP"), name: "Tokyo", lat: 35.6762, lng: 139.6503, timezone: "Asia/Tokyo", order_index: 0, status: "planned", arrive_date: d(6), depart_date: d(12) },
+          { trip_country_id: tc("JP"), name: "Kyoto", lat: 35.0116, lng: 135.7681, timezone: "Asia/Tokyo", order_index: 1, status: "planned", arrive_date: d(13), depart_date: d(16), transport_mode: "train", transport_note: "Shinkansen Nozomi" },
+          { trip_country_id: tc("JP"), name: "Naoshima", lat: 34.4602, lng: 133.9959, timezone: "Asia/Tokyo", order_index: 2, status: "planned", arrive_date: d(17), depart_date: d(18), transport_mode: "ferry", transport_note: "Uno Port â†’ Miyanoura" },
         ])
         .select("id, name"),
     );
@@ -271,7 +272,7 @@ export async function loadSampleData(): Promise<ActionResult<{ tripId: string }>
     await supabase.from("bookings").insert([
       { trip_id: trip.id, trip_country_id: tc("IT"), city_id: city("florence"), type: "train", title: "Frecciarossa Rome → Florence", from_label: "Roma Termini", to_label: "Firenze S.M.N.", start_at: `${d(2)}T10:15:00`, end_at: `${d(2)}T11:51:00`, confirmation_no: "PNR 7XK2LM", cost: 48, currency: "EUR", status: "booked" },
       { trip_id: trip.id, trip_country_id: tc("JP"), city_id: city("tokyo"), type: "flight", title: "Rome → Tokyo Haneda", from_label: "FCO", to_label: "HND", start_at: `${d(5)}T13:20:00`, end_at: `${d(6)}T07:40:00`, confirmation_no: "QX4H8T", cost: 890, currency: "USD", status: "booked" },
-      { trip_id: trip.id, trip_country_id: tc("JP"), city_id: city("kyoto"), type: "hotel", title: "Ryokan Yachiyo", from_label: null, to_label: "Kyoto", start_at: `${d(13)}T15:00:00`, end_at: `${d(18)}T11:00:00`, confirmation_no: "RY-20931", cost: 120000, currency: "JPY", status: "pending" },
+      { trip_id: trip.id, trip_country_id: tc("JP"), city_id: city("kyoto"), type: "hotel", title: "Ryokan Yachiyo", from_label: null, to_label: "Kyoto", start_at: `${d(13)}T15:00:00`, end_at: `${d(16)}T11:00:00`, confirmation_no: "RY-20931", cost: 120000, currency: "JPY", status: "pending" },
     ]);
     await supabase.from("packing_items").insert(
       [

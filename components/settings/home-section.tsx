@@ -28,7 +28,8 @@ export function HomeSection({ settings }: { settings: Settings | null }) {
     return () => clearTimeout(t);
   }, []);
 
-  const countries = useMemo(() => [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name)), []);
+  // Fixed locale: the default collation differs between server and browser, which breaks hydration.
+  const countries = useMemo(() => [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name, "en")), []);
 
   const pick = (r: { name: string; label: string; lat: number; lng: number }) => {
     setCity(r.label.split(",").slice(0, 2).join(",").trim() || r.name);
@@ -98,7 +99,7 @@ export function HomeSection({ settings }: { settings: Settings | null }) {
             <Input id="home-lng" inputMode="decimal" value={lng} onChange={(e) => setLng(e.target.value)} />
           </Field>
         </div>
-        <Field label="Time zone (IANA)" htmlFor="home-tz" hint={`Leave empty to look it up from the coordinates. This device: ${browserTimeZone()}.`}>
+        <Field label="Time zone (IANA)" htmlFor="home-tz" hint={`Leave empty to look it up from the coordinates.${now ? ` This device: ${browserTimeZone()}.` : ""}`}>
           <div className="relative">
             <Input id="home-tz" value={tz} onChange={(e) => setTz(e.target.value)} placeholder="Asia/Baku" />
             {lookingUp && <Loader2 className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted" />}

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getScope } from "@/lib/scope";
 import { loadGraph } from "@/lib/data";
+import { tripRoute } from "@/lib/server/route-data";
+import { JETLAG_STRONG_HOURS } from "@/lib/jetlag";
 import { ItineraryPlanner } from "@/components/itinerary/planner";
 
 export const metadata: Metadata = { title: "Itinerary" };
@@ -20,6 +22,13 @@ export default async function ItineraryPage({ searchParams }: PageProps<"/itiner
   const dayIds = new Set(days.map((d) => d.id));
   const cities = selected ? g.cities.filter((c) => c.trip_country_id === selected.id) : [];
   const cityIds = new Set(cities.map((c) => c.id));
+  // Days on which I arrive at a stop with a big time shift get a soft "light first day" banner.
+  const shiftDayIds = selected
+    ? tripRoute(selected.trip_id, g.countries, g.cities, scope.settings)
+        .legs.filter((l) => l.tripCountryId === selected.id && l.jetlag && Math.abs(l.jetlag.shift) >= JETLAG_STRONG_HOURS)
+        .map((l) => days.find((d) => l.arrive && d.date === l.arrive) ?? (l.toKind === "city" ? days.find((d) => d.city_id === l.toId) : days[0]))
+        .flatMap((d) => (d ? [d.id] : []))
+    : [];
   const bookings = selected ? g.bookings.filter((b) => b.trip_country_id === selected.id || (b.trip_id === selected.trip_id && !b.trip_country_id)) : [];
   return (
     <ItineraryPlanner
@@ -30,6 +39,7 @@ export default async function ItineraryPage({ searchParams }: PageProps<"/itiner
       cities={cities}
       places={g.places.filter((p) => cityIds.has(p.city_id))}
       bookings={bookings}
+      shiftDayIds={shiftDayIds}
       initialDayId={typeof sp.day === "string" ? sp.day : null}
       showTripName={scope.isAll}
     />
