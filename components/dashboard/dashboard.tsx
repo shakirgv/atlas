@@ -17,6 +17,7 @@ import { GeoStatusChip } from "@/components/common/status-chip";
 import { MemoryMini } from "@/components/memories/memory-mini";
 import { WorldMap, type MapCity, type MapCountryState, type RoutePoint } from "@/components/map/world-map";
 import { Button } from "@/components/ui/button";
+import { SetupBanner } from "@/components/common/setup-banner";
 import { useWorkspace } from "@/components/shell/workspace";
 
 type Stats = { visited: number; planned: number; cities: number; daysOnRoad: number; placesVisited: number; places: number; photos: number };
@@ -132,6 +133,7 @@ export function Dashboard({
   memories,
   onThisDay,
   alerts,
+  setup,
 }: {
   displayName: string;
   baseCurrency: string;
@@ -146,6 +148,7 @@ export function Dashboard({
   memories: MemoryVM[];
   onThisDay: MemoryVM[];
   alerts: Alert[];
+  setup: { missingHome: boolean; missingPassport: boolean };
 }) {
   const ws = useWorkspace();
   const money = (n: number) => formatMoney(n, baseCurrency);
@@ -204,6 +207,8 @@ export function Dashboard({
           ))}
         </div>
       </div>
+
+      <SetupBanner {...setup} />
 
       <Stagger className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-12">
         <StaggerItem className="md:col-span-2 lg:col-span-7">

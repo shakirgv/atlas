@@ -9,6 +9,7 @@ import {
   PLACE_CATEGORIES,
   PLACE_STATUSES,
   STOP_TYPES,
+  TRANSPORT_MODES,
   TRIP_STATUSES,
 } from "@/lib/types";
 
@@ -54,6 +55,35 @@ const optUuid = z
 
 const currency = z.string().regex(/^[A-Z]{3}$/, "Use a 3-letter currency code");
 
+export const transportMode = z
+  .enum(TRANSPORT_MODES)
+  .or(z.literal(""))
+  .nullish()
+  .transform((v) => (v ? v : null));
+
+export const timeZoneStr = z
+  .string()
+  .trim()
+  .max(64)
+  .nullish()
+  .transform((v) => (v ? v : null))
+  .refine((v) => {
+    if (!v) return true;
+    try {
+      new Intl.DateTimeFormat("en-US", { timeZone: v });
+      return true;
+    } catch {
+      return false;
+    }
+  }, "Unknown time zone (use an IANA name like Asia/Tokyo)");
+
+const countryCode = z
+  .string()
+  .regex(/^[A-Za-z]{2}$/, "Pick a country")
+  .or(z.literal(""))
+  .nullish()
+  .transform((v) => (v ? v.toUpperCase() : null));
+
 function endAfterStart<T extends Record<string, unknown>>(startKey: keyof T, endKey: keyof T) {
   return (v: T, ctx: z.RefinementCtx) => {
     const s = v[startKey] as string | null;
@@ -81,6 +111,8 @@ export const tripCountrySchema = z
     depart_date: dateStr,
     budget: optNumber,
     notes: optText(20000),
+    transport_mode: transportMode,
+    transport_note: optText(160),
   })
   .superRefine(endAfterStart("arrive_date", "depart_date"));
 export type TripCountryInput = z.input<typeof tripCountrySchema>;
@@ -94,6 +126,9 @@ export const citySchema = z
     notes: optText(20000),
     lat: optNumber,
     lng: optNumber,
+    timezone: timeZoneStr,
+    transport_mode: transportMode,
+    transport_note: optText(160),
   })
   .superRefine(endAfterStart("arrive_date", "depart_date"));
 export type CityInput = z.input<typeof citySchema>;
@@ -194,6 +229,15 @@ export const settingsSchema = z.object({
   base_currency: currency,
   theme: z.enum(["system", "light", "dark"]),
 });
+
+export const homeSchema = z.object({
+  home_city: optText(160),
+  home_lat: optNumber.refine((v) => v === null || (v >= -90 && v <= 90), "Latitude is −90…90"),
+  home_lng: optNumber.refine((v) => v === null || (v >= -180 && v <= 180), "Longitude is −180…180"),
+  home_timezone: timeZoneStr,
+  passport_country: countryCode,
+});
+export type HomeInput = z.input<typeof homeSchema>;
 
 export const bookingSchema = z.object({
   trip_id: z.uuid("Pick a trip"),

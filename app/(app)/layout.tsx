@@ -5,11 +5,14 @@ import { isSupabaseConfigured } from "@/lib/config";
 import { getScope } from "@/lib/scope";
 import { countryFlag, countryName } from "@/lib/countries";
 import type { CityOption, CountryOption } from "@/lib/types";
+import { fillMissingTimezones } from "@/lib/server/backfill";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   if (!isSupabaseConfigured) return <SetupRequired />;
   const { supabase, scope } = await getScope();
   const cookieStore = await cookies();
+  // One-time (idempotent) backfill: cities created before time zones existed get one from tz-lookup.
+  await fillMissingTimezones(supabase).catch(() => 0);
 
   const { data: tcs } = scope.tripIds.length
     ? await supabase.from("trip_countries").select("id, trip_id, country_code, order_index, arrive_date, depart_date, status").in("trip_id", scope.tripIds).order("order_index")

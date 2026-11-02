@@ -61,16 +61,62 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"cities": {
+                },"cash_transactions": {
                   Row: {
-                    "arrive_date": string | null,"cover_path": string | null,"created_at": string,"depart_date": string | null,"id": string,"lat": number | null,"lng": number | null,"name": string,"notes": string | null,"order_index": number,"status": string,"trip_country_id": string,"user_id": string
+                    "amount": number,"counter_amount": number | null,"counter_currency": string | null,"created_at": string,"date": string,"effective_rate": number | null,"expense_id": string | null,"fee_amount": number | null,"fee_currency": string | null,"fee_expense_id": string | null,"id": string,"linked_transaction_id": string | null,"mid_market_rate": number | null,"note": string | null,"type": string,"user_id": string,"wallet_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "arrive_date"?: string | null,"cover_path"?: string | null,"created_at"?: string,"depart_date"?: string | null,"id"?: string,"lat"?: number | null,"lng"?: number | null,"name": string,"notes"?: string | null,"order_index"?: number,"status"?: string,"trip_country_id": string,"user_id"?: string
+                    "amount": number,"counter_amount"?: number | null,"counter_currency"?: string | null,"created_at"?: string,"date"?: string,"effective_rate"?: number | null,"expense_id"?: string | null,"fee_amount"?: number | null,"fee_currency"?: string | null,"fee_expense_id"?: string | null,"id"?: string,"linked_transaction_id"?: string | null,"mid_market_rate"?: number | null,"note"?: string | null,"type": string,"user_id"?: string,"wallet_id": string
                   }
                   Update: {
-                    "arrive_date"?: string | null,"cover_path"?: string | null,"created_at"?: string,"depart_date"?: string | null,"id"?: string,"lat"?: number | null,"lng"?: number | null,"name"?: string,"notes"?: string | null,"order_index"?: number,"status"?: string,"trip_country_id"?: string,"user_id"?: string
+                    "amount"?: number,"counter_amount"?: number | null,"counter_currency"?: string | null,"created_at"?: string,"date"?: string,"effective_rate"?: number | null,"expense_id"?: string | null,"fee_amount"?: number | null,"fee_currency"?: string | null,"fee_expense_id"?: string | null,"id"?: string,"linked_transaction_id"?: string | null,"mid_market_rate"?: number | null,"note"?: string | null,"type"?: string,"user_id"?: string,"wallet_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cash_transactions_expense_id_fkey"
+      columns: ["expense_id"]
+isOneToOne: false
+      referencedRelation: "expenses"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cash_transactions_fee_expense_id_fkey"
+      columns: ["fee_expense_id"]
+isOneToOne: false
+      referencedRelation: "expenses"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cash_transactions_wallet_id_fkey"
+      columns: ["wallet_id"]
+isOneToOne: false
+      referencedRelation: "cash_wallets"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"cash_wallets": {
+                  Row: {
+                    "created_at": string,"currency": string,"id": string,"label": string | null,"low_balance_alert": number | null,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"currency": string,"id"?: string,"label"?: string | null,"low_balance_alert"?: number | null,"user_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"currency"?: string,"id"?: string,"label"?: string | null,"low_balance_alert"?: number | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"cities": {
+                  Row: {
+                    "arrive_date": string | null,"cover_path": string | null,"created_at": string,"depart_date": string | null,"id": string,"lat": number | null,"lng": number | null,"name": string,"notes": string | null,"order_index": number,"status": string,"timezone": string | null,"transport_mode": string | null,"transport_note": string | null,"trip_country_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "arrive_date"?: string | null,"cover_path"?: string | null,"created_at"?: string,"depart_date"?: string | null,"id"?: string,"lat"?: number | null,"lng"?: number | null,"name": string,"notes"?: string | null,"order_index"?: number,"status"?: string,"timezone"?: string | null,"transport_mode"?: string | null,"transport_note"?: string | null,"trip_country_id": string,"user_id"?: string
+                  }
+                  Update: {
+                    "arrive_date"?: string | null,"cover_path"?: string | null,"created_at"?: string,"depart_date"?: string | null,"id"?: string,"lat"?: number | null,"lng"?: number | null,"name"?: string,"notes"?: string | null,"order_index"?: number,"status"?: string,"timezone"?: string | null,"transport_mode"?: string | null,"transport_note"?: string | null,"trip_country_id"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -81,16 +127,30 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"documents": {
+                },"country_info_overrides": {
                   Row: {
-                    "created_at": string,"expiry_date": string | null,"file_name": string | null,"file_path": string | null,"id": string,"is_sample": boolean,"issue_date": string | null,"mime_type": string | null,"notes": string | null,"reference_no": string | null,"size_bytes": number | null,"title": string,"trip_country_id": string | null,"trip_id": string | null,"type": string,"user_id": string
+                    "country_code": string,"created_at": string,"embassy_address": string | null,"embassy_name": string | null,"embassy_phone": string | null,"embassy_url": string | null,"emergency_ambulance": string | null,"emergency_fire": string | null,"emergency_general": string | null,"emergency_police": string | null,"frequency": string | null,"id": string,"notes": string | null,"plugs": (string)[] | null,"sim_tips": string | null,"tap_water": string | null,"tipping": string | null,"user_id": string,"voltage": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"expiry_date"?: string | null,"file_name"?: string | null,"file_path"?: string | null,"id"?: string,"is_sample"?: boolean,"issue_date"?: string | null,"mime_type"?: string | null,"notes"?: string | null,"reference_no"?: string | null,"size_bytes"?: number | null,"title": string,"trip_country_id"?: string | null,"trip_id"?: string | null,"type"?: string,"user_id"?: string
+                    "country_code": string,"created_at"?: string,"embassy_address"?: string | null,"embassy_name"?: string | null,"embassy_phone"?: string | null,"embassy_url"?: string | null,"emergency_ambulance"?: string | null,"emergency_fire"?: string | null,"emergency_general"?: string | null,"emergency_police"?: string | null,"frequency"?: string | null,"id"?: string,"notes"?: string | null,"plugs"?: (string)[] | null,"sim_tips"?: string | null,"tap_water"?: string | null,"tipping"?: string | null,"user_id"?: string,"voltage"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"expiry_date"?: string | null,"file_name"?: string | null,"file_path"?: string | null,"id"?: string,"is_sample"?: boolean,"issue_date"?: string | null,"mime_type"?: string | null,"notes"?: string | null,"reference_no"?: string | null,"size_bytes"?: number | null,"title"?: string,"trip_country_id"?: string | null,"trip_id"?: string | null,"type"?: string,"user_id"?: string
+                    "country_code"?: string,"created_at"?: string,"embassy_address"?: string | null,"embassy_name"?: string | null,"embassy_phone"?: string | null,"embassy_url"?: string | null,"emergency_ambulance"?: string | null,"emergency_fire"?: string | null,"emergency_general"?: string | null,"emergency_police"?: string | null,"frequency"?: string | null,"id"?: string,"notes"?: string | null,"plugs"?: (string)[] | null,"sim_tips"?: string | null,"tap_water"?: string | null,"tipping"?: string | null,"user_id"?: string,"voltage"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"documents": {
+                  Row: {
+                    "created_at": string,"expiry_date": string | null,"file_name": string | null,"file_path": string | null,"id": string,"is_sample": boolean,"issue_date": string | null,"mime_type": string | null,"notes": string | null,"reference_no": string | null,"sensitive": boolean,"size_bytes": number | null,"title": string,"trip_country_id": string | null,"trip_id": string | null,"type": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"expiry_date"?: string | null,"file_name"?: string | null,"file_path"?: string | null,"id"?: string,"is_sample"?: boolean,"issue_date"?: string | null,"mime_type"?: string | null,"notes"?: string | null,"reference_no"?: string | null,"sensitive"?: boolean,"size_bytes"?: number | null,"title": string,"trip_country_id"?: string | null,"trip_id"?: string | null,"type"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"expiry_date"?: string | null,"file_name"?: string | null,"file_path"?: string | null,"id"?: string,"is_sample"?: boolean,"issue_date"?: string | null,"mime_type"?: string | null,"notes"?: string | null,"reference_no"?: string | null,"sensitive"?: boolean,"size_bytes"?: number | null,"title"?: string,"trip_country_id"?: string | null,"trip_id"?: string | null,"type"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -107,16 +167,42 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"expenses": {
+                },"entry_requirements": {
                   Row: {
-                    "amount": number,"amount_base": number,"category": string,"city_id": string | null,"created_at": string,"currency": string,"date": string,"fx_rate": number,"id": string,"kind": string,"notes": string | null,"title": string | null,"trip_country_id": string | null,"trip_id": string,"user_id": string
+                    "allowed_stay_days": number | null,"applied_on": string | null,"apply_by": string | null,"checklist": NonNullable<Json>,"country_code": string,"created_at": string,"document_id": string | null,"fee": number | null,"fee_currency": string | null,"id": string,"last_verified_on": string | null,"notes": string | null,"official_url": string | null,"passport_country": string | null,"requirement_type": string,"status": string,"trip_country_id": string,"user_id": string,"valid_from": string | null,"valid_until": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount": number,"amount_base": number,"category"?: string,"city_id"?: string | null,"created_at"?: string,"currency"?: string,"date"?: string,"fx_rate"?: number,"id"?: string,"kind"?: string,"notes"?: string | null,"title"?: string | null,"trip_country_id"?: string | null,"trip_id": string,"user_id"?: string
+                    "allowed_stay_days"?: number | null,"applied_on"?: string | null,"apply_by"?: string | null,"checklist"?: NonNullable<Json>,"country_code": string,"created_at"?: string,"document_id"?: string | null,"fee"?: number | null,"fee_currency"?: string | null,"id"?: string,"last_verified_on"?: string | null,"notes"?: string | null,"official_url"?: string | null,"passport_country"?: string | null,"requirement_type"?: string,"status"?: string,"trip_country_id": string,"user_id"?: string,"valid_from"?: string | null,"valid_until"?: string | null
                   }
                   Update: {
-                    "amount"?: number,"amount_base"?: number,"category"?: string,"city_id"?: string | null,"created_at"?: string,"currency"?: string,"date"?: string,"fx_rate"?: number,"id"?: string,"kind"?: string,"notes"?: string | null,"title"?: string | null,"trip_country_id"?: string | null,"trip_id"?: string,"user_id"?: string
+                    "allowed_stay_days"?: number | null,"applied_on"?: string | null,"apply_by"?: string | null,"checklist"?: NonNullable<Json>,"country_code"?: string,"created_at"?: string,"document_id"?: string | null,"fee"?: number | null,"fee_currency"?: string | null,"id"?: string,"last_verified_on"?: string | null,"notes"?: string | null,"official_url"?: string | null,"passport_country"?: string | null,"requirement_type"?: string,"status"?: string,"trip_country_id"?: string,"user_id"?: string,"valid_from"?: string | null,"valid_until"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "entry_requirements_document_id_fkey"
+      columns: ["document_id"]
+isOneToOne: false
+      referencedRelation: "documents"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "entry_requirements_trip_country_id_fkey"
+      columns: ["trip_country_id"]
+isOneToOne: true
+      referencedRelation: "trip_countries"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"expenses": {
+                  Row: {
+                    "amount": number,"amount_base": number,"category": string,"city_id": string | null,"created_at": string,"currency": string,"date": string,"fx_rate": number,"id": string,"kind": string,"notes": string | null,"payment_method": string,"title": string | null,"trip_country_id": string | null,"trip_id": string,"user_id": string,"wallet_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount": number,"amount_base": number,"category"?: string,"city_id"?: string | null,"created_at"?: string,"currency"?: string,"date"?: string,"fx_rate"?: number,"id"?: string,"kind"?: string,"notes"?: string | null,"payment_method"?: string,"title"?: string | null,"trip_country_id"?: string | null,"trip_id": string,"user_id"?: string,"wallet_id"?: string | null
+                  }
+                  Update: {
+                    "amount"?: number,"amount_base"?: number,"category"?: string,"city_id"?: string | null,"created_at"?: string,"currency"?: string,"date"?: string,"fx_rate"?: number,"id"?: string,"kind"?: string,"notes"?: string | null,"payment_method"?: string,"title"?: string | null,"trip_country_id"?: string | null,"trip_id"?: string,"user_id"?: string,"wallet_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -136,6 +222,12 @@ isOneToOne: false
       columns: ["trip_id"]
 isOneToOne: false
       referencedRelation: "trips"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "expenses_wallet_id_fkey"
+      columns: ["wallet_id"]
+isOneToOne: false
+      referencedRelation: "cash_wallets"
       referencedColumns: ["id"]
     }
                   ]
@@ -299,28 +391,42 @@ isOneToOne: false
                   ]
                 },"settings": {
                   Row: {
-                    "base_currency": string,"created_at": string,"display_name": string | null,"theme": string,"user_id": string
+                    "base_currency": string,"created_at": string,"display_name": string | null,"home_city": string | null,"home_lat": number | null,"home_lng": number | null,"home_timezone": string | null,"lock_timeout_minutes": number,"passport_country": string | null,"theme": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "base_currency"?: string,"created_at"?: string,"display_name"?: string | null,"theme"?: string,"user_id"?: string
+                    "base_currency"?: string,"created_at"?: string,"display_name"?: string | null,"home_city"?: string | null,"home_lat"?: number | null,"home_lng"?: number | null,"home_timezone"?: string | null,"lock_timeout_minutes"?: number,"passport_country"?: string | null,"theme"?: string,"user_id"?: string
                   }
                   Update: {
-                    "base_currency"?: string,"created_at"?: string,"display_name"?: string | null,"theme"?: string,"user_id"?: string
+                    "base_currency"?: string,"created_at"?: string,"display_name"?: string | null,"home_city"?: string | null,"home_lat"?: number | null,"home_lng"?: number | null,"home_timezone"?: string | null,"lock_timeout_minutes"?: number,"passport_country"?: string | null,"theme"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"shares": {
+                  Row: {
+                    "config": NonNullable<Json>,"created_at": string,"expires_at": string | null,"id": string,"kind": string,"last_viewed_at": string | null,"revoked_at": string | null,"target_id": string | null,"token": string,"user_id": string,"view_count": number,"year": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "config"?: NonNullable<Json>,"created_at"?: string,"expires_at"?: string | null,"id"?: string,"kind": string,"last_viewed_at"?: string | null,"revoked_at"?: string | null,"target_id"?: string | null,"token": string,"user_id"?: string,"view_count"?: number,"year"?: number | null
+                  }
+                  Update: {
+                    "config"?: NonNullable<Json>,"created_at"?: string,"expires_at"?: string | null,"id"?: string,"kind"?: string,"last_viewed_at"?: string | null,"revoked_at"?: string | null,"target_id"?: string | null,"token"?: string,"user_id"?: string,"view_count"?: number,"year"?: number | null
                   }
                   Relationships: [
                     
                   ]
                 },"trip_countries": {
                   Row: {
-                    "arrive_date": string | null,"budget": number | null,"country_code": string,"cover_path": string | null,"created_at": string,"depart_date": string | null,"id": string,"notes": string | null,"order_index": number,"status": string,"trip_id": string,"user_id": string
+                    "arrive_date": string | null,"budget": number | null,"country_code": string,"cover_path": string | null,"created_at": string,"depart_date": string | null,"id": string,"notes": string | null,"order_index": number,"status": string,"transport_mode": string | null,"transport_note": string | null,"trip_id": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "arrive_date"?: string | null,"budget"?: number | null,"country_code": string,"cover_path"?: string | null,"created_at"?: string,"depart_date"?: string | null,"id"?: string,"notes"?: string | null,"order_index"?: number,"status"?: string,"trip_id": string,"user_id"?: string
+                    "arrive_date"?: string | null,"budget"?: number | null,"country_code": string,"cover_path"?: string | null,"created_at"?: string,"depart_date"?: string | null,"id"?: string,"notes"?: string | null,"order_index"?: number,"status"?: string,"transport_mode"?: string | null,"transport_note"?: string | null,"trip_id": string,"user_id"?: string
                   }
                   Update: {
-                    "arrive_date"?: string | null,"budget"?: number | null,"country_code"?: string,"cover_path"?: string | null,"created_at"?: string,"depart_date"?: string | null,"id"?: string,"notes"?: string | null,"order_index"?: number,"status"?: string,"trip_id"?: string,"user_id"?: string
+                    "arrive_date"?: string | null,"budget"?: number | null,"country_code"?: string,"cover_path"?: string | null,"created_at"?: string,"depart_date"?: string | null,"id"?: string,"notes"?: string | null,"order_index"?: number,"status"?: string,"transport_mode"?: string | null,"transport_note"?: string | null,"trip_id"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -345,13 +451,34 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"vault_secrets": {
+                  Row: {
+                    "created_at": string,"pin_failed_attempts": number,"pin_hash": string | null,"pin_locked_until": string | null,"pin_salt": string | null,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"pin_failed_attempts"?: number,"pin_hash"?: string | null,"pin_locked_until"?: string | null,"pin_salt"?: string | null,"user_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"pin_failed_attempts"?: number,"pin_hash"?: string | null,"pin_locked_until"?: string | null,"pin_salt"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 }
           }
           Views: {
             [_ in never]: never
           }
           Functions: {
-            [_ in never]: never
+            "atlas_pin_state":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "pin_failed_attempts": number,"pin_hash": string,"pin_locked_until": string,"pin_salt": string
+            }[]
+                           },
+"atlas_pin_write":
+{ Args: { "p_failed": number,"p_hash": string,"p_locked_until": string,"p_salt": string,"p_set_hash": boolean }; Returns: undefined
+                           }
           }
           Enums: {
             [_ in never]: never

@@ -1,7 +1,7 @@
 "use server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
-import { tripCountrySchema, type TripCountryInput } from "@/lib/validation";
+import { transportMode, tripCountrySchema, type TripCountryInput } from "@/lib/validation";
 import { getCountry } from "@/lib/countries";
 import { collectCountryTree } from "@/lib/entities";
 import { cleanupEntityPhotos } from "@/lib/storage";
@@ -81,6 +81,20 @@ export async function deleteTripCountry(id: string): Promise<ActionResult> {
     const tree = await collectCountryTree(supabase, [cid]);
     await cleanupEntityPhotos(supabase, [cid, ...tree.cityIds, ...tree.placeIds]);
     must(await supabase.from("trip_countries").delete().eq("id", cid));
+    refreshAll();
+    return ok();
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Quick inline edit from the route list: how do I get to this country? */
+export async function setCountryTransport(id: string, mode: string | null, note?: string | null): Promise<ActionResult> {
+  try {
+    const { supabase } = await requireUser();
+    const patch: { transport_mode: string | null; transport_note?: string | null } = { transport_mode: transportMode.parse(mode) };
+    if (note !== undefined) patch.transport_note = z.string().trim().max(160).nullable().parse(note) || null;
+    must(await supabase.from("trip_countries").update(patch).eq("id", z.uuid().parse(id)));
     refreshAll();
     return ok();
   } catch (e) {

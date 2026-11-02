@@ -18,6 +18,7 @@ import {
   Martini,
   Mountain,
   Package,
+  Percent,
   Plane,
   Receipt,
   Sailboat,
@@ -66,6 +67,7 @@ export const EXPENSE_CATEGORY_ICON: Record<ExpenseCategory, LucideIcon> = {
   shopping: ShoppingBag,
   visa: Stamp,
   insurance: ShieldCheck,
+  fees: Percent,
   other: Wallet,
 };
 

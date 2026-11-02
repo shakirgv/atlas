@@ -68,5 +68,6 @@ export const EXPENSE_CATEGORY_META: Record<ExpenseCategory, { label: string; col
   shopping: { label: "Shopping", color: "#C46A9A" },
   visa: { label: "Visa", color: "#8A6E4B" },
   insurance: { label: "Insurance", color: "#5A6B8C" },
+  fees: { label: "Fees", color: "#B0654A" },
   other: { label: "Other", color: "#9AA0A8" },
 };

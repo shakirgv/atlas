@@ -56,6 +56,7 @@ export default async function DashboardPage() {
       upcomingDays={upcomingDays}
       memories={g.memories.slice(0, 3)}
       onThisDay={onThisDay}
+      setup={{ missingHome: !scope.settings?.home_city, missingPassport: !scope.settings?.passport_country }}
       alerts={buildAlerts({ documents: g.documents, trips: g.trips, countries: g.countries, expenses: g.expenses })}
     />
   );

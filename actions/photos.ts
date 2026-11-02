@@ -12,6 +12,7 @@ const TABLE: Record<PhotoEntityType, "trips" | "trip_countries" | "cities" | "pl
   city: "cities",
   place: "places",
   memory: null,
+  expense: null,
 };
 
 /** Save photo rows after the browser uploaded the files to Storage. */
