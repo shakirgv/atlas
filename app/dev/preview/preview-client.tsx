@@ -11,6 +11,9 @@ import { ExpenseTable } from "@/components/budget/expense-table";
 import { PhotoMap } from "@/components/photos/photo-map";
 import { PinPad } from "@/components/vault/pin-pad";
 import { ExportDialog, type ExportTrip } from "@/components/map/export-dialog";
+import { RecapView } from "@/components/recap/recap-view";
+import { OnThisDay } from "@/components/dashboard/on-this-day";
+import { computeRecap, recapSlides, type RecapInput } from "@/lib/recap";
 import { Button } from "@/components/ui/button";
 import { SecuritySection } from "@/components/settings/security-section";
 import { MfaForm } from "@/app/(auth)/login/mfa/mfa-form";
@@ -135,6 +138,44 @@ const EXPORT_TRIPS: ExportTrip[] = [
   },
 ];
 
+/** A year with something on every slide. Fixed dates, so the numbers can be checked by hand. */
+const RECAP_INPUT: RecapInput = {
+  today: "2026-12-20",
+  stays: [
+    { id: "s0", code: "IT", name: "Italy", flag: "🇮🇹", status: "visited", arrive: "2025-05-01", depart: "2025-05-04" },
+    { id: "s1", code: "TR", name: "Türkiye", flag: "🇹🇷", status: "visited", arrive: "2026-03-01", depart: "2026-03-08" },
+    { id: "s2", code: "IT", name: "Italy", flag: "🇮🇹", status: "visited", arrive: "2026-03-09", depart: "2026-03-20" },
+    { id: "s3", code: "JP", name: "Japan", flag: "🇯🇵", status: "visited", arrive: "2026-10-01", depart: "2026-10-18" },
+    { id: "s4", code: "IT", name: "Italy", flag: "🇮🇹", status: "visited", arrive: "2026-11-01", depart: "2026-11-05" },
+  ],
+  stops: [
+    { key: "a", kind: "city", id: "a", tripCountryId: "s1", name: "Istanbul", lat: 41.01, lng: 28.98, arrive: "2026-03-01", mode: "flight" },
+    { key: "b", kind: "city", id: "b", tripCountryId: "s2", name: "Rome", lat: 41.9, lng: 12.5, arrive: "2026-03-09", mode: "flight" },
+    { key: "c", kind: "city", id: "c", tripCountryId: "s2", name: "Florence", lat: 43.77, lng: 11.26, arrive: "2026-03-15", mode: "train" },
+    { key: "d", kind: "city", id: "d", tripCountryId: "s3", name: "Tokyo", lat: 35.68, lng: 139.65, arrive: "2026-10-01", mode: "flight" },
+    { key: "e", kind: "city", id: "e", tripCountryId: "s3", name: "Kyoto", lat: 35.01, lng: 135.77, arrive: "2026-10-10", mode: "train" },
+  ],
+  places: [
+    { id: "p1", name: "Colosseum", cityId: "b", status: "visited", rating: 5 },
+    { id: "p2", name: "Fushimi Inari Taisha", cityId: "e", status: "visited", rating: 5 },
+    { id: "p3", name: "Grand Bazaar", cityId: "a", status: "visited", rating: 4 },
+  ],
+  expenses: [
+    { date: "2026-03-02", kind: "actual", category: "accommodation", amount_base: 1200 },
+    { date: "2026-10-02", kind: "actual", category: "food", amount_base: 640 },
+    { date: "2026-10-03", kind: "actual", category: "fees", amount_base: 15 },
+  ],
+  memories: [
+    { id: "m1", date: "2026-03-10", title: "Lost in Monti", body: "No map, just ivy walls, tiny wine bars and a cat that followed us for three streets until it found someone with better food." },
+  ],
+  photos: ["#d9774a", "#6f8f5f", "#7c8db5", "#c9a227", "#b8865a", "#35506b", "#6b4a2b"].map((color, i) => ({ id: `ph${i}`, url: swatch(color), thumbUrl: swatch(color), date: "2026-03-10", caption: null, linked: "memory" as const })),
+};
+const RECAP_STATS = computeRecap(RECAP_INPUT, 2026);
+const THIS_DAY = [
+  { kind: "memory" as const, id: "m", date: "2025-11-02", yearsAgo: 1, title: "First evening on the Bosphorus", place: "Istanbul", thumbUrl: swatch("#d9774a") },
+  { kind: "photo" as const, id: "p", date: "2023-11-03", yearsAgo: 3, title: "Trevi at dusk", place: "Rome", thumbUrl: swatch("#7c8db5"), url: swatch("#7c8db5"), caption: "Trevi at dusk" },
+];
+
 function ExportDemo() {
   const [open, setOpen] = useState(false);
   return (
@@ -242,6 +283,14 @@ export function PreviewClient({ liveClimate, liveForecast }: { liveClimate: { ba
               <p className="mb-1 mt-4 text-xs text-muted">Dashboard tile: normals (live API)</p>
               <div className="card flex h-44 flex-col gap-3 p-5">{liveClimate.bangkok && <NormalsView months={liveClimate.bangkok} stop={{ ...TOKYO, name: "Bangkok" }} />}</div>
             </div>
+          </div>
+        </Section>
+        <Section title="Year recap">
+          <RecapView embedded stats={RECAP_STATS} slides={recapSlides(RECAP_STATS)} currency="USD" years={[2026, 2025]} />
+        </Section>
+        <Section title="On this day">
+          <div className="max-w-sm">
+            <OnThisDay items={THIS_DAY} />
           </div>
         </Section>
         <Section title="Map export">

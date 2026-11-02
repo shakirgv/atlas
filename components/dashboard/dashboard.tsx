@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, BellRing, Building2, CalendarDays, Camera, CalendarClock, Earth, FileText, Flag, History, Info, MapPin, Plane, Plus, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowRight, BellRing, Building2, CalendarDays, Camera, CalendarClock, Earth, FileText, Flag, Info, MapPin, Plane, Plus, Sparkles, Wallet } from "lucide-react";
 import type { BudgetSummary } from "@/lib/budget";
 import type { Alert } from "@/lib/alerts";
 import type { CityVM, CountryVM, MemoryVM } from "@/lib/data";
@@ -20,6 +20,8 @@ import { Button } from "@/components/ui/button";
 import { SetupBanner } from "@/components/common/setup-banner";
 import { TimeTile, type TimeTileData } from "./time-tile";
 import { WeatherTile, type WeatherStop } from "./weather-tile";
+import { OnThisDay } from "./on-this-day";
+import type { OnThisDayItem } from "@/lib/recap";
 import { useWorkspace } from "@/components/shell/workspace";
 
 type Stats = { visited: number; planned: number; cities: number; daysOnRoad: number; placesVisited: number; places: number; photos: number };
@@ -147,6 +149,7 @@ export function Dashboard({
   upcomingDays,
   memories,
   onThisDay,
+  recap,
   alerts,
   setup,
   time,
@@ -164,7 +167,8 @@ export function Dashboard({
   map: { states: Record<string, MapCountryState>; routes: RoutePoint[][]; cities: MapCity[] };
   upcomingDays: UpDay[];
   memories: MemoryVM[];
-  onThisDay: MemoryVM[];
+  onThisDay: OnThisDayItem[];
+  recap: { year: number; prominent: boolean } | null;
   alerts: Alert[];
   setup: { missingHome: boolean; missingPassport: boolean };
   time: TimeTileData;
@@ -215,6 +219,13 @@ export function Dashboard({
           </h1>
         </div>
         <div className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0" role="group" aria-label="Quick actions">
+          {recap && !recap.prominent && (
+            <Button variant="ghost" size="sm" asChild className="h-9 shrink-0">
+              <Link href={`/recap/${recap.year}`}>
+                <Sparkles className="!size-3.5 text-accent" /> {recap.year} recap
+              </Link>
+            </Button>
+          )}
           {[
             { kind: "country" as const, label: "Country", icon: Flag },
             { kind: "expense" as const, label: "Expense", icon: Wallet },
@@ -229,6 +240,19 @@ export function Dashboard({
       </div>
 
       <SetupBanner {...setup} />
+
+      {recap?.prominent && (
+        <Link href={`/recap/${recap.year}`} className="card card-hover flex items-center gap-4 overflow-hidden bg-ink p-5 text-bg">
+          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-accent text-white">
+            <Sparkles className="size-6" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display text-2xl font-semibold leading-tight">Your {recap.year} recap</span>
+            <span className="block text-sm opacity-80">Countries, kilometres, photos and your favourite moments.</span>
+          </span>
+          <ArrowRight className="size-5 shrink-0" />
+        </Link>
+      )}
 
       <Stagger className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-12">
         <StaggerItem className="md:col-span-2 lg:col-span-7">
@@ -416,16 +440,7 @@ export function Dashboard({
 
         <StaggerItem className="md:col-span-1 lg:col-span-3">
           {onThisDay.length ? (
-            <Panel title="On this day" icon={History} className="h-full">
-              <div className="flex flex-col gap-3">
-                {onThisDay.slice(0, 2).map((m) => (
-                  <div key={m.id}>
-                    <p className="mb-1 text-xs font-medium text-accent">{new Date().getFullYear() - Number(m.date.slice(0, 4))} year(s) ago</p>
-                    <MemoryMini m={m} />
-                  </div>
-                ))}
-              </div>
-            </Panel>
+            <OnThisDay items={onThisDay} />
           ) : (
             <Panel title="Trip at a glance" icon={Plane} className="h-full">
               <dl className="flex flex-col gap-3 text-sm">
@@ -442,7 +457,6 @@ export function Dashboard({
                   <dd className="num font-medium">{budget.totalBudget ? money(budget.totalBudget) : "—"}</dd>
                 </div>
               </dl>
-              <p className="mt-auto pt-4 text-xs text-muted">Memories from this date in past years will show up here.</p>
             </Panel>
           )}
         </StaggerItem>

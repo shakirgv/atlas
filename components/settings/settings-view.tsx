@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useForm } from "react-hook-form";
@@ -131,6 +132,20 @@ export function SettingsView({ settings, email, hasSample, mfaEnabled, hasPin }:
 
       <Section id="security" icon={LockKeyhole} title="Security" description="Protects your data even if your password leaks or your phone is unlocked.">
         <SecuritySection mfaEnabled={mfaEnabled} hasPin={hasPin} timeout={settings?.lock_timeout_minutes ?? 5} />
+      </Section>
+
+      <Section icon={Sparkles} title="Year recap" description="Your travels as a story you can flip through and download.">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" asChild>
+            <Link href={`/recap/${new Date().getFullYear()}`}>This year</Link>
+          </Button>
+          <Button variant="secondary" asChild>
+            <Link href={`/recap/${new Date().getFullYear() - 1}`}>Last year</Link>
+          </Button>
+          <Button variant="secondary" asChild>
+            <Link href="/recap/all">All time</Link>
+          </Button>
+        </div>
       </Section>
 
       <Section icon={Download} title="Export & import" description="Your data, portable. JSON includes everything except photo and document files.">

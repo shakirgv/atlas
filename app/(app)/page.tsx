@@ -10,15 +10,20 @@ import { Dashboard } from "@/components/dashboard/dashboard";
 import type { WeatherStop } from "@/components/dashboard/weather-tile";
 import { homeStop, routesForTrips } from "@/lib/server/route-data";
 import { loadCash } from "@/lib/server/cash";
+import { loadOnThisDay, loadRecapYears } from "@/lib/server/recap";
+import { recapEntry } from "@/lib/recap";
 
 export default async function DashboardPage() {
   const { supabase, scope } = await getScope();
-  const [g, map, cash] = await Promise.all([
+  const todayDate = todayIso();
+  const [g, map, cash, onThisDay, recapYears] = await Promise.all([
     loadGraph(supabase, scope.trips, scope.tripIds, { days: true, places: true, expenses: true, memories: true, documents: true, photoCount: true, bookings: true, entries: true }),
     loadMapData(supabase, scope),
     loadCash(supabase, scope.baseCurrency),
+    loadOnThisDay(supabase, todayDate),
+    loadRecapYears(supabase, todayDate),
   ]);
-  const today = todayIso();
+  const today = todayDate;
   // The dashboard map only needs what can be sent to the browser.
   const { routeFor: _routeFor, ...mapProps } = map;
   void _routeFor;
@@ -39,8 +44,6 @@ export default async function DashboardPage() {
     }));
 
   const codes = (status: (s: string) => boolean) => new Set(g.countries.filter((c) => status(c.status)).map((c) => c.code)).size;
-  const md = today.slice(5);
-  const onThisDay = g.memories.filter((m) => m.date.slice(5) === md && m.date.slice(0, 4) < today.slice(0, 4));
 
   const route = routesForTrips(scope.tripIds, g.countries, g.cities, scope.settings);
   const home = homeStop(scope.settings);
@@ -92,6 +95,7 @@ export default async function DashboardPage() {
       upcomingDays={upcomingDays}
       memories={g.memories.slice(0, 3)}
       onThisDay={onThisDay}
+      recap={recapEntry(today, recapYears)}
       setup={{ missingHome: !scope.settings?.home_city, missingPassport: !scope.settings?.passport_country }}
       alerts={buildAlerts({
         documents: g.documents,

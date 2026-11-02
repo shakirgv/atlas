@@ -50,8 +50,11 @@ Delete this file when the whole pack is finished.
 ## Done: 3.5 Map export
 - `lib/map-export.ts`, `lib/export-image.ts` (SVG → PNG pipeline, reused by recap), `components/map/export-map.tsx`, `export-dialog.tsx`.
 
+## Done: 3.11 On this day + Recap
+- `lib/recap.ts`, `lib/server/recap.ts`, `components/recap/*`, `components/dashboard/on-this-day.tsx`, `/recap/[year]`.
+
 ## Next steps (build order from IMPROVEMENTS.md §5)
-3.11 On this day + Recap → 3.12 Share links → polish/README/final report.
+3.12 Share links → polish/README/final report.
 
 ## Notes for a fresh session
 - Dashboard bento needs rebalancing once Weather/Cash/On this day/Recap tiles exist (Time tile is in a `GlanceColumn`).
