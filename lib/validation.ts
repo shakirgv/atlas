@@ -7,6 +7,7 @@ import {
   EXPENSE_CATEGORIES,
   EXPENSE_KINDS,
   GEO_STATUSES,
+  PAYMENT_METHODS,
   PLACE_CATEGORIES,
   PLACE_STATUSES,
   REQUIREMENT_TYPES,
@@ -196,8 +197,73 @@ export const expenseSchema = z.object({
   currency,
   fx_rate: z.coerce.number<number | string>().positive("Rate must be positive"),
   notes: optText(2000),
+  payment_method: z.enum(PAYMENT_METHODS).default("card"),
+  wallet_id: optUuid,
 });
 export type ExpenseInput = z.input<typeof expenseSchema>;
+
+const positive = (message: string) => z.coerce.number<number | string>().positive(message);
+const cashDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date");
+const optCurrency = z
+  .string()
+  .nullish()
+  .transform((v) => (v ? v : null))
+  .pipe(currency.nullable());
+const optFee = optNumber.refine((v) => v === null || v >= 0, "The fee can't be negative");
+
+export const walletSchema = z.object({
+  currency,
+  label: optText(60),
+  low_balance_alert: optNumber.refine((v) => v === null || v >= 0, "The alert can't be negative"),
+});
+export type WalletInput = z.input<typeof walletSchema>;
+
+export const withdrawalSchema = z.object({
+  wallet_id: z.uuid(),
+  date: cashDate,
+  received: positive("Enter the cash you received"),
+  charged: positive("Enter what your card was charged"),
+  charged_currency: currency,
+  fee: optFee,
+  fee_currency: optCurrency,
+  note: optText(300),
+  trip_id: optUuid,
+  trip_country_id: optUuid,
+});
+export type WithdrawalInputRaw = z.input<typeof withdrawalSchema>;
+
+export const exchangeSchema = z.object({
+  from_wallet_id: z.uuid(),
+  from_amount: positive("Enter how much you gave"),
+  to_currency: currency,
+  to_amount: positive("Enter how much you got"),
+  date: cashDate,
+  fee: optFee,
+  fee_currency: optCurrency,
+  note: optText(300),
+  trip_id: optUuid,
+  trip_country_id: optUuid,
+});
+export type ExchangeInputRaw = z.input<typeof exchangeSchema>;
+
+export const cashEntrySchema = z.object({
+  wallet_id: z.uuid(),
+  type: z.enum(["received", "adjustment"]),
+  date: cashDate,
+  amount: z.coerce.number<number | string>().refine((n) => Number.isFinite(n), "Enter an amount"),
+  note: optText(300),
+});
+export type CashEntryInput = z.input<typeof cashEntrySchema>;
+
+export const cashTxPatchSchema = z
+  .object({
+    amount: z.coerce.number<number | string>().refine((n) => Number.isFinite(n), "Enter an amount"),
+    date: cashDate,
+    note: optText(300),
+  })
+  .partial()
+  .strict();
+export type CashTxPatch = z.input<typeof cashTxPatchSchema>;
 
 export const memorySchema = z.object({
   trip_id: z.uuid("Pick a trip"),

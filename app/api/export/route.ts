@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { apiUser } from "@/lib/server/api";
 import { APP_NAME } from "@/lib/config";
 
-const TABLES = ["settings", "trips", "trip_countries", "cities", "places", "itinerary_days", "itinerary_items", "expenses", "memories", "documents", "photos", "bookings", "packing_items", "packing_templates", "country_info_overrides", "entry_requirements"] as const;
+const TABLES = ["settings", "trips", "trip_countries", "cities", "places", "itinerary_days", "itinerary_items", "expenses", "memories", "documents", "photos", "bookings", "packing_items", "packing_templates", "country_info_overrides", "entry_requirements", "cash_wallets", "cash_transactions"] as const;
 
 function csvCell(v: unknown) {
   if (v === null || v === undefined) return "";

@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState, useTransition } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, Download, MoreHorizontal, Pencil, Search, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Banknote, Download, MoreHorizontal, Pencil, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteExpense, updateExpense } from "@/actions/expenses";
 import { EXPENSE_CATEGORIES, type Expense, type ExpenseCategory } from "@/lib/types";
@@ -30,6 +30,8 @@ function toInput(e: Expense, patch: Partial<Expense> = {}) {
     currency: r.currency,
     fx_rate: Number(r.fx_rate),
     notes: r.notes,
+    payment_method: r.payment_method as "card" | "cash" | "other",
+    wallet_id: r.wallet_id,
   };
 }
 
@@ -193,7 +195,14 @@ export function ExpenseTable({ expenses, countries, base, onEdit }: { expenses: 
                         <Input autoFocus value={draft} onChange={(ev) => setDraft(ev.target.value)} onBlur={() => commitDraft(e)} onKeyDown={(ev) => ev.key === "Enter" && commitDraft(e)} className="h-8" />
                       ) : (
                         <button type="button" onClick={() => (setEditing({ id: e.id, field: "title" }), setDraft(e.title ?? ""))} className="flex flex-col text-left" aria-label="Edit title">
-                          <span className="font-medium">{e.title || EXPENSE_CATEGORY_META[cat]?.label}</span>
+                          <span className="flex items-center gap-1.5 font-medium">
+                            {e.title || EXPENSE_CATEGORY_META[cat]?.label}
+                            {e.payment_method === "cash" && (
+                              <span className="inline-flex items-center gap-0.5 text-[11px] font-normal text-muted">
+                                <Banknote className="size-3" /> Cash
+                              </span>
+                            )}
+                          </span>
                           {c && <span className="text-xs text-muted">{c.flag} {c.name}</span>}
                         </button>
                       )}

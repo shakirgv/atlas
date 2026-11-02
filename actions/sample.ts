@@ -10,6 +10,9 @@ import { ACTIVE_TRIP_COOKIE } from "@/lib/config";
 import { fail, must, mustMaybe, ok, refreshAll } from "@/actions/_util";
 import type { ActionResult, ExpenseCategory, PlaceCategory, PlaceStatus, StopType } from "@/lib/types";
 
+/** Marks the wallets sample data creates, so deleting it can't touch real ones. */
+const SAMPLE_WALLET = "Sample: ";
+
 /** Rough USD-based rates used only if live rates are unavailable while seeding. */
 const STATIC_PER_USD: Record<string, number> = { USD: 1, EUR: 0.92, TRY: 34.5, JPY: 150, GBP: 0.78, AZN: 1.7 };
 
@@ -37,7 +40,7 @@ const PLACES: PlaceSeed[] = [
 
 export async function loadSampleData(): Promise<ActionResult<{ tripId: string }>> {
   try {
-    const { supabase } = await requireUser();
+    const { supabase, user } = await requireUser();
     const existing = must(await supabase.from("trips").select("id").eq("is_sample", true).limit(1));
     if (existing.length) throw new Error("Sample data is already loaded.");
 
@@ -203,7 +206,7 @@ export async function loadSampleData(): Promise<ActionResult<{ tripId: string }>
       [6, "Food budget Tokyo", "JPY", "food", "planned", 45000, "JP", "tokyo"],
       [13, "Ryokan in Kyoto", "JPY", "accommodation", "planned", 120000, "JP", "kyoto"],
     ];
-    must(
+    const sampleExpenses = must(
       await supabase.from("expenses").insert(
         EXP.map(([offset, title, cur, category, kind, amount, cc, cn]) => {
           const rate = fx(cur);
@@ -221,8 +224,39 @@ export async function loadSampleData(): Promise<ActionResult<{ tripId: string }>
             amount_base: round2(amount * rate),
           };
         }),
-      ),
+      ).select("id, title"),
     );
+
+    // Two cash wallets. Skipped for a currency that already has a real wallet, so nothing of mine is touched.
+    const { data: ownWallets } = await supabase.from("cash_wallets").select("currency");
+    const hasWallet = (cur: string) => (ownWallets ?? []).some((w) => w.currency === cur);
+    const feeRow = (title: string, amount: number, cur: string, offset: number) => ({ trip_id: trip.id, date: d(offset), title, category: "fees", kind: "actual", amount, currency: cur, fx_rate: fx(cur), amount_base: round2(amount * fx(cur)) });
+    if (!hasWallet("EUR") && !hasWallet("JPY")) {
+      const wallets = must(
+        await supabase.from("cash_wallets").insert([
+          { user_id: user.id, currency: "EUR", label: `${SAMPLE_WALLET}Euro pouch`, low_balance_alert: 50 },
+          { user_id: user.id, currency: "JPY", label: `${SAMPLE_WALLET}Yen envelope` },
+        ]).select("id, currency"),
+      );
+      const eur = wallets.find((w) => w.currency === "EUR")!.id;
+      const jpy = wallets.find((w) => w.currency === "JPY")!.id;
+      const fees = must(await supabase.from("expenses").insert([feeRow("ATM fee", 5, "USD", -4), feeRow("Exchange fee", 3, "EUR", -1)]).select("id, title"));
+      const lunch = sampleExpenses.find((x) => x.title === "Lunch at Roscioli")!.id;
+      must(await supabase.from("expenses").update({ payment_method: "cash", wallet_id: eur }).eq("id", lunch));
+      const out = must(
+        await supabase.from("cash_transactions").insert({ wallet_id: eur, type: "exchange_out", date: d(-1), amount: -100, counter_amount: 17000, counter_currency: "JPY", fee_amount: 3, fee_currency: "EUR", effective_rate: 0.00605882, mid_market_rate: 0.00588235, fee_expense_id: fees.find((f) => f.title === "Exchange fee")!.id }).select("id").single(),
+      );
+      const incoming = must(
+        await supabase.from("cash_transactions").insert({ wallet_id: jpy, type: "exchange_in", date: d(-1), amount: 17000, counter_amount: 100, counter_currency: "EUR", effective_rate: 0.00605882, mid_market_rate: 0.00588235, linked_transaction_id: out.id }).select("id").single(),
+      );
+      must(await supabase.from("cash_transactions").update({ linked_transaction_id: incoming.id }).eq("id", out.id));
+      must(
+        await supabase.from("cash_transactions").insert([
+          { wallet_id: eur, type: "withdrawal", date: d(-4), amount: 300, counter_amount: 330, counter_currency: "USD", fee_amount: 5, fee_currency: "USD", effective_rate: 1.11666667, mid_market_rate: 1.08695652, fee_expense_id: fees.find((f) => f.title === "ATM fee")!.id, note: "Termini station ATM" },
+          { wallet_id: eur, type: "spend", date: d(-3), amount: -62, expense_id: lunch, note: "Lunch at Roscioli" },
+        ]),
+      );
+    }
 
     must(
       await supabase.from("memories").insert([
@@ -343,6 +377,7 @@ export async function deleteSampleData(): Promise<ActionResult> {
       await cleanupTrips(supabase, ids);
       must(await supabase.from("trips").delete().in("id", ids));
     }
+    must(await supabase.from("cash_wallets").delete().like("label", `${SAMPLE_WALLET}%`));
     const docs = must(await supabase.from("documents").select("id, file_path").eq("is_sample", true));
     if (docs.length) {
       await removeFiles(supabase, "documents", docs.map((x) => x.file_path));

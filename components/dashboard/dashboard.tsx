@@ -142,6 +142,7 @@ export function Dashboard({
   nextStopCityCount,
   stats,
   budget,
+  cash,
   map,
   upcomingDays,
   memories,
@@ -159,6 +160,7 @@ export function Dashboard({
   nextStopCityCount: number;
   stats: Stats;
   budget: BudgetSummary;
+  cash: { onHand: number; fees: number } | null;
   map: { states: Record<string, MapCountryState>; routes: RoutePoint[][]; cities: MapCity[] };
   upcomingDays: UpDay[];
   memories: MemoryVM[];
@@ -367,6 +369,18 @@ export function Dashboard({
                   <span className="text-muted">Left per day</span>
                   <span className="num font-semibold">{budget.remainingPerDay !== null ? money(budget.remainingPerDay) : "—"}</span>
                 </div>
+                {cash && (
+                  <Link href="/budget?tab=cash" className="flex justify-between border-t border-border pt-2 hover:text-accent">
+                    <span className="text-muted">Cash on hand</span>
+                    <span className="num font-medium">{money(cash.onHand)}</span>
+                  </Link>
+                )}
+                {cash && cash.fees > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted">Fees paid</span>
+                    <span className="num font-medium">{money(cash.fees)}</span>
+                  </div>
+                )}
               </div>
             </div>
             <div className="mt-4 hidden sm:block">

@@ -1,7 +1,10 @@
 "use client";
 import { useState } from "react";
-import { CalendarClock, Coins, PiggyBank, Plus, Receipt, Target, TrendingUp, Wallet } from "lucide-react";
+import { Banknote, CalendarClock, ChartPie, Coins, PiggyBank, Plus, Receipt, Target, TrendingUp, Wallet } from "lucide-react";
 import type { BudgetSummary } from "@/lib/budget";
+import type { CashSummary } from "@/lib/cash";
+import { CashTab } from "@/components/cash/cash-tab";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Expense } from "@/lib/types";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
@@ -22,6 +25,10 @@ export function BudgetView({
   summary: s,
   countries,
   baseCurrency,
+  cash,
+  allTrips,
+  defaultTripId,
+  initialTab,
 }: {
   expenses: Expense[];
   summary: BudgetSummary;
@@ -29,9 +36,19 @@ export function BudgetView({
   cities: { id: string; name: string; trip_country_id: string }[];
   trips: { id: string; title: string }[];
   baseCurrency: string;
+  cash: CashSummary;
+  allTrips: { id: string; title: string }[];
+  defaultTripId: string | null;
+  initialTab: "overview" | "cash";
 }) {
   const ws = useWorkspace();
   const [editing, setEditing] = useState<Expense | null>(null);
+  const [spendFrom, setSpendFrom] = useState<{ id: string; currency: string } | null>(null);
+  const changeTab = (v: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", v);
+    window.history.replaceState(null, "", url);
+  };
   const money = (n: number) => formatMoney(n, baseCurrency);
   const cards = [
     { label: "Total budget", value: s.totalBudget, icon: Target, tone: "var(--ink)", hint: s.totalBudget ? "Trip total or country caps" : "Not set" },
@@ -56,6 +73,19 @@ export function BudgetView({
           </Button>
         }
       />
+      <Tabs defaultValue={initialTab} onValueChange={changeTab}>
+        <TabsList aria-label="Budget sections">
+          <TabsTrigger value="overview">
+            <ChartPie /> Overview
+          </TabsTrigger>
+          <TabsTrigger value="cash">
+            <Banknote /> Cash
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="cash">
+          <CashTab cash={cash} baseCurrency={baseCurrency} trips={allTrips} defaultTripId={defaultTripId} onSpend={(w) => setSpendFrom({ id: w.id, currency: w.currency })} />
+        </TabsContent>
+        <TabsContent value="overview" className="flex flex-col gap-6">
       {!expenses.length && !s.totalBudget ? (
         <EmptyState
           icon={Wallet}
@@ -139,7 +169,10 @@ export function BudgetView({
           <ExpenseTable expenses={expenses} countries={countries} base={baseCurrency} onEdit={setEditing} />
         </>
       )}
+        </TabsContent>
+      </Tabs>
       {editing && <ExpenseSheet open onOpenChange={(o) => !o && setEditing(null)} expense={editing} />}
+      {spendFrom && <ExpenseSheet open onOpenChange={(o) => !o && setSpendFrom(null)} cashFrom={spendFrom} />}
     </PageTransition>
   );
 }

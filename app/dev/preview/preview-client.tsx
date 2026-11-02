@@ -6,9 +6,12 @@ import { ForecastView, NormalsView, type WeatherStop } from "@/components/dashbo
 import { EssentialsTab } from "@/components/countries/essentials-tab";
 import { EntryTab } from "@/components/entry/entry-tab";
 import { EntryTable } from "@/components/entry/entry-table";
+import { CashTab } from "@/components/cash/cash-tab";
+import { planExchange, planSpend, planWithdrawal, summarizeCash } from "@/lib/cash";
 import { entryOverview } from "@/lib/entry";
 import { shiftIso, todayIso } from "@/lib/dates";
 import type { EntryRequirement } from "@/lib/types";
+import { ConfirmProvider } from "@/components/ui/confirm";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const VERDICTS: Verdict[] = ["good", "hot", "rainy", "cold", "very_hot", "freezing"];
@@ -44,6 +47,33 @@ function entryFixtures() {
 }
 
 const ENTRY = entryFixtures();
+
+/** The spec's scenario, built with the same plan functions the actions use. */
+function cashFixtures() {
+  const date = todayIso();
+  const wallet = (id: string, currency: string, label: string | null, low: number | null = null) => ({ id, currency, label, low_balance_alert: low, user_id: "u", created_at: date });
+  const withdrawal = planWithdrawal({ walletId: "jpy", walletCurrency: "JPY", date, received: 20000, charged: 150, chargedCurrency: "USD", fee: 5, feeCurrency: "USD", tripId: "t" }, 0.00745);
+  const spend = planSpend({ id: "e", payment_method: "cash", wallet_id: "jpy", kind: "actual", amount: 3500, date, title: "Ramen in Shibuya" })!;
+  const exchange = planExchange({ fromWalletId: "eur", fromCurrency: "EUR", fromAmount: 40, toWalletId: "jpy", toCurrency: "JPY", toAmount: 6400, date, tripId: "t" }, 0.0061);
+  const rows = [withdrawal.tx, spend, exchange.out, exchange.in, { wallet_id: "eur", type: "received", date, amount: 60, note: "Hostel deposit back" }].map((t, i) => ({
+    id: `tx-${i}`,
+    user_id: "u",
+    created_at: `${date}T00:00:0${i}`,
+    counter_amount: null,
+    counter_currency: null,
+    fee_amount: null,
+    fee_currency: null,
+    effective_rate: null,
+    mid_market_rate: null,
+    linked_transaction_id: null,
+    expense_id: null,
+    fee_expense_id: null,
+    ...t,
+  }));
+  return summarizeCash([wallet("jpy", "JPY", null), wallet("eur", "EUR", "Euro pouch", 50)], rows, { rates: { base: "USD", rates: { JPY: 135, EUR: 0.92 }, updatedAt: null, stale: false }, baseCurrency: "USD", feesPaid: 5 });
+}
+
+const CASH = cashFixtures();
 const ENTRY_REQUIREMENT = {
   requirement_type: "e_visa",
   status: "to_apply",
@@ -58,6 +88,7 @@ const ENTRY_REQUIREMENT = {
 export function PreviewClient({ liveClimate, liveForecast }: { liveClimate: { bangkok: ClimateMonth[] | null; reykjavik: ClimateMonth[] | null }; liveForecast: ForecastDay[] | null }) {
   return (
     <TooltipProvider>
+      <ConfirmProvider>
       <main className="mx-auto flex max-w-6xl flex-col gap-10 p-4 sm:p-8">
         <h1 className="text-4xl font-semibold">Feature preview</h1>
         <Section title="Climate">
@@ -97,6 +128,12 @@ export function PreviewClient({ liveClimate, liveForecast }: { liveClimate: { ba
             </div>
           </div>
         </Section>
+        <Section title="Cash wallets">
+          <CashTab cash={CASH} baseCurrency="USD" trips={[{ id: "t", title: "Sample trip" }]} defaultTripId="t" startOpen />
+        </Section>
+        <Section title="Cash: no wallets yet">
+          <CashTab cash={{ wallets: [], cashOnHand: 0, unconverted: [], feesPaid: 0 }} baseCurrency="USD" trips={[]} defaultTripId={null} />
+        </Section>
         <Section title="Visas &amp; entry table">
           <EntryTable rows={ENTRY.rows} />
         </Section>
@@ -113,6 +150,7 @@ export function PreviewClient({ liveClimate, liveForecast }: { liveClimate: { ba
           <EssentialsTab code="AQ" countryId="preview" override={null} />
         </Section>
       </main>
+      </ConfirmProvider>
     </TooltipProvider>
   );
 }

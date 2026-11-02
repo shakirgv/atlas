@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       places: await insert("places", data.places, { city_id: true }),
       days: await insert("itinerary_days", data.itinerary_days, { trip_country_id: true, city_id: false }),
       stops: await insert("itinerary_items", data.itinerary_items, { day_id: true, place_id: false }),
-      expenses: await insert("expenses", data.expenses, { trip_id: true, trip_country_id: false, city_id: false }),
+      expenses: await insert("expenses", data.expenses, { trip_id: true, trip_country_id: false, city_id: false, wallet_id: false }),
       memories: await insert("memories", data.memories, { trip_id: true, trip_country_id: false, city_id: false, place_id: false }),
       documents: await insert("documents", data.documents, { trip_id: false, trip_country_id: false }, (r) => ({ ...r, is_sample: false, file_name: null, mime_type: null, size_bytes: null })),
       bookings: 0,

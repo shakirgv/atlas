@@ -9,12 +9,14 @@ import { daysUntil, todayIso } from "@/lib/dates";
 import { Dashboard } from "@/components/dashboard/dashboard";
 import type { WeatherStop } from "@/components/dashboard/weather-tile";
 import { homeStop, routesForTrips } from "@/lib/server/route-data";
+import { loadCash } from "@/lib/server/cash";
 
 export default async function DashboardPage() {
   const { supabase, scope } = await getScope();
-  const [g, map] = await Promise.all([
+  const [g, map, cash] = await Promise.all([
     loadGraph(supabase, scope.trips, scope.tripIds, { days: true, places: true, expenses: true, memories: true, documents: true, photoCount: true, bookings: true, entries: true }),
     loadMapData(supabase, scope),
+    loadCash(supabase, scope.baseCurrency),
   ]);
   const today = todayIso();
   const ongoing = g.countries.find((c) => c.display === "ongoing");
@@ -82,6 +84,7 @@ export default async function DashboardPage() {
         photos: g.photoCount,
       }}
       budget={summarizeBudget(g.expenses, g.trips, g.countries)}
+      cash={cash.wallets.length ? { onHand: cash.cashOnHand, fees: cash.feesPaid } : null}
       map={map}
       upcomingDays={upcomingDays}
       memories={g.memories.slice(0, 3)}

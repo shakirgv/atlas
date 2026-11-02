@@ -3,9 +3,10 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { listWalletOptions, type WalletOption } from "@/actions/cash";
 import { createExpense, updateExpense } from "@/actions/expenses";
 import { expenseSchema, type z } from "@/lib/validation";
-import { EXPENSE_CATEGORIES, type Expense } from "@/lib/types";
+import { EXPENSE_CATEGORIES, PAYMENT_METHODS, type Expense } from "@/lib/types";
 import { CURRENCIES, EXPENSE_CATEGORY_META, formatMoney, rateToBase, round2 } from "@/lib/money";
 import { EXPENSE_CATEGORY_ICON } from "@/lib/icons";
 import { primaryCurrency } from "@/lib/countries";
@@ -27,11 +28,14 @@ export function ExpenseSheet({
   onOpenChange,
   expense,
   tripCountryId,
+  cashFrom,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   expense?: Expense | null;
   tripCountryId?: string | null;
+  /** Opened from a wallet's "Spend": starts as a cash payment from that wallet. */
+  cashFrom?: { id: string; currency: string } | null;
 }) {
   const ws = useWorkspace();
   const defaultTrip = useDefaultTripId();
@@ -44,6 +48,7 @@ export function ExpenseSheet({
   const initialCountry = expense?.trip_country_id ?? tripCountryId ?? "";
   const initialCurrency = () => {
     if (expense) return expense.currency;
+    if (cashFrom) return cashFrom.currency;
     const c = ws.countries.find((x) => x.id === initialCountry);
     const fromCountry = primaryCurrency(c?.country_code);
     if (fromCountry) return fromCountry;
@@ -65,6 +70,8 @@ export function ExpenseSheet({
       currency: initialCurrency(),
       fx_rate: expense?.fx_rate ?? 1,
       notes: expense?.notes ?? "",
+      payment_method: (expense?.payment_method as Out["payment_method"]) ?? (cashFrom ? "cash" : "card"),
+      wallet_id: expense?.wallet_id ?? cashFrom?.id ?? "",
     },
   });
   const { register, handleSubmit, control, watch, setValue, formState, reset } = form;
@@ -74,6 +81,34 @@ export function ExpenseSheet({
   const tripId = watch("trip_id");
   const countryId = watch("trip_country_id");
   const [manualRate, setManualRate] = useState(Boolean(expense && expense.currency !== base));
+  const payment = watch("payment_method");
+  const kind = watch("kind");
+  const walletId = watch("wallet_id");
+  const [wallets, setWallets] = useState<WalletOption[]>([]);
+  const cashPaid = payment === "cash" && kind === "actual";
+  const walletChoices = wallets.filter((w) => w.currency === currency);
+  const wallet = walletChoices.find((w) => w.id === walletId) ?? walletChoices[0] ?? null;
+  // On an edit, the amount already counted in the balance comes back before comparing.
+  const alreadySpent = expense?.payment_method === "cash" && expense.kind === "actual" && expense.wallet_id === wallet?.id ? Number(expense.amount) : 0;
+  const afterSpend = wallet ? wallet.balance + alreadySpent - amount : null;
+
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    void listWalletOptions().then((res) => {
+      if (alive && res.ok) setWallets(res.data);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [open]);
+
+  // A wallet holds one currency, so the choice follows the expense's currency.
+  useEffect(() => {
+    const next = payment === "cash" ? (walletChoices.find((w) => w.id === walletId)?.id ?? walletChoices[0]?.id ?? "") : "";
+    if ((walletId ?? "") !== next) setValue("wallet_id", next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payment, currency, wallets]);
 
   // Reset the form each time the sheet opens.
   useEffect(() => {
@@ -90,6 +125,8 @@ export function ExpenseSheet({
       currency: initialCurrency(),
       fx_rate: expense?.fx_rate ?? 1,
       notes: expense?.notes ?? "",
+      payment_method: (expense?.payment_method as Out["payment_method"]) ?? (cashFrom ? "cash" : "card"),
+      wallet_id: expense?.wallet_id ?? cashFrom?.id ?? "",
     });
     setCount(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -120,8 +157,16 @@ export function ExpenseSheet({
       const res = expense ? await updateExpense(expense.id, values) : await createExpense(values);
       if (!res.ok) return void toast.error(res.error);
       localStorage.setItem(LAST_CURRENCY_KEY, values.currency);
+      const negative = cashPaid && afterSpend !== null && afterSpend < 0 ? `Your ${values.currency} wallet is now at ${formatMoney(afterSpend, values.currency)}.` : null;
+      if (negative) toast.warning(negative);
+      void listWalletOptions().then((r) => r.ok && setWallets(r.data));
       if (expense) {
         toast.success("Expense updated");
+        onOpenChange(false);
+        return;
+      }
+      if (cashFrom) {
+        toast.success(`Spent ${formatMoney(values.amount, values.currency)} in cash`);
         onOpenChange(false);
         return;
       }
@@ -232,6 +277,50 @@ export function ExpenseSheet({
               </div>
             )}
           />
+          <Controller
+            control={control}
+            name="payment_method"
+            render={({ field }) => (
+              <div role="radiogroup" aria-label="Payment" className="grid grid-cols-3 rounded-xl border border-border bg-surface-2 p-1">
+                {PAYMENT_METHODS.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    role="radio"
+                    aria-checked={field.value === m}
+                    onClick={() => field.onChange(m)}
+                    className={cn("h-9 rounded-lg text-sm font-medium capitalize text-muted transition-colors", field.value === m && "bg-surface text-ink shadow-sm ring-1 ring-border")}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            )}
+          />
+          {payment === "cash" && (
+            <div className="-mt-1 flex flex-col gap-1.5">
+              {walletChoices.length > 1 && (
+                <NativeSelect aria-label="Wallet" {...register("wallet_id")}>
+                  {walletChoices.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.label ?? `${w.currency} cash`}
+                    </option>
+                  ))}
+                </NativeSelect>
+              )}
+              {kind === "planned" ? (
+                <p className="text-xs text-muted">Planned, so it stays in your wallet until you mark it as spent.</p>
+              ) : !wallet ? (
+                <p className="text-xs text-muted">A {currency} wallet will be created for this.</p>
+              ) : afterSpend !== null && afterSpend < 0 ? (
+                <p className="text-xs font-medium text-danger" role="alert">
+                  This takes your {currency} wallet to {formatMoney(afterSpend, currency)}. You can still save it.
+                </p>
+              ) : (
+                <p className="num text-xs text-muted">From {wallet.label ?? `${currency} cash`}: {formatMoney(afterSpend ?? 0, currency)} left after this.</p>
+              )}
+            </div>
+          )}
           <Controller
             control={control}
             name="category"
