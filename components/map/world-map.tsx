@@ -35,9 +35,9 @@ const projection = geoNaturalEarth1().fitExtent(
 const path = geoPath(projection);
 const SPHERE = path({ type: "Sphere" }) ?? "";
 const GRATICULE = path(geoGraticule10()) ?? "";
-const SHAPES = FEATURES.map((f: Feature<Geometry>) => {
+export const SHAPES = FEATURES.map((f: Feature<Geometry>) => {
   const info = getCountryByCcn3(String(f.id));
-  return { id: String(f.id), code: info?.cca2 ?? null, name: info?.name ?? "", flag: info?.flag ?? "", d: path(f) ?? "" };
+  return { id: String(f.id), code: info?.cca2 ?? null, name: info?.name ?? "", flag: info?.flag ?? "", d: path(f) ?? "", feature: f };
 });
 
 /** Zoom transform that frames the given route points (with padding), capped so context stays visible. */

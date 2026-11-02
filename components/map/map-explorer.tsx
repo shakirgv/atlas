@@ -1,8 +1,9 @@
 "use client";
 import { useMemo, useState, useTransition } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronUp, Earth, Plus, X } from "lucide-react";
+import { ChevronUp, Earth, ImageDown, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { addCountries } from "@/actions/countries";
 import { getCountry } from "@/lib/countries";
@@ -15,7 +16,11 @@ import { Button } from "@/components/ui/button";
 import { useDefaultTripId, useWorkspace } from "@/components/shell/workspace";
 import { transportMeta } from "@/lib/transport";
 import type { PhotoBadge } from "@/lib/photo-pins";
+import type { ExportTrip } from "./export-dialog";
 import { DEFAULT_LAYERS, MapLegend, modesInUse, WorldMap, type Layers, type MapCity, type MapCountryState, type RoutePoint } from "./world-map";
+
+// The export code only loads when the dialog opens.
+const ExportDialog = dynamic(() => import("./export-dialog").then((m) => m.ExportDialog), { ssr: false });
 
 export function MapExplorer({
   states,
@@ -25,6 +30,8 @@ export function MapExplorer({
   countries,
   cityCounts,
   photoBadges,
+  exportTrips,
+  activeTripId,
 }: {
   states: Record<string, MapCountryState>;
   routes: RoutePoint[][];
@@ -33,7 +40,10 @@ export function MapExplorer({
   countries: CountryVM[];
   cityCounts: Record<string, number>;
   photoBadges: { cities: PhotoBadge[]; countries: PhotoBadge[] };
+  exportTrips: ExportTrip[];
+  activeTripId: string | null;
 }) {
+  const [exporting, setExporting] = useState(false);
   const ws = useWorkspace();
   const router = useRouter();
   const tripId = useDefaultTripId();
@@ -122,6 +132,9 @@ export function MapExplorer({
     <div className="-mx-4 -mb-32 -mt-6 grid h-[calc(100dvh-3.5rem-64px-env(safe-area-inset-bottom))] md:-mx-8 md:-mb-16 md:-mt-8 md:h-[calc(100dvh-4rem)] lg:grid-cols-[1fr_340px]">
       <div className="relative min-h-0 overflow-hidden bg-ocean">
         <WorldMap states={states} routes={routes} cities={cities} photoBadges={photoBadges} layers={layers} onCountryClick={onClick} highlight={hl ?? popover?.code} className="size-full" controlsClassName="max-lg:bottom-[84px]" />
+        <Button variant="secondary" size="sm" onClick={() => setExporting(true)} className="absolute right-3 top-3 z-10 md:right-5 md:top-5">
+          <ImageDown /> Export
+        </Button>
         <div className="pointer-events-none absolute inset-x-3 top-3 flex flex-col gap-2 md:inset-x-5 md:top-5">
           <div className="pointer-events-auto flex flex-wrap items-center gap-3 self-start rounded-2xl border border-border bg-surface/85 px-3 py-2 text-xs backdrop-blur">
             <span>
@@ -169,6 +182,7 @@ export function MapExplorer({
       <aside className="hidden min-h-0 border-l border-border bg-surface lg:block" aria-label="Countries in route order">
         {panel}
       </aside>
+      {exporting && <ExportDialog trips={exportTrips} activeTripId={activeTripId} onOpenChange={setExporting} />}
     </div>
   );
 }

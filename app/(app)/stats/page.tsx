@@ -3,6 +3,7 @@ import { getScope } from "@/lib/scope";
 import { loadGraph } from "@/lib/data";
 import { loadMapData } from "@/lib/map-data";
 import { COUNTRIES, WORLD_COUNTRY_COUNT, getCountry } from "@/lib/countries";
+import { worldShare } from "@/lib/map-export";
 import { daysBetween } from "@/lib/dates";
 import { daysOnTheRoad } from "@/lib/trip";
 import { StatsView } from "@/components/stats/stats-view";
@@ -39,7 +40,7 @@ export default async function StatsPage() {
       states={map.states}
       visited={visitedCodes.length}
       planned={plannedCodes.length}
-      worldPct={(visitedCodes.length / WORLD_COUNTRY_COUNT) * 100}
+      worldPct={worldShare(visitedCodes)}
       worldTotal={WORLD_COUNTRY_COUNT}
       continents={continents}
       continentsCovered={continents.filter((c) => c.visited > 0).length}

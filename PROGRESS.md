@@ -47,9 +47,11 @@ Delete this file when the whole pack is finished.
 - `supabase/migrations/004_extra_lock.sql`, `lib/vault*.ts`, `actions/vault.ts`, `actions/mfa.ts`, `components/vault/*`, `components/settings/security-section.tsx`, `/login/mfa`.
 - The SQL was tested on PGlite (real Postgres, no Docker) with `auth` and `storage` stubbed; the Supabase Auth calls themselves were not run.
 
+## Done: 3.5 Map export
+- `lib/map-export.ts`, `lib/export-image.ts` (SVG → PNG pipeline, reused by recap), `components/map/export-map.tsx`, `export-dialog.tsx`.
+
 ## Next steps (build order from IMPROVEMENTS.md §5)
-3.5 Map export
-→ 3.11 On this day + Recap → 3.12 Share links → polish/README/final report.
+3.11 On this day + Recap → 3.12 Share links → polish/README/final report.
 
 ## Notes for a fresh session
 - Dashboard bento needs rebalancing once Weather/Cash/On this day/Recap tiles exist (Time tile is in a `GlanceColumn`).

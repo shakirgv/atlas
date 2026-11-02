@@ -10,6 +10,8 @@ import { CashTab } from "@/components/cash/cash-tab";
 import { ExpenseTable } from "@/components/budget/expense-table";
 import { PhotoMap } from "@/components/photos/photo-map";
 import { PinPad } from "@/components/vault/pin-pad";
+import { ExportDialog, type ExportTrip } from "@/components/map/export-dialog";
+import { Button } from "@/components/ui/button";
 import { SecuritySection } from "@/components/settings/security-section";
 import { MfaForm } from "@/app/(auth)/login/mfa/mfa-form";
 import type { PhotoPin, UnlocatedPhoto } from "@/lib/photo-pins";
@@ -103,6 +105,47 @@ const TRAY: UnlocatedPhoto[] = [
   { tripId: "t", tripCountryId: "it", cityId: null, year: "2026", label: "No GPS", photo: pinPhoto("u1", "#35506b", "") },
   { tripId: "t", tripCountryId: "it", cityId: null, year: "2026", label: "No GPS 2", photo: pinPhoto("u2", "#6b4a2b", "") },
 ];
+
+const EXPORT_TRIPS: ExportTrip[] = [
+  {
+    id: "t1",
+    title: "Three countries",
+    routes: [
+      [
+        { id: "home", code: "", lat: 40.41, lng: 49.87, name: "Baku", home: true },
+        { id: "ist", code: "TR", lat: 41.01, lng: 28.98, name: "Istanbul", mode: "flight" },
+        { id: "rom", code: "IT", lat: 41.9, lng: 12.5, name: "Rome", mode: "flight" },
+        { id: "flo", code: "IT", lat: 43.77, lng: 11.26, name: "Florence", mode: "train", minor: true },
+        { id: "tyo", code: "JP", lat: 35.68, lng: 139.65, name: "Tokyo", mode: "flight" },
+        { id: "kyo", code: "JP", lat: 35.01, lng: 135.77, name: "Kyoto", mode: "train", minor: true },
+        { id: "nao", code: "JP", lat: 34.46, lng: 134.0, name: "Naoshima", mode: "ferry", minor: true },
+      ],
+    ],
+    cities: [
+      { id: "c1", name: "Istanbul", lat: 41.01, lng: 28.98 },
+      { id: "c2", name: "Rome", lat: 41.9, lng: 12.5 },
+      { id: "c3", name: "Tokyo", lat: 35.68, lng: 139.65 },
+    ],
+    countries: [
+      { code: "TR", status: "visited" },
+      { code: "IT", status: "visited" },
+      { code: "JP", status: "planned" },
+      { code: "BR", status: "wishlist" },
+    ],
+  },
+];
+
+function ExportDemo() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button onClick={() => setOpen(true)} data-testid="open-export">
+        Open export dialog
+      </Button>
+      {open && <ExportDialog trips={EXPORT_TRIPS} activeTripId="t1" onOpenChange={setOpen} />}
+    </>
+  );
+}
 
 /** The keypad on the same rules the database enforces (tested separately): PIN 1234, 5 tries. */
 function PinDemo() {
@@ -200,6 +243,9 @@ export function PreviewClient({ liveClimate, liveForecast }: { liveClimate: { ba
               <div className="card flex h-44 flex-col gap-3 p-5">{liveClimate.bangkok && <NormalsView months={liveClimate.bangkok} stop={{ ...TOKYO, name: "Bangkok" }} />}</div>
             </div>
           </div>
+        </Section>
+        <Section title="Map export">
+          <ExportDemo />
         </Section>
         <Section title="Extra lock">
           <div className="grid items-start gap-4 lg:grid-cols-3">

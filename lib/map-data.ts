@@ -6,8 +6,26 @@ import { buildStops } from "@/lib/route";
 import { displayStatus, strongerStatus } from "@/lib/status";
 import type { City, GeoStatus, TripCountry } from "@/lib/types";
 import type { MapCity, MapCountryState, RoutePoint } from "@/components/map/world-map";
+import type { ExportTrip } from "@/components/map/export-dialog";
 
 /** Map statuses use every trip (visited if any entry is visited); routes + cities follow the active scope. */
+/** Everything the map export needs, per trip, whichever trip is active right now. */
+export async function loadExportTrips(supabase: ServerSupabase, scope: Scope, routeFor: (tid: string) => RoutePoint[]): Promise<ExportTrip[]> {
+  const [{ data: tcs }, { data: cities }] = await Promise.all([supabase.from("trip_countries").select("id, trip_id, country_code, status"), supabase.from("cities").select("id, name, lat, lng, trip_country_id")]);
+  return scope.trips.map((t) => {
+    const own = (tcs ?? []).filter((c) => c.trip_id === t.id);
+    const ids = new Set(own.map((c) => c.id));
+    const route = routeFor(t.id);
+    return {
+      id: t.id,
+      title: t.title,
+      routes: route.length ? [route] : [],
+      cities: (cities ?? []).filter((c) => ids.has(c.trip_country_id) && c.lat != null && c.lng != null).map((c) => ({ id: c.id, name: c.name, lat: c.lat!, lng: c.lng! })),
+      countries: own.map((c) => ({ code: c.country_code.trim(), status: c.status })),
+    };
+  });
+}
+
 export async function loadMapData(supabase: ServerSupabase, scope: Scope) {
   const { data } = await supabase.from("trip_countries").select("*").order("order_index");
   const all = (data ?? []) as TripCountry[];
@@ -35,34 +53,33 @@ export async function loadMapData(supabase: ServerSupabase, scope: Scope) {
   const st = scope.settings;
   const home: RoutePoint | null =
     st?.home_lat != null && st?.home_lng != null ? { id: "home", code: "", lat: st.home_lat, lng: st.home_lng, name: st.home_city ?? "Home", home: true } : null;
-  const scopeTc = all.filter((t) => scope.tripIds.includes(t.trip_id)).map((t) => t.id);
-  const { data: cities } = scopeTc.length ? await supabase.from("cities").select("*").in("trip_country_id", scopeTc) : { data: [] as City[] };
+  const scopeTc = new Set(all.filter((t) => scope.tripIds.includes(t.trip_id)).map((t) => t.id));
+  const { data: cities } = all.length ? await supabase.from("cities").select("*") : { data: [] as City[] };
   const cityRows = cities ?? [];
-  const mapCities: MapCity[] = cityRows.filter((c) => c.lat != null && c.lng != null).map((c) => ({ id: c.id, name: c.name, lat: c.lat!, lng: c.lng! }));
+  const mapCities: MapCity[] = cityRows.filter((c) => scopeTc.has(c.trip_country_id) && c.lat != null && c.lng != null).map((c) => ({ id: c.id, name: c.name, lat: c.lat!, lng: c.lng! }));
 
   // Routes run stop by stop (so train and ferry legs between cities are drawn too). Only the first
   // stop of each country is numbered, which keeps the numbers in step with the route panel.
-  const routes: RoutePoint[][] = scope.tripIds
-    .map((tid) => {
-      const tcs = all
-        .filter((t) => t.trip_id === tid && getCountry(t.country_code))
-        .map((t) => {
-          const c = getCountry(t.country_code)!;
-          const [lat, lng] = countryAnchor(c.cca2) ?? c.latlng ?? [0, 0];
-          return { ...t, code: c.cca2, name: c.name, lat, lng };
-        });
-      const seen = new Set<string>();
-      const pts: RoutePoint[] = buildStops(tcs, cityRows)
-        .filter((s) => s.lat != null && s.lng != null)
-        .map((s) => {
-          const minor = seen.has(s.tripCountryId);
-          seen.add(s.tripCountryId);
-          return { id: s.id, code: s.countryCode, lat: s.lat!, lng: s.lng!, name: s.name, mode: s.transport, note: s.transportNote, minor };
-        });
-      // The route starts at home when it is set (the first stop's mode means "from home").
-      return home && pts.length ? [home, ...pts] : pts;
-    })
-    .filter((r) => r.length > 0);
+  const routeFor = (tid: string): RoutePoint[] => {
+    const tcs = all
+      .filter((t) => t.trip_id === tid && getCountry(t.country_code))
+      .map((t) => {
+        const c = getCountry(t.country_code)!;
+        const [lat, lng] = countryAnchor(c.cca2) ?? c.latlng ?? [0, 0];
+        return { ...t, code: c.cca2, name: c.name, lat, lng };
+      });
+    const seen = new Set<string>();
+    const pts: RoutePoint[] = buildStops(tcs, cityRows)
+      .filter((s) => s.lat != null && s.lng != null)
+      .map((s) => {
+        const minor = seen.has(s.tripCountryId);
+        seen.add(s.tripCountryId);
+        return { id: s.id, code: s.countryCode, lat: s.lat!, lng: s.lng!, name: s.name, mode: s.transport, note: s.transportNote, minor };
+      });
+    // The route starts at home when it is set (the first stop's mode means "from home").
+    return home && pts.length ? [home, ...pts] : pts;
+  };
+  const routes: RoutePoint[][] = scope.tripIds.map(routeFor).filter((r) => r.length > 0);
 
-  return { states, routes, cities: mapCities, inScopeIds: Object.fromEntries(inScopeIds) as Record<string, string> };
+  return { states, routes, cities: mapCities, inScopeIds: Object.fromEntries(inScopeIds) as Record<string, string>, routeFor };
 }
