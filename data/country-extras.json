@@ -1,1 +1,3945 @@
-{"reviewed":"2026-11","countries":{}}
+{
+"reviewed":"2026-11",
+"note":"Best-effort baseline written from general knowledge, not checked against an official source. A null field means unknown. Edits in the app override this file.",
+"countries":{
+"AF":{
+"emergency":{
+"general":null,
+"police":"119",
+"ambulance":"102",
+"fire":"119"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"AX":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"safe",
+"driving":"right"
+},
+"AL":{
+"emergency":{
+"general":"112",
+"police":"129",
+"ambulance":"127",
+"fire":"128"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"DZ":{
+"emergency":{
+"general":null,
+"police":"17",
+"ambulance":"14",
+"fire":"14"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"AS":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B",
+"F",
+"I"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Expected: 15-20% in restaurants, plus small tips for other services.",
+"tapWater":"caution",
+"driving":"right"
+},
+"AD":{
+"emergency":{
+"general":"112",
+"police":"110",
+"ambulance":"118",
+"fire":"118"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"safe",
+"driving":"right"
+},
+"AO":{
+"emergency":{
+"general":null,
+"police":"113",
+"ambulance":"112",
+"fire":"115"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"AI":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"110 V",
+"frequency":"60 Hz",
+"tipping":null,
+"tapWater":"caution",
+"driving":"left"
+},
+"AG":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"230 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"left"
+},
+"AR":{
+"emergency":{
+"general":"911",
+"police":"101",
+"ambulance":"107",
+"fire":"100"
+},
+"plugs":[
+"C",
+"I"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"AM":{
+"emergency":{
+"general":"112",
+"police":"102",
+"ambulance":"103",
+"fire":"101"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"AW":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B",
+"F"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"AU":{
+"emergency":{
+"general":"000",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"I"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"safe",
+"driving":"left"
+},
+"AT":{
+"emergency":{
+"general":"112",
+"police":"133",
+"ambulance":"144",
+"fire":"122"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"safe",
+"driving":"right"
+},
+"AZ":{
+"emergency":{
+"general":"112",
+"police":"102",
+"ambulance":"103",
+"fire":"101"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"BS":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Expected: 15-20% in restaurants, plus small tips for other services.",
+"tapWater":"caution",
+"driving":"left"
+},
+"BH":{
+"emergency":{
+"general":"999",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"BD":{
+"emergency":{
+"general":"999",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"C",
+"D",
+"G",
+"K"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Not required, but small tips are welcome for good service.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"BB":{
+"emergency":{
+"general":null,
+"police":"211",
+"ambulance":"511",
+"fire":"311"
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"115 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"left"
+},
+"BY":{
+"emergency":{
+"general":null,
+"police":"102",
+"ambulance":"103",
+"fire":"101"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"BE":{
+"emergency":{
+"general":"112",
+"police":"101",
+"ambulance":"100",
+"fire":"100"
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"safe",
+"driving":"right"
+},
+"BZ":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B",
+"G"
+],
+"voltage":"110 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"BJ":{
+"emergency":{
+"general":null,
+"police":"117",
+"ambulance":null,
+"fire":"118"
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"BM":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":null,
+"driving":"left"
+},
+"BT":{
+"emergency":{
+"general":null,
+"police":"113",
+"ambulance":"112",
+"fire":"110"
+},
+"plugs":[
+"C",
+"D",
+"F",
+"G",
+"M"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"left"
+},
+"BO":{
+"emergency":{
+"general":null,
+"police":"110",
+"ambulance":"118",
+"fire":"119"
+},
+"plugs":[
+"A",
+"C"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"BA":{
+"emergency":{
+"general":null,
+"police":"122",
+"ambulance":"124",
+"fire":"123"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"BW":{
+"emergency":{
+"general":null,
+"police":"999",
+"ambulance":"997",
+"fire":"998"
+},
+"plugs":[
+"D",
+"G",
+"M"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"left"
+},
+"BR":{
+"emergency":{
+"general":null,
+"police":"190",
+"ambulance":"192",
+"fire":"193"
+},
+"plugs":[
+"C",
+"N"
+],
+"voltage":"127/220 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"VG":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"110 V",
+"frequency":"60 Hz",
+"tipping":null,
+"tapWater":"caution",
+"driving":"left"
+},
+"BN":{
+"emergency":{
+"general":null,
+"police":"993",
+"ambulance":"991",
+"fire":"995"
+},
+"plugs":[
+"G"
+],
+"voltage":"240 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"caution",
+"driving":"left"
+},
+"BG":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"BF":{
+"emergency":{
+"general":null,
+"police":"17",
+"ambulance":null,
+"fire":"18"
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"BI":{
+"emergency":null,
+"plugs":[
+"C",
+"E"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"KH":{
+"emergency":{
+"general":null,
+"police":"117",
+"ambulance":"119",
+"fire":"118"
+},
+"plugs":[
+"A",
+"C",
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required, but small tips are welcome for good service.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"CM":{
+"emergency":{
+"general":null,
+"police":"117",
+"ambulance":null,
+"fire":"118"
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"CA":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Expected: 15-20% in restaurants, plus small tips for other services.",
+"tapWater":"safe",
+"driving":"right"
+},
+"CV":{
+"emergency":{
+"general":null,
+"police":"132",
+"ambulance":"130",
+"fire":"131"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"BQ":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":null,
+"voltage":null,
+"frequency":null,
+"tipping":null,
+"tapWater":null,
+"driving":"right"
+},
+"KY":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"left"
+},
+"CF":{
+"emergency":null,
+"plugs":[
+"C",
+"E"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"TD":{
+"emergency":{
+"general":null,
+"police":"17",
+"ambulance":null,
+"fire":"18"
+},
+"plugs":[
+"C",
+"D",
+"E",
+"F"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"CL":{
+"emergency":{
+"general":null,
+"police":"133",
+"ambulance":"131",
+"fire":"132"
+},
+"plugs":[
+"C",
+"L"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"CN":{
+"emergency":{
+"general":null,
+"police":"110",
+"ambulance":"120",
+"fire":"119"
+},
+"plugs":[
+"A",
+"C",
+"I"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"CX":{
+"emergency":{
+"general":"000",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"I"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":null,
+"driving":"left"
+},
+"CC":{
+"emergency":{
+"general":"000",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"I"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":null,
+"driving":"left"
+},
+"CO":{
+"emergency":{
+"general":"123",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"110 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"KM":{
+"emergency":null,
+"plugs":[
+"C",
+"E"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"CK":{
+"emergency":{
+"general":null,
+"police":"999",
+"ambulance":"998",
+"fire":"996"
+},
+"plugs":[
+"I"
+],
+"voltage":"240 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"caution",
+"driving":"left"
+},
+"CR":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"HR":{
+"emergency":{
+"general":"112",
+"police":"192",
+"ambulance":"194",
+"fire":"193"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"CU":{
+"emergency":{
+"general":null,
+"police":"106",
+"ambulance":"104",
+"fire":"105"
+},
+"plugs":[
+"A",
+"B",
+"C",
+"L"
+],
+"voltage":"110/220 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"CW":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"127 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"CY":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"left"
+},
+"CZ":{
+"emergency":{
+"general":"112",
+"police":"158",
+"ambulance":"155",
+"fire":"150"
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"DK":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"E",
+"F",
+"K"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"safe",
+"driving":"right"
+},
+"DJ":{
+"emergency":{
+"general":null,
+"police":"17",
+"ambulance":null,
+"fire":"18"
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"DM":{
+"emergency":{
+"general":"999",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"D",
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"left"
+},
+"DO":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"CD":{
+"emergency":null,
+"plugs":[
+"C",
+"D",
+"E"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"EC":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"EG":{
+"emergency":{
+"general":null,
+"police":"122",
+"ambulance":"123",
+"fire":"180"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"SV":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"GQ":{
+"emergency":null,
+"plugs":[
+"C",
+"E"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"ER":{
+"emergency":null,
+"plugs":[
+"C",
+"L"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"EE":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"SZ":{
+"emergency":{
+"general":null,
+"police":"999",
+"ambulance":"977",
+"fire":"933"
+},
+"plugs":[
+"M"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"left"
+},
+"ET":{
+"emergency":{
+"general":null,
+"police":"991",
+"ambulance":"907",
+"fire":"939"
+},
+"plugs":[
+"C",
+"E",
+"F",
+"L"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"FK":{
+"emergency":{
+"general":"999",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"G"
+],
+"voltage":"240 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":null,
+"driving":"left"
+},
+"FO":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"E",
+"F",
+"K"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"safe",
+"driving":"right"
+},
+"FJ":{
+"emergency":{
+"general":null,
+"police":"917",
+"ambulance":"911",
+"fire":"911"
+},
+"plugs":[
+"I"
+],
+"voltage":"240 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"caution",
+"driving":"left"
+},
+"FI":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"safe",
+"driving":"right"
+},
+"FR":{
+"emergency":{
+"general":"112",
+"police":"17",
+"ambulance":"15",
+"fire":"18"
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"safe",
+"driving":"right"
+},
+"GF":{
+"emergency":{
+"general":"112",
+"police":"17",
+"ambulance":"15",
+"fire":"18"
+},
+"plugs":[
+"C",
+"D",
+"E"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"caution",
+"driving":"right"
+},
+"PF":{
+"emergency":{
+"general":null,
+"police":"17",
+"ambulance":"15",
+"fire":"18"
+},
+"plugs":[
+"A",
+"B",
+"E"
+],
+"voltage":"220 V",
+"frequency":"60 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"caution",
+"driving":"right"
+},
+"GA":{
+"emergency":null,
+"plugs":[
+"C"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"GM":{
+"emergency":{
+"general":null,
+"police":"117",
+"ambulance":"116",
+"fire":"118"
+},
+"plugs":[
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"GE":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"DE":{
+"emergency":{
+"general":"112",
+"police":"110",
+"ambulance":"112",
+"fire":"112"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"safe",
+"driving":"right"
+},
+"GH":{
+"emergency":{
+"general":"112",
+"police":"191",
+"ambulance":"193",
+"fire":"192"
+},
+"plugs":[
+"D",
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"GI":{
+"emergency":{
+"general":"112",
+"police":"199",
+"ambulance":"190",
+"fire":"190"
+},
+"plugs":[
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"GR":{
+"emergency":{
+"general":"112",
+"police":"100",
+"ambulance":"166",
+"fire":"199"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"GL":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"E",
+"F",
+"K"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"safe",
+"driving":"right"
+},
+"GD":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"left"
+},
+"GP":{
+"emergency":{
+"general":"112",
+"police":"17",
+"ambulance":"15",
+"fire":"18"
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"caution",
+"driving":"right"
+},
+"GU":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"110 V",
+"frequency":"60 Hz",
+"tipping":"Expected: 15-20% in restaurants, plus small tips for other services.",
+"tapWater":"caution",
+"driving":"right"
+},
+"GT":{
+"emergency":{
+"general":null,
+"police":"110",
+"ambulance":null,
+"fire":"122"
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"GG":{
+"emergency":{
+"general":"999",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"left"
+},
+"GN":{
+"emergency":null,
+"plugs":[
+"C",
+"F",
+"K"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"GW":{
+"emergency":null,
+"plugs":[
+"C"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"GY":{
+"emergency":{
+"general":null,
+"police":"911",
+"ambulance":"913",
+"fire":"912"
+},
+"plugs":[
+"A",
+"B",
+"D",
+"G"
+],
+"voltage":null,
+"frequency":"60 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"left"
+},
+"HT":{
+"emergency":{
+"general":null,
+"police":"114",
+"ambulance":"116",
+"fire":"115"
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"110 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"HN":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"HK":{
+"emergency":{
+"general":"999",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"G"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"safe",
+"driving":"left"
+},
+"HU":{
+"emergency":{
+"general":"112",
+"police":"107",
+"ambulance":"104",
+"fire":"105"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"IS":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"safe",
+"driving":"right"
+},
+"IN":{
+"emergency":{
+"general":"112",
+"police":"100",
+"ambulance":"102",
+"fire":"101"
+},
+"plugs":[
+"C",
+"D",
+"M"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"ID":{
+"emergency":{
+"general":"112",
+"police":"110",
+"ambulance":"118",
+"fire":"113"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required, but small tips are welcome for good service.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"IR":{
+"emergency":{
+"general":null,
+"police":"110",
+"ambulance":"115",
+"fire":"125"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"IQ":{
+"emergency":{
+"general":null,
+"police":"104",
+"ambulance":"122",
+"fire":"115"
+},
+"plugs":[
+"C",
+"D",
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"IE":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"left"
+},
+"IM":{
+"emergency":{
+"general":"999",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"left"
+},
+"IL":{
+"emergency":{
+"general":null,
+"police":"100",
+"ambulance":"101",
+"fire":"102"
+},
+"plugs":[
+"C",
+"H",
+"M"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"IT":{
+"emergency":{
+"general":"112",
+"police":"113",
+"ambulance":"118",
+"fire":"115"
+},
+"plugs":[
+"C",
+"F",
+"L"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"safe",
+"driving":"right"
+},
+"CI":{
+"emergency":{
+"general":null,
+"police":"110",
+"ambulance":"185",
+"fire":"180"
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"JM":{
+"emergency":{
+"general":null,
+"police":"119",
+"ambulance":"110",
+"fire":"110"
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"110 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"left"
+},
+"JP":{
+"emergency":{
+"general":null,
+"police":"110",
+"ambulance":"119",
+"fire":"119"
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"100 V",
+"frequency":"50/60 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"safe",
+"driving":"left"
+},
+"JE":{
+"emergency":{
+"general":"999",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"left"
+},
+"JO":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"D",
+"F",
+"G",
+"J"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"KZ":{
+"emergency":{
+"general":"112",
+"police":"102",
+"ambulance":"103",
+"fire":"101"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"KE":{
+"emergency":{
+"general":"999",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"G"
+],
+"voltage":"240 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"KI":{
+"emergency":null,
+"plugs":[
+"I"
+],
+"voltage":"240 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"XK":{
+"emergency":{
+"general":null,
+"police":"192",
+"ambulance":"194",
+"fire":"193"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"KW":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"D",
+"G"
+],
+"voltage":"240 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"KG":{
+"emergency":{
+"general":null,
+"police":"102",
+"ambulance":"103",
+"fire":"101"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"LA":{
+"emergency":{
+"general":null,
+"police":"191",
+"ambulance":"195",
+"fire":"190"
+},
+"plugs":[
+"A",
+"B",
+"C",
+"E",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required, but small tips are welcome for good service.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"LV":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"LB":{
+"emergency":{
+"general":null,
+"police":"112",
+"ambulance":"140",
+"fire":"175"
+},
+"plugs":[
+"A",
+"B",
+"C",
+"D",
+"G"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"LS":{
+"emergency":null,
+"plugs":[
+"M"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"caution",
+"driving":"left"
+},
+"LR":{
+"emergency":null,
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"LY":{
+"emergency":null,
+"plugs":[
+"C",
+"L"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"LI":{
+"emergency":{
+"general":"112",
+"police":"117",
+"ambulance":"144",
+"fire":"118"
+},
+"plugs":[
+"C",
+"J"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"safe",
+"driving":"right"
+},
+"LT":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"LU":{
+"emergency":{
+"general":"112",
+"police":"113",
+"ambulance":"112",
+"fire":"112"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"safe",
+"driving":"right"
+},
+"MO":{
+"emergency":{
+"general":"999",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"D",
+"G",
+"M"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"caution",
+"driving":"left"
+},
+"MG":{
+"emergency":{
+"general":null,
+"police":"117",
+"ambulance":null,
+"fire":"118"
+},
+"plugs":[
+"C",
+"D",
+"E",
+"J",
+"K"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Not required, but small tips are welcome for good service.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"MW":{
+"emergency":{
+"general":null,
+"police":"997",
+"ambulance":"998",
+"fire":"999"
+},
+"plugs":[
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"left"
+},
+"MY":{
+"emergency":{
+"general":"999",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"G"
+],
+"voltage":"240 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"caution",
+"driving":"left"
+},
+"MV":{
+"emergency":{
+"general":null,
+"police":"119",
+"ambulance":"102",
+"fire":"118"
+},
+"plugs":[
+"D",
+"G",
+"J",
+"K",
+"L"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required, but small tips are welcome for good service.",
+"tapWater":"caution",
+"driving":"left"
+},
+"ML":{
+"emergency":{
+"general":null,
+"police":"17",
+"ambulance":"15",
+"fire":"18"
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"MT":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"left"
+},
+"MH":{
+"emergency":null,
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"MQ":{
+"emergency":{
+"general":"112",
+"police":"17",
+"ambulance":"15",
+"fire":"18"
+},
+"plugs":[
+"C",
+"D",
+"E"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"caution",
+"driving":"right"
+},
+"MR":{
+"emergency":{
+"general":null,
+"police":"117",
+"ambulance":null,
+"fire":"118"
+},
+"plugs":[
+"C"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"MU":{
+"emergency":{
+"general":null,
+"police":"999",
+"ambulance":"114",
+"fire":"115"
+},
+"plugs":[
+"C",
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"left"
+},
+"YT":{
+"emergency":{
+"general":"112",
+"police":"17",
+"ambulance":"15",
+"fire":"18"
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"caution",
+"driving":"right"
+},
+"MX":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"127 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"FM":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"MD":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"MC":{
+"emergency":{
+"general":"112",
+"police":"17",
+"ambulance":"18",
+"fire":"18"
+},
+"plugs":[
+"C",
+"D",
+"E",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"safe",
+"driving":"right"
+},
+"MN":{
+"emergency":{
+"general":null,
+"police":"102",
+"ambulance":"103",
+"fire":"101"
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required, but small tips are welcome for good service.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"ME":{
+"emergency":{
+"general":"112",
+"police":"122",
+"ambulance":"124",
+"fire":"123"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"MS":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"230 V",
+"frequency":"60 Hz",
+"tipping":null,
+"tapWater":"caution",
+"driving":"left"
+},
+"MA":{
+"emergency":{
+"general":null,
+"police":"19",
+"ambulance":"15",
+"fire":"15"
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"MZ":{
+"emergency":{
+"general":null,
+"police":"119",
+"ambulance":"117",
+"fire":"198"
+},
+"plugs":[
+"C",
+"F",
+"M"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"MM":{
+"emergency":{
+"general":null,
+"police":"199",
+"ambulance":"192",
+"fire":"191"
+},
+"plugs":[
+"A",
+"C",
+"D",
+"F",
+"G",
+"I"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required, but small tips are welcome for good service.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"NA":{
+"emergency":{
+"general":null,
+"police":"10111",
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"D",
+"M"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"left"
+},
+"NR":{
+"emergency":null,
+"plugs":[
+"I"
+],
+"voltage":"240 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"NP":{
+"emergency":{
+"general":null,
+"police":"100",
+"ambulance":"102",
+"fire":"101"
+},
+"plugs":[
+"C",
+"D",
+"M"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"NL":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"safe",
+"driving":"right"
+},
+"NC":{
+"emergency":{
+"general":null,
+"police":"17",
+"ambulance":"15",
+"fire":"18"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"caution",
+"driving":"right"
+},
+"NZ":{
+"emergency":{
+"general":"111",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"I"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"safe",
+"driving":"left"
+},
+"NI":{
+"emergency":{
+"general":null,
+"police":"118",
+"ambulance":"128",
+"fire":"115"
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"NE":{
+"emergency":null,
+"plugs":[
+"C",
+"D",
+"E",
+"F"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"NG":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"D",
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"NU":{
+"emergency":null,
+"plugs":[
+"I"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":null,
+"driving":"left"
+},
+"NF":{
+"emergency":{
+"general":"000",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"I"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":null,
+"driving":"left"
+},
+"MK":{
+"emergency":{
+"general":"112",
+"police":"192",
+"ambulance":"194",
+"fire":"193"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"MP":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Expected: 15-20% in restaurants, plus small tips for other services.",
+"tapWater":null,
+"driving":"right"
+},
+"NO":{
+"emergency":{
+"general":"112",
+"police":"112",
+"ambulance":"113",
+"fire":"110"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"safe",
+"driving":"right"
+},
+"OM":{
+"emergency":{
+"general":"9999",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"G"
+],
+"voltage":"240 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"PK":{
+"emergency":{
+"general":"1122",
+"police":"15",
+"ambulance":"115",
+"fire":"16"
+},
+"plugs":[
+"C",
+"D",
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required, but small tips are welcome for good service.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"PW":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"PS":{
+"emergency":{
+"general":null,
+"police":"100",
+"ambulance":"101",
+"fire":"102"
+},
+"plugs":[
+"C",
+"H"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"PA":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"PG":{
+"emergency":null,
+"plugs":[
+"I"
+],
+"voltage":"240 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"PY":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"PE":{
+"emergency":{
+"general":null,
+"police":"105",
+"ambulance":"117",
+"fire":"116"
+},
+"plugs":[
+"A",
+"B",
+"C"
+],
+"voltage":"220 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"PH":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B",
+"C"
+],
+"voltage":"230 V",
+"frequency":"60 Hz",
+"tipping":"Not required, but small tips are welcome for good service.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"PL":{
+"emergency":{
+"general":"112",
+"police":"997",
+"ambulance":"999",
+"fire":"998"
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"PT":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"safe",
+"driving":"right"
+},
+"PR":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Expected: 15-20% in restaurants, plus small tips for other services.",
+"tapWater":"safe",
+"driving":"right"
+},
+"QA":{
+"emergency":{
+"general":"999",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"D",
+"G"
+],
+"voltage":"240 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"CG":{
+"emergency":null,
+"plugs":[
+"C",
+"E"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"RE":{
+"emergency":{
+"general":"112",
+"police":"17",
+"ambulance":"15",
+"fire":"18"
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"caution",
+"driving":"right"
+},
+"RO":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"RU":{
+"emergency":{
+"general":"112",
+"police":"102",
+"ambulance":"103",
+"fire":"101"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"RW":{
+"emergency":{
+"general":null,
+"police":"112",
+"ambulance":"912",
+"fire":null
+},
+"plugs":[
+"C",
+"J"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"BL":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"230 V",
+"frequency":"60 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":null,
+"driving":"right"
+},
+"KN":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B",
+"D",
+"G"
+],
+"voltage":"230 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"left"
+},
+"LC":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"G"
+],
+"voltage":"240 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"left"
+},
+"MF":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"220 V",
+"frequency":"60 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":null,
+"driving":"right"
+},
+"PM":{
+"emergency":{
+"general":null,
+"police":"17",
+"ambulance":"15",
+"fire":"18"
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"230 V",
+"frequency":"60 Hz",
+"tipping":null,
+"tapWater":null,
+"driving":"right"
+},
+"VC":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"left"
+},
+"WS":{
+"emergency":{
+"general":null,
+"police":"995",
+"ambulance":"996",
+"fire":"994"
+},
+"plugs":[
+"I"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"SM":{
+"emergency":{
+"general":null,
+"police":"113",
+"ambulance":"118",
+"fire":"115"
+},
+"plugs":[
+"C",
+"F",
+"L"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"safe",
+"driving":"right"
+},
+"ST":{
+"emergency":null,
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"SA":{
+"emergency":{
+"general":"911",
+"police":"999",
+"ambulance":"997",
+"fire":"998"
+},
+"plugs":[
+"A",
+"B",
+"F",
+"G"
+],
+"voltage":"230 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"SN":{
+"emergency":{
+"general":null,
+"police":"17",
+"ambulance":null,
+"fire":"18"
+},
+"plugs":[
+"C",
+"D",
+"E",
+"K"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"RS":{
+"emergency":{
+"general":"112",
+"police":"192",
+"ambulance":"194",
+"fire":"193"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"SC":{
+"emergency":{
+"general":"999",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"G"
+],
+"voltage":"240 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"caution",
+"driving":"left"
+},
+"SL":{
+"emergency":null,
+"plugs":[
+"D",
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"SG":{
+"emergency":{
+"general":null,
+"police":"999",
+"ambulance":"995",
+"fire":"995"
+},
+"plugs":[
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"safe",
+"driving":"left"
+},
+"SX":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"110 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":null,
+"driving":"right"
+},
+"SK":{
+"emergency":{
+"general":"112",
+"police":"158",
+"ambulance":"155",
+"fire":"150"
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"SI":{
+"emergency":{
+"general":"112",
+"police":"113",
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"SB":{
+"emergency":null,
+"plugs":[
+"G",
+"I"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"SO":{
+"emergency":null,
+"plugs":[
+"C"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"ZA":{
+"emergency":{
+"general":"112",
+"police":"10111",
+"ambulance":"10177",
+"fire":null
+},
+"plugs":[
+"C",
+"D",
+"M",
+"N"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"left"
+},
+"KR":{
+"emergency":{
+"general":null,
+"police":"112",
+"ambulance":"119",
+"fire":"119"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"220 V",
+"frequency":"60 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"safe",
+"driving":"right"
+},
+"SS":{
+"emergency":null,
+"plugs":[
+"C",
+"D"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"ES":{
+"emergency":{
+"general":"112",
+"police":"091",
+"ambulance":"061",
+"fire":"080"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"safe",
+"driving":"right"
+},
+"LK":{
+"emergency":{
+"general":null,
+"police":"119",
+"ambulance":"1990",
+"fire":"110"
+},
+"plugs":[
+"D",
+"G",
+"M"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"SD":{
+"emergency":null,
+"plugs":[
+"C",
+"D"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"SR":{
+"emergency":{
+"general":"115",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B",
+"C",
+"F"
+],
+"voltage":"127 V",
+"frequency":"60 Hz",
+"tipping":null,
+"tapWater":"caution",
+"driving":"left"
+},
+"SJ":{
+"emergency":{
+"general":null,
+"police":"112",
+"ambulance":"113",
+"fire":"110"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"safe",
+"driving":"right"
+},
+"SE":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"safe",
+"driving":"right"
+},
+"CH":{
+"emergency":{
+"general":"112",
+"police":"117",
+"ambulance":"144",
+"fire":"118"
+},
+"plugs":[
+"C",
+"J"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"safe",
+"driving":"right"
+},
+"SY":{
+"emergency":{
+"general":null,
+"police":"112",
+"ambulance":"110",
+"fire":"113"
+},
+"plugs":[
+"C",
+"E",
+"L"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"TW":{
+"emergency":{
+"general":null,
+"police":"110",
+"ambulance":"119",
+"fire":"119"
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"110 V",
+"frequency":"60 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"caution",
+"driving":"right"
+},
+"TJ":{
+"emergency":{
+"general":null,
+"police":"102",
+"ambulance":"103",
+"fire":"101"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"TZ":{
+"emergency":{
+"general":null,
+"police":"112",
+"ambulance":"114",
+"fire":"115"
+},
+"plugs":[
+"D",
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"TH":{
+"emergency":{
+"general":null,
+"police":"191",
+"ambulance":"1669",
+"fire":"199"
+},
+"plugs":[
+"A",
+"B",
+"C"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required, but small tips are welcome for good service.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"TL":{
+"emergency":{
+"general":null,
+"police":"112",
+"ambulance":"110",
+"fire":"115"
+},
+"plugs":[
+"C",
+"E",
+"F",
+"I"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"TG":{
+"emergency":{
+"general":null,
+"police":"117",
+"ambulance":null,
+"fire":"118"
+},
+"plugs":[
+"C"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"TK":{
+"emergency":null,
+"plugs":[
+"I"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":null,
+"driving":"left"
+},
+"TO":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"I"
+],
+"voltage":"240 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"TT":{
+"emergency":{
+"general":null,
+"police":"999",
+"ambulance":"811",
+"fire":"990"
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"115 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"left"
+},
+"TN":{
+"emergency":{
+"general":null,
+"police":"197",
+"ambulance":"190",
+"fire":"198"
+},
+"plugs":[
+"C",
+"E"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"TR":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"TM":{
+"emergency":{
+"general":null,
+"police":"102",
+"ambulance":"103",
+"fire":"101"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"TC":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":null,
+"driving":"left"
+},
+"TV":{
+"emergency":null,
+"plugs":[
+"I"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":null,
+"driving":"left"
+},
+"UG":{
+"emergency":{
+"general":"999",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"G"
+],
+"voltage":"240 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"UA":{
+"emergency":{
+"general":"112",
+"police":"102",
+"ambulance":"103",
+"fire":"101"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"caution",
+"driving":"right"
+},
+"AE":{
+"emergency":{
+"general":null,
+"police":"999",
+"ambulance":"998",
+"fire":"997"
+},
+"plugs":[
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"GB":{
+"emergency":{
+"general":"999",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"left"
+},
+"US":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Expected: 15-20% in restaurants, plus small tips for other services.",
+"tapWater":"safe",
+"driving":"right"
+},
+"VI":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"A",
+"B"
+],
+"voltage":"110 V",
+"frequency":"60 Hz",
+"tipping":"Expected: 15-20% in restaurants, plus small tips for other services.",
+"tapWater":"caution",
+"driving":"left"
+},
+"UY":{
+"emergency":{
+"general":"911",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"F",
+"I",
+"L"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"safe",
+"driving":"right"
+},
+"UZ":{
+"emergency":{
+"general":null,
+"police":"102",
+"ambulance":"103",
+"fire":"101"
+},
+"plugs":[
+"C",
+"F"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"VU":{
+"emergency":null,
+"plugs":[
+"I"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not customary. Service is usually included or tipping is not expected.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"VA":{
+"emergency":{
+"general":"112",
+"police":null,
+"ambulance":null,
+"fire":null
+},
+"plugs":[
+"C",
+"F",
+"L"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Not required: round up, or leave 5-10% for good service.",
+"tapWater":"safe",
+"driving":"right"
+},
+"VE":{
+"emergency":null,
+"plugs":[
+"A",
+"B"
+],
+"voltage":"120 V",
+"frequency":"60 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"VN":{
+"emergency":{
+"general":null,
+"police":"113",
+"ambulance":"115",
+"fire":"114"
+},
+"plugs":[
+"A",
+"C",
+"D"
+],
+"voltage":"220 V",
+"frequency":"50 Hz",
+"tipping":"Not required, but small tips are welcome for good service.",
+"tapWater":"unsafe",
+"driving":"right"
+},
+"YE":{
+"emergency":{
+"general":null,
+"police":"194",
+"ambulance":"191",
+"fire":"191"
+},
+"plugs":[
+"A",
+"D",
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":null,
+"tapWater":"unsafe",
+"driving":"right"
+},
+"ZM":{
+"emergency":{
+"general":null,
+"police":"999",
+"ambulance":"991",
+"fire":"993"
+},
+"plugs":[
+"C",
+"D",
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"left"
+},
+"ZW":{
+"emergency":{
+"general":null,
+"police":"995",
+"ambulance":"994",
+"fire":"993"
+},
+"plugs":[
+"D",
+"G"
+],
+"voltage":"230 V",
+"frequency":"50 Hz",
+"tipping":"Appreciated: about 10% in restaurants if service is not on the bill.",
+"tapWater":"unsafe",
+"driving":"left"
+}
+}
+}

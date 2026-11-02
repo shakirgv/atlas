@@ -13,6 +13,7 @@ import {
   Info,
   Languages,
   Landmark,
+  LifeBuoy,
   Loader2,
   MapPin,
   MoreHorizontal,
@@ -62,9 +63,12 @@ import { TransportChip } from "@/components/route/transport-chip";
 import { zoneCity } from "@/lib/timezones";
 import type { ClimateStop } from "@/lib/climate";
 import { CityVerdicts } from "@/components/climate/city-verdicts";
+import type { InfoOverride } from "@/lib/country-info";
+import { EssentialsTab } from "./essentials-tab";
 
 const TABS = [
   { value: "overview", label: "Overview", icon: Info },
+  { value: "essentials", label: "Essentials", icon: LifeBuoy },
   { value: "cities", label: "Cities", icon: Building2 },
   { value: "itinerary", label: "Itinerary", icon: CalendarDays },
   { value: "places", label: "Places", icon: MapPin },
@@ -121,6 +125,7 @@ export function GenerateDaysButton({ countryId, hasDates, variant = "primary", l
 export function CountryDetail({
   legs,
   climateStops,
+  infoOverride,
   country,
   attribution,
   cities,
@@ -136,6 +141,7 @@ export function CountryDetail({
 }: {
   legs: LegView[];
   climateStops: ClimateStop[];
+  infoOverride: InfoOverride;
   country: CountryVM;
   attribution: string | null;
   cities: CityVM[];
@@ -314,6 +320,10 @@ export function CountryDetail({
               </dl>
             </section>
           </div>
+        </TabsContent>
+
+        <TabsContent value="essentials">
+          <EssentialsTab code={country.code} countryId={country.id} override={infoOverride} />
         </TabsContent>
 
         <TabsContent value="cities">

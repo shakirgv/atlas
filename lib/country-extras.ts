@@ -17,7 +17,7 @@ export type CountryExtras = {
   capital?: [number, number] | null;
 };
 
-type File = { reviewed: string; countries: Record<string, CountryExtras> };
+type File = { reviewed: string; note?: string; countries: Record<string, CountryExtras> };
 const data = extras as unknown as File;
 
 export const EXTRAS_REVIEWED = data.reviewed;

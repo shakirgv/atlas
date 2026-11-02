@@ -3,6 +3,7 @@ import type { ClimateMonth, ForecastDay, Verdict } from "@/lib/climate";
 import { ClimateCard } from "@/components/climate/climate-card";
 import { VerdictChip } from "@/components/climate/verdict-chip";
 import { ForecastView, NormalsView, type WeatherStop } from "@/components/dashboard/weather-tile";
+import { EssentialsTab } from "@/components/countries/essentials-tab";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const VERDICTS: Verdict[] = ["good", "hot", "rainy", "cold", "very_hot", "freezing"];
@@ -58,6 +59,12 @@ export function PreviewClient({ liveClimate, liveForecast }: { liveClimate: { ba
               <div className="card flex h-44 flex-col gap-3 p-5">{liveClimate.bangkok && <NormalsView months={liveClimate.bangkok} stop={{ ...TOKYO, name: "Bangkok" }} />}</div>
             </div>
           </div>
+        </Section>
+        <Section title="Essentials: Japan with my edits">
+          <EssentialsTab code="JP" countryId="preview" override={{ tipping: "Never tip, it can confuse staff.", embassy_name: "Embassy of Azerbaijan in Tokyo", embassy_phone: "+81 3 0000 0000", embassy_url: "https://example.org" }} />
+        </Section>
+        <Section title="Essentials: no baseline (Antarctica)">
+          <EssentialsTab code="AQ" countryId="preview" override={null} />
         </Section>
       </main>
     </TooltipProvider>

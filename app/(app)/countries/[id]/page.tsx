@@ -21,10 +21,12 @@ export default async function CountryPage({ params, searchParams }: PageProps<"/
   const days = g.days.filter((d) => d.trip_country_id === id);
   const dayIds = new Set(days.map((d) => d.id));
   const route = tripRoute(tc.trip_id, g.countries, g.cities, scope.settings);
+  const { data: infoOverride } = await supabase.from("country_info_overrides").select("*").eq("country_code", country.code).maybeSingle();
   return (
     <CountryDetail
       legs={route.legs.filter((l) => l.tripCountryId === id)}
       climateStops={climateStopsFor(route.stops, id)}
+      infoOverride={infoOverride}
       country={country}
       attribution={await coverAttribution(supabase, country.cover_path)}
       cities={cities}

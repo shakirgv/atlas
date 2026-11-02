@@ -26,9 +26,12 @@ Delete this file when the whole pack is finished.
 - `lib/climate.ts` (verdicts, normals, WMO codes), `lib/server/weather.ts` (Open-Meteo + `unstable_cache`), `/api/climate`, `/api/forecast`,
   `hooks/use-climate.ts`, `components/climate/*`, dashboard `weather-tile.tsx`, `/dev/preview` fixture gallery (dev only).
 
+## Done: 3.4 Country essentials
+- `data/country-extras.json` (filled), `lib/country-info.ts`, `actions/country-info.ts`, `components/countries/essentials-tab.tsx`,
+  `/countries/[id]/card` (`print-country-card.tsx`).
+
 ## Next steps (build order from IMPROVEMENTS.md §5)
-3.4 Country essentials (`data/country-extras.json` is still an empty stub; `lib/country-extras.ts` is ready)
-→ 3.1 Visa/entry → 3.8 Cash → 3.9 Receipts → 3.7 Photo pins → 3.10 MFA + PIN vault → 3.5 Map export
+3.1 Visa/entry → 3.8 Cash → 3.9 Receipts → 3.7 Photo pins → 3.10 MFA + PIN vault → 3.5 Map export
 → 3.11 On this day + Recap → 3.12 Share links → polish/README/final report.
 
 ## Notes for a fresh session
