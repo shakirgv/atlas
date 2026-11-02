@@ -11,6 +11,8 @@ import type { ItineraryDay, ItineraryItem, PlaceCategory } from "@/lib/types";
 import { PLACE_CATEGORY_META } from "@/lib/icons";
 import { pluralize } from "@/lib/utils";
 import { CityClimateCard } from "@/components/climate/climate-card";
+import { PhotoLightbox } from "@/components/photos/photo-grid";
+import type { PhotoPin } from "@/lib/photo-pins";
 import { CoverActions } from "@/components/cover/cover-actions";
 import { EmptyState } from "@/components/common/empty-state";
 import { Hero, HeroButton } from "@/components/common/hero";
@@ -30,6 +32,7 @@ import { CityEditDialog } from "./city-edit-dialog";
 
 export function CityDetail({
   city,
+  pins,
   stay,
   attribution,
   places,
@@ -38,6 +41,7 @@ export function CityDetail({
   memories,
 }: {
   city: CityVM;
+  pins: PhotoPin[];
   stay: { arrive: string | null; depart: string | null };
   attribution: string | null;
   places: PlaceVM[];
@@ -50,7 +54,9 @@ export function CityDetail({
   const confirm = useConfirm();
   const [view, setView] = useState<"list" | "map">("list");
   const [editOpen, setEditOpen] = useState(false);
+  const [photoIndex, setPhotoIndex] = useState(-1);
   const [, start] = useTransition();
+  const pinPhotos = pins.map((p) => p.photo);
   const nights = daysBetween(city.arrive_date, city.depart_date);
   const markers = places
     .filter((p) => p.lat != null && p.lng != null)
@@ -138,6 +144,18 @@ export function CityDetail({
           )}
         </section>
         <aside className="flex min-w-0 flex-col gap-6 lg:col-span-4">
+          {pins.length > 0 && (
+            <section className="card overflow-hidden" aria-label="Photo pins">
+              <MapView
+                className="h-52"
+                markers={pins.map((p) => ({ id: p.photo.id, lat: p.lat, lng: p.lng, label: p.label, image: p.photo.thumb_url }))}
+                onMarkerClick={(id) => setPhotoIndex(pinPhotos.findIndex((p) => p.id === id))}
+              />
+              <p className="flex items-center gap-1.5 px-4 py-2.5 text-xs text-muted">
+                <Camera className="size-3.5 text-accent" /> {pluralize(pins.length, "photo")} in {city.name}
+              </p>
+            </section>
+          )}
           {city.lat != null && city.lng != null && <CityClimateCard lat={city.lat} lng={city.lng} arrive={stay.arrive} depart={stay.depart} />}
           <section className="card p-5" aria-labelledby="days-title">
             <SectionTitle>
@@ -200,6 +218,7 @@ export function CityDetail({
         </SectionTitle>
         <NotesEditor initial={city.notes} onSave={(v) => saveCityNotes(city.id, v)} placeholder={`Neighbourhoods, transport tips, what to try in ${city.name}…`} />
       </section>
+      {pinPhotos.length > 0 && <PhotoLightbox photos={pinPhotos} index={photoIndex} onClose={() => setPhotoIndex(-1)} />}
       {editOpen && <CityEditDialog open onOpenChange={setEditOpen} city={city} />}
     </PageTransition>
   );

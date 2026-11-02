@@ -7,7 +7,7 @@ import { zoom as d3zoom, zoomIdentity, type ZoomBehavior } from "d3-zoom";
 import { feature } from "topojson-client";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import type { GeometryCollection, Topology } from "topojson-specification";
-import { House, Minus, Plane, Plus, RotateCcw } from "lucide-react";
+import { Camera, House, Minus, Plane, Plus, RotateCcw } from "lucide-react";
 import world from "world-atlas/countries-110m.json";
 import { getCountryByCcn3 } from "@/lib/countries";
 import { fmtRange } from "@/lib/dates";
@@ -18,6 +18,7 @@ import { TRANSPORT_MODES, type TransportMode } from "@/lib/types";
 import type { DisplayStatus, GeoStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useReducedMotion } from "@/hooks/use-media-query";
+import type { PhotoBadge } from "@/lib/photo-pins";
 
 const W = 960;
 const H = 500;
@@ -105,13 +106,16 @@ export function modesInUse(routes: RoutePoint[][]): TransportMode[] {
   return TRANSPORT_MODES.filter((m) => set.has(m));
 }
 export type MapCity = { id: string; name: string; lat: number; lng: number };
-export type Layers = { visited: boolean; planned: boolean; wishlist: boolean; route: boolean; cities: boolean };
-export const DEFAULT_LAYERS: Layers = { visited: true, planned: true, wishlist: true, route: true, cities: true };
+export type Layers = { visited: boolean; planned: boolean; wishlist: boolean; route: boolean; cities: boolean; photos: boolean };
+export const DEFAULT_LAYERS: Layers = { visited: true, planned: true, wishlist: true, route: true, cities: true, photos: false };
+/** From this zoom on, badges and dots switch from per country to per city. */
+const CITY_ZOOM = 2.5;
 
 export function WorldMap({
   states,
   routes = [],
   cities = [],
+  photoBadges,
   layers = DEFAULT_LAYERS,
   compact,
   onCountryClick,
@@ -123,6 +127,7 @@ export function WorldMap({
   states: Record<string, MapCountryState>;
   routes?: RoutePoint[][];
   cities?: MapCity[];
+  photoBadges?: { cities: PhotoBadge[]; countries: PhotoBadge[] };
   layers?: Layers;
   compact?: boolean;
   onCountryClick?: (code: string, point: { x: number; y: number }) => void;
@@ -264,7 +269,7 @@ export function WorldMap({
               }),
             )}
           {layers.cities &&
-            t.k > 2.5 &&
+            t.k > CITY_ZOOM &&
             cityDots.map((c) => (
               <g key={c.id} transform={`translate(${c.xy[0]},${c.xy[1]}) scale(${inv})`}>
                 <circle r={3.5} fill="var(--surface)" stroke="var(--ink)" strokeWidth={1.2} />
@@ -322,6 +327,25 @@ export function WorldMap({
                 </g>
               );
             })}
+          {layers.photos &&
+            (t.k > CITY_ZOOM ? photoBadges?.cities : photoBadges?.countries)?.map((b) => {
+              const xy = projection([b.lng, b.lat]);
+              if (!xy) return null;
+              const label = String(b.count);
+              const width = 24 + label.length * 7;
+              return (
+                <g key={b.key} data-testid="photo-badge" transform={`translate(${xy[0]},${xy[1]}) scale(${inv})`} role="img" aria-label={`${b.count} photos in ${b.name}`}>
+                  <title>{`${b.count} photos in ${b.name}`}</title>
+                  <g transform="translate(14,-22)">
+                    <rect x={0} y={0} width={width} height={20} rx={10} fill="var(--ink)" stroke="var(--surface)" strokeWidth={1.5} />
+                    <Camera x={5} y={4} width={12} height={12} color="var(--surface)" strokeWidth={2} />
+                    <text x={20} y={14} fontSize={11} fontWeight={600} fill="var(--surface)" className="num">
+                      {label}
+                    </text>
+                  </g>
+                </g>
+              );
+            })}
         </g>
       </svg>
 
@@ -376,13 +400,14 @@ export function WorldMap({
   );
 }
 
-export function MapLegend({ layers, onToggle, className, modes = [] }: { layers: Layers; onToggle?: (key: keyof Layers) => void; className?: string; modes?: TransportMode[] }) {
+export function MapLegend({ layers, onToggle, className, modes = [], hasPhotos }: { layers: Layers; onToggle?: (key: keyof Layers) => void; className?: string; modes?: TransportMode[]; hasPhotos?: boolean }) {
   const items: { key: keyof Layers; label: string; color: string }[] = [
     { key: "visited", label: "Visited", color: "var(--visited)" },
     { key: "planned", label: "Planned", color: "var(--planned)" },
     { key: "wishlist", label: "Wishlist", color: "var(--wishlist)" },
     { key: "route", label: "Route", color: "var(--accent)" },
     { key: "cities", label: "Cities", color: "var(--ink)" },
+    ...(hasPhotos ? [{ key: "photos" as const, label: "Photos", color: "var(--ink)" }] : []),
   ];
   return (
     <div className={cn("flex flex-wrap gap-1.5", className)} role="group" aria-label="Map layers">
@@ -402,6 +427,8 @@ export function MapLegend({ layers, onToggle, className, modes = [] }: { layers:
             <span className="h-0.5 w-3.5 rounded-full" style={{ background: i.color }} />
           ) : i.key === "cities" ? (
             <span className="size-2 rounded-full border-[1.5px] bg-surface" style={{ borderColor: i.color }} />
+          ) : i.key === "photos" ? (
+            <Camera className="size-3.5" style={{ color: i.color }} />
           ) : (
             <span className="size-2.5 rounded-[3px]" style={{ background: i.color }} />
           )}

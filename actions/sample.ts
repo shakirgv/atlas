@@ -58,6 +58,23 @@ async function seedReceipt(supabase: ServerSupabase, userId: string, expenseId: 
   }
 }
 
+/** A generated gradient picture attached to a memory. Best effort, like the receipts. */
+async function seedPhoto(supabase: ServerSupabase, userId: string, memoryId: string, caption: string, from: string, to: string, lat: number | null, lng: number | null, date: string) {
+  try {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient></defs><rect width="1200" height="900" fill="url(#g)"/><text x="600" y="470" font-family="serif" font-size="72" text-anchor="middle" fill="white" opacity="0.85">Sample photo</text></svg>`;
+    const image = sharp(Buffer.from(svg));
+    const [full, thumb] = await Promise.all([image.clone().webp({ quality: 78 }).toBuffer(), image.clone().resize({ width: 480 }).webp({ quality: 72 }).toBuffer()]);
+    const base = `${userId}/memory/${memoryId}/${crypto.randomUUID()}`;
+    const bucket = supabase.storage.from(BUCKETS.photos);
+    const a = await bucket.upload(`${base}.webp`, full, { contentType: "image/webp" });
+    const b = await bucket.upload(`${base}_thumb.webp`, thumb, { contentType: "image/webp" });
+    if (a.error || b.error) return;
+    await supabase.from("photos").insert({ entity_type: "memory", entity_id: memoryId, path: `${base}.webp`, thumb_path: `${base}_thumb.webp`, width: 1200, height: 900, caption, lat, lng, taken_at: `${date}T17:00:00Z`, source: "upload" });
+  } catch {
+    // Only the sample picture is missing then.
+  }
+}
+
 export async function loadSampleData(): Promise<ActionResult<{ tripId: string }>> {
   try {
     const { supabase, user } = await requireUser();
@@ -285,7 +302,7 @@ export async function loadSampleData(): Promise<ActionResult<{ tripId: string }>
       );
     }
 
-    must(
+    const sampleMemories = must(
       await supabase.from("memories").insert([
         {
           trip_id: trip.id,
@@ -318,7 +335,19 @@ export async function loadSampleData(): Promise<ActionResult<{ tripId: string }>
           mood: "✨",
           tags: ["rome", "walk"],
         },
-      ]),
+      ]).select("id, title"),
+    );
+
+    // Generated pictures with GPS, so Photo pins has something to show. The last has no location, for the tray.
+    const memoryId = (title: string) => sampleMemories.find((m) => m.title === title)!.id;
+    await Promise.all(
+      [
+        ["First evening on the Bosphorus", "Bosphorus", "#d9774a", "#35506b", 41.0422, 29.0083],
+        ["Baklava at Karaköy", "Karaköy", "#c9a227", "#6b4a2b", 41.0228, 28.977],
+        ["Lost in Monti", "Monti", "#6f8f5f", "#3a4f3a", 41.8958, 12.4938],
+        ["Lost in Monti", "Via Urbana", "#b8865a", "#4f3a2e", 41.8964, 12.4951],
+        ["Lost in Monti", "Somewhere", "#7c8db5", "#2e3a52", null, null],
+      ].map(([title, caption, from, to, lat, lng]) => seedPhoto(supabase, user.id, memoryId(title as string), caption as string, from as string, to as string, lat as number | null, lng as number | null, d(-3))),
     );
 
     const sampleDocs = must(

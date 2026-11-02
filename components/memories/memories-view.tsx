@@ -14,7 +14,8 @@ import { PageHeader } from "@/components/common/page-header";
 import { PageTransition } from "@/components/common/motion";
 import { MemoryComposerCard, type PlaceLite } from "@/components/forms/memory-composer";
 import { PhotoGrid, PhotoLightbox } from "@/components/photos/photo-grid";
-import { MapView } from "@/components/map/map";
+import { PhotoMap, type MemoryPin } from "@/components/photos/photo-map";
+import type { PhotoPin, UnlocatedPhoto } from "@/lib/photo-pins";
 import { useConfirm } from "@/components/ui/confirm";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { NativeSelect } from "@/components/ui/input";
@@ -92,6 +93,9 @@ function MemoryCard({ m, country, city, place, highlighted, onEdit }: { m: Memor
 
 export function MemoriesView({
   memories,
+  pins,
+  unlocated,
+  trips,
   countries,
   cities,
   places,
@@ -99,6 +103,9 @@ export function MemoriesView({
   initialTab,
 }: {
   memories: MemoryVM[];
+  pins: PhotoPin[];
+  unlocated: UnlocatedPhoto[];
+  trips: { id: string; title: string }[];
   countries: CountryLite[];
   cities: CityLite[];
   places: PlaceLite[];
@@ -134,19 +141,15 @@ export function MemoriesView({
     [memories, country, city],
   );
 
-  // Map: photo GPS first, then the linked place, then the linked city.
-  const mapMarkers = useMemo(() => {
-    const out: { id: string; lat: number; lng: number; label: string; image?: string | null; color?: string; glyph?: string }[] = [];
+  // A memory with no photos is still pinned where it happened.
+  const memoryPins = useMemo(() => {
+    const out: MemoryPin[] = [];
     for (const m of memories) {
-      const geo = m.photos.filter((p) => p.lat != null && p.lng != null);
-      if (geo.length) {
-        geo.forEach((p) => out.push({ id: `${m.id}:${p.id}`, lat: p.lat!, lng: p.lng!, label: m.title ?? fmtDate(m.date), image: p.thumb_url }));
-        continue;
-      }
+      if (m.photos.length) continue;
       const pl = places.find((p) => p.id === m.place_id);
       const ci = cities.find((c) => c.id === m.city_id);
       const loc = pl?.lat != null && pl?.lng != null ? { lat: pl.lat, lng: pl.lng } : ci?.lat != null && ci?.lng != null ? { lat: ci.lat, lng: ci.lng } : null;
-      if (loc) out.push({ id: m.id, lat: loc.lat + (out.length % 5) * 0.0007, lng: loc.lng, label: m.title ?? fmtDate(m.date), image: m.photos[0]?.thumb_url ?? null, glyph: m.mood ?? "•" });
+      if (loc) out.push({ id: m.id, lat: loc.lat, lng: loc.lng, label: m.title ?? fmtDate(m.date), glyph: m.mood ?? "•" });
     }
     return out;
   }, [memories, places, cities]);
@@ -233,14 +236,16 @@ export function MemoriesView({
             )}
           </TabsContent>
           <TabsContent value="map">
-            <MapView
-              className="h-[62vh] min-h-96 rounded-[16px] border border-border"
-              markers={mapMarkers}
-              onMarkerClick={(id) => {
+            <PhotoMap
+              pins={pins}
+              unlocated={unlocated}
+              memoryPins={memoryPins}
+              trips={trips}
+              countries={countries}
+              onMemory={(id) => {
                 setTab("timeline");
-                setTimeout(() => document.getElementById(`memory-${id.split(":")[0]}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+                setTimeout(() => document.getElementById(`memory-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
               }}
-              emptyLabel="Photos with GPS, or memories linked to a place or city, appear here"
             />
             <p className="mt-2 text-xs text-muted">Pinned by photo GPS when available, otherwise by the linked place or city.</p>
           </TabsContent>

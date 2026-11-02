@@ -14,6 +14,7 @@ import { GeoStatusChip } from "@/components/common/status-chip";
 import { Button } from "@/components/ui/button";
 import { useDefaultTripId, useWorkspace } from "@/components/shell/workspace";
 import { transportMeta } from "@/lib/transport";
+import type { PhotoBadge } from "@/lib/photo-pins";
 import { DEFAULT_LAYERS, MapLegend, modesInUse, WorldMap, type Layers, type MapCity, type MapCountryState, type RoutePoint } from "./world-map";
 
 export function MapExplorer({
@@ -23,6 +24,7 @@ export function MapExplorer({
   inScopeIds,
   countries,
   cityCounts,
+  photoBadges,
 }: {
   states: Record<string, MapCountryState>;
   routes: RoutePoint[][];
@@ -30,6 +32,7 @@ export function MapExplorer({
   inScopeIds: Record<string, string>;
   countries: CountryVM[];
   cityCounts: Record<string, number>;
+  photoBadges: { cities: PhotoBadge[]; countries: PhotoBadge[] };
 }) {
   const ws = useWorkspace();
   const router = useRouter();
@@ -118,7 +121,7 @@ export function MapExplorer({
   return (
     <div className="-mx-4 -mb-32 -mt-6 grid h-[calc(100dvh-3.5rem-64px-env(safe-area-inset-bottom))] md:-mx-8 md:-mb-16 md:-mt-8 md:h-[calc(100dvh-4rem)] lg:grid-cols-[1fr_340px]">
       <div className="relative min-h-0 overflow-hidden bg-ocean">
-        <WorldMap states={states} routes={routes} cities={cities} layers={layers} onCountryClick={onClick} highlight={hl ?? popover?.code} className="size-full" controlsClassName="max-lg:bottom-[84px]" />
+        <WorldMap states={states} routes={routes} cities={cities} photoBadges={photoBadges} layers={layers} onCountryClick={onClick} highlight={hl ?? popover?.code} className="size-full" controlsClassName="max-lg:bottom-[84px]" />
         <div className="pointer-events-none absolute inset-x-3 top-3 flex flex-col gap-2 md:inset-x-5 md:top-5">
           <div className="pointer-events-auto flex flex-wrap items-center gap-3 self-start rounded-2xl border border-border bg-surface/85 px-3 py-2 text-xs backdrop-blur">
             <span>
@@ -131,7 +134,7 @@ export function MapExplorer({
               <b className="num font-display text-base">{counts.wishlist}</b> wishlist
             </span>
           </div>
-          <MapLegend className="pointer-events-auto" modes={modesInUse(routes)} layers={layers} onToggle={(k) => setLayers((l) => ({ ...l, [k]: !l[k] }))} />
+          <MapLegend className="pointer-events-auto" modes={modesInUse(routes)} hasPhotos={photoBadges.cities.length > 0 || photoBadges.countries.length > 0} layers={layers} onToggle={(k) => setLayers((l) => ({ ...l, [k]: !l[k] }))} />
         </div>
         {popover && info && (
           <div className="absolute z-20 w-64 rounded-2xl border border-border bg-surface p-4 shadow-xl" style={{ left: `clamp(12px, ${popover.x - 128}px, calc(100% - 268px))`, top: `clamp(12px, ${popover.y + 12}px, calc(100% - 180px))` }} role="dialog" aria-label={`${info.name}`}>

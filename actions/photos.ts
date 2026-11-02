@@ -98,6 +98,19 @@ export async function receiptDownloadUrls(ids: string[]): Promise<ActionResult<R
   }
 }
 
+/** Manual geotag from the "Photos without location" tray. The GPS lives only in the database, never in the file. */
+export async function setPhotoLocation(id: string, lat: number, lng: number): Promise<ActionResult> {
+  try {
+    const { supabase } = await requireUser();
+    const point = z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }).parse({ lat, lng });
+    must(await supabase.from("photos").update(point).eq("id", z.uuid().parse(id)).neq("entity_type", "expense"));
+    refreshAll();
+    return ok();
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 export async function deletePhoto(id: string): Promise<ActionResult> {
   try {
     const { supabase } = await requireUser();

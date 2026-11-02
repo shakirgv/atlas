@@ -40,8 +40,11 @@ Delete this file when the whole pack is finished.
 ## Done: 3.9 Receipts
 - `lib/receipts.ts`, `components/budget/receipts.tsx`, expense table cell + filter + ZIP, expense form picker, `photos` preset in `lib/upload.ts`.
 
+## Done: 3.7 Photo pins
+- `lib/photo-pins.ts`, `lib/server/photo-pins.ts`, `components/photos/photo-map*.tsx`, Memories tab "Map", city mini-map, world map Photos layer, `setPhotoLocation`.
+
 ## Next steps (build order from IMPROVEMENTS.md §5)
-3.7 Photo pins → 3.10 MFA + PIN vault → 3.5 Map export
+3.10 MFA + PIN vault → 3.5 Map export
 → 3.11 On this day + Recap → 3.12 Share links → polish/README/final report.
 
 ## Notes for a fresh session

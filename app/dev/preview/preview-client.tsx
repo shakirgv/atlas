@@ -8,6 +8,8 @@ import { EntryTab } from "@/components/entry/entry-tab";
 import { EntryTable } from "@/components/entry/entry-table";
 import { CashTab } from "@/components/cash/cash-tab";
 import { ExpenseTable } from "@/components/budget/expense-table";
+import { PhotoMap } from "@/components/photos/photo-map";
+import type { PhotoPin, UnlocatedPhoto } from "@/lib/photo-pins";
 import { useState } from "react";
 import type { Expense, PhotoView } from "@/lib/types";
 import { planExchange, planSpend, planWithdrawal, summarizeCash } from "@/lib/cash";
@@ -82,6 +84,22 @@ const RECEIPT_IMG = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http:/
 const expenseRow = (id: string, title: string, category: string, amount: number, currency: string, base: number, kind = "actual", payment = "card") => ({ id, title, category, amount, currency, amount_base: base, kind, payment_method: payment, date: todayIso(), fx_rate: 1, trip_id: "t", trip_country_id: null, city_id: "c", wallet_id: null, notes: null, user_id: "u", created_at: "" }) as unknown as Expense;
 const EXPENSES = [expenseRow("a", "Ramen in Shibuya", "food", 3500, "JPY", 25.9, "actual", "cash"), expenseRow("b", "Hotel in Shinjuku", "accommodation", 168000, "JPY", 1244), expenseRow("c", "Taxi", "transport", 2200, "JPY", 16.3), expenseRow("d", "Ryokan in Kyoto", "accommodation", 120000, "JPY", 889, "planned")];
 const RECEIPTS = { a: [{ id: "r1", thumb_url: RECEIPT_IMG, url: RECEIPT_IMG, width: 300, height: 400 } as unknown as PhotoView, { id: "r2", thumb_url: RECEIPT_IMG, url: RECEIPT_IMG, width: 300, height: 400 } as unknown as PhotoView] };
+
+const swatch = (color: string) => `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="${color}"/></svg>`)}`;
+const pinPhoto = (id: string, color: string, caption: string) => ({ id, url: swatch(color), thumb_url: swatch(color), caption, width: 200, height: 200 }) as unknown as PhotoView;
+/** Rome close together, so they cluster and split on zoom; one far-away pin; two for the tray. */
+const PIN_BASE = { source: "gps" as const, tripId: "t", tripCountryId: "it", cityId: "rome", year: "2026" };
+const PINS: PhotoPin[] = [
+  { ...PIN_BASE, photo: pinPhoto("p1", "#d9774a", "Colosseum"), lat: 41.8902, lng: 12.4922, label: "Colosseum" },
+  { ...PIN_BASE, photo: pinPhoto("p2", "#6f8f5f", "Forum"), lat: 41.8925, lng: 12.4853, label: "Forum" },
+  { ...PIN_BASE, photo: pinPhoto("p3", "#7c8db5", "Trevi"), lat: 41.9009, lng: 12.4833, label: "Trevi" },
+  { ...PIN_BASE, photo: pinPhoto("p4", "#c9a227", "Pantheon"), lat: 41.8986, lng: 12.4769, label: "Pantheon" },
+  { ...PIN_BASE, tripCountryId: "jp", cityId: "tokyo", year: "2025", photo: pinPhoto("p5", "#b8865a", "Tokyo"), lat: 35.6762, lng: 139.6503, label: "Tokyo" },
+];
+const TRAY: UnlocatedPhoto[] = [
+  { tripId: "t", tripCountryId: "it", cityId: null, year: "2026", label: "No GPS", photo: pinPhoto("u1", "#35506b", "") },
+  { tripId: "t", tripCountryId: "it", cityId: null, year: "2026", label: "No GPS 2", photo: pinPhoto("u2", "#6b4a2b", "") },
+];
 
 /** Runs a file through the real compression pipeline, so the size target can be checked without Storage. */
 function ReceiptProbe() {
@@ -158,6 +176,9 @@ export function PreviewClient({ liveClimate, liveForecast }: { liveClimate: { ba
               <div className="card flex h-44 flex-col gap-3 p-5">{liveClimate.bangkok && <NormalsView months={liveClimate.bangkok} stop={{ ...TOKYO, name: "Bangkok" }} />}</div>
             </div>
           </div>
+        </Section>
+        <Section title="Photo pins">
+          <PhotoMap pins={PINS} unlocated={TRAY} trips={[{ id: "t", title: "Sample trip" }]} countries={[{ id: "it", name: "Italy", flag: "🇮🇹" }, { id: "jp", name: "Japan", flag: "🇯🇵" }]} saveLocation={async () => ({ ok: true, data: undefined })} />
         </Section>
         <Section title="Expenses with receipts">
           <ReceiptProbe />

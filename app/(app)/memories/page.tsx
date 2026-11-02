@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getScope } from "@/lib/scope";
 import { loadGraph } from "@/lib/data";
+import { loadPhotoPins } from "@/lib/server/photo-pins";
 import { MemoriesView } from "@/components/memories/memories-view";
 
 export const metadata: Metadata = { title: "Memories" };
@@ -9,9 +10,13 @@ export default async function MemoriesPage({ searchParams }: PageProps<"/memorie
   const sp = await searchParams;
   const { supabase, scope } = await getScope();
   const g = await loadGraph(supabase, scope.trips, scope.tripIds, { memories: true, places: true });
+  const { pins, unlocated } = await loadPhotoPins(supabase, g);
   return (
     <MemoriesView
       memories={g.memories}
+      pins={pins}
+      unlocated={unlocated}
+      trips={g.trips.map((t) => ({ id: t.id, title: t.title }))}
       countries={g.countries.map((c) => ({ id: c.id, name: c.name, flag: c.flag }))}
       cities={g.cities.map((c) => ({ id: c.id, name: c.name, trip_country_id: c.trip_country_id, lat: c.lat, lng: c.lng }))}
       places={g.places.map((p) => ({ id: p.id, name: p.name, city_id: p.city_id, lat: p.lat, lng: p.lng }))}
