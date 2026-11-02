@@ -40,6 +40,12 @@ export const SHAPES = FEATURES.map((f: Feature<Geometry>) => {
   return { id: String(f.id), code: info?.cca2 ?? null, name: info?.name ?? "", flag: info?.flag ?? "", d: path(f) ?? "", feature: f };
 });
 
+/**
+ * Screen positions get rounded: Node and the browser can differ in the last digits of the same
+ * calculation, and React reports that as a hydration mismatch. A hundredth of a unit can't be seen.
+ */
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
 /** Zoom transform that frames the given route points (with padding), capped so context stays visible. */
 function fitTransform(routes: RoutePoint[][], maxK: number) {
   const pts = routes.flat().map((p) => projection([p.lng, p.lat])).filter((p): p is [number, number] => Boolean(p));
@@ -53,7 +59,7 @@ function fitTransform(routes: RoutePoint[][], maxK: number) {
   const cy = (y0 + y1) / 2;
   const x = Math.min(0, Math.max(W - W * k, W / 2 - cx * k));
   const y = Math.min(0, Math.max(H - H * k, H / 2 - cy * k));
-  return { k, x, y };
+  return { k: Math.round(k * 10000) / 10000, x: r2(x), y: r2(y) };
 }
 
 export type MapCountryState = {
@@ -96,7 +102,7 @@ export function buildRouteLegs(route: RoutePoint[], proj = projection): RouteLeg
     const d = gc ? (p({ type: "LineString", coordinates: [[from.lng, from.lat], [to.lng, to.lat]] }) ?? "") : `M${a[0]},${a[1]}L${b[0]},${b[1]}`;
     const m = gc ? arcMidpoint(from, to) : null;
     const mid = (m ? proj([m.lng, m.lat]) : [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]) ?? [0, 0];
-    return { key: `${from.id}-${to.id}`, from, to, d, mid: mid as [number, number], mode: to.mode ?? null, greatCircle: gc, length: Math.hypot(a[0] - b[0], a[1] - b[1]) };
+    return { key: `${from.id}-${to.id}`, from, to, d, mid: [r2(mid[0]), r2(mid[1])] as [number, number], mode: to.mode ?? null, greatCircle: gc, length: Math.hypot(a[0] - b[0], a[1] - b[1]) };
   });
 }
 
@@ -184,13 +190,20 @@ export function WorldMap({
         let n = 0;
         return r.map((p) => {
           const xy = projection([p.lng, p.lat]) ?? [0, 0];
-          return { ...p, n: p.home || p.minor ? 0 : ++n, x: xy[0], y: xy[1] };
+          return { ...p, n: p.home || p.minor ? 0 : ++n, x: r2(xy[0]), y: r2(xy[1]) };
         });
       }),
     [routes],
   );
   const [hoverLeg, setHoverLeg] = useState<{ leg: RouteLeg; x: number; y: number; w: number } | null>(null);
-  const cityDots = useMemo(() => cities.map((c) => ({ ...c, xy: projection([c.lng, c.lat]) ?? [0, 0] })), [cities]);
+  const cityDots = useMemo(
+    () =>
+      cities.map((c) => {
+        const xy = projection([c.lng, c.lat]) ?? [0, 0];
+        return { ...c, xy: [r2(xy[0]), r2(xy[1])] };
+      }),
+    [cities],
+  );
   const hoverState = hover ? states[hover.code] : undefined;
   const hoverShape = hover ? SHAPES.find((s) => s.code === hover.code) : undefined;
   const inv = 1 / t.k;
@@ -334,7 +347,7 @@ export function WorldMap({
               const label = String(b.count);
               const width = 24 + label.length * 7;
               return (
-                <g key={b.key} data-testid="photo-badge" transform={`translate(${xy[0]},${xy[1]}) scale(${inv})`} role="img" aria-label={`${b.count} photos in ${b.name}`}>
+                <g key={b.key} data-testid="photo-badge" transform={`translate(${r2(xy[0])},${r2(xy[1])}) scale(${inv})`} role="img" aria-label={`${b.count} photos in ${b.name}`}>
                   <title>{`${b.count} photos in ${b.name}`}</title>
                   <g transform="translate(14,-22)">
                     <rect x={0} y={0} width={width} height={20} rx={10} fill="var(--ink)" stroke="var(--surface)" strokeWidth={1.5} />

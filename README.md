@@ -19,7 +19,10 @@ Built with **Next.js 16** (App Router, React 19, TypeScript strict), **Tailwind 
    - The `service_role` key is optional and only for share links; see [Share links](#share-links). Never prefix it with `NEXT_PUBLIC_`.
 2. **Run the files in `supabase/migrations/` in order in the Supabase SQL editor: `001`, `002`, `003`, `004`.**
    - Dashboard → **SQL Editor** → **New query** → paste the *whole* file `supabase/migrations/001_init.sql` → **Run**.
-   - Then a new query with `supabase/migrations/002_extras.sql` → **Run** (bookings, packing lists, packing templates).
+   - Then a new query for each of the others, in order:
+     - `002_extras.sql`: bookings, packing lists, packing templates.
+     - `003_improvements.sql`: entry requirements, cash wallets, country overrides, share links, transport, time zones.
+     - `004_extra_lock.sql`: two-factor enforcement and the PIN vault. Run it after `003`; it replaces two of its functions.
    - This creates every table, row-level security, the two **private** storage buckets (`photos`, `documents`) and their storage policies.
 3. **In Supabase Auth: create your user, and turn off "Allow new users to sign up".**
    - **Authentication → Users → Add user → Create new user**: your email + a password, tick **Auto Confirm User**.
@@ -59,7 +62,9 @@ npm install
 npm run dev
 ```
 
-Other scripts: `npm run build`, `npm run start`, `npm run lint`, `npx tsc --noEmit`.
+Other scripts: `npm run build`, `npm run start`, `npm run lint`, `npm test`, `npx tsc --noEmit`.
+
+In development, `/dev/preview` shows every new feature's states on fixtures with no database (plus `/dev/preview/dashboard`, `/dev/preview/card` and `/dev/preview/share`). These routes answer 404 in production.
 
 ### Optional: fully local Supabase (Docker)
 
@@ -79,6 +84,7 @@ npx supabase db reset       # applies supabase/migrations/*.sql
 3. Under **Environment Variables** add exactly:
    - `NEXT_PUBLIC_SUPABASE_URL` = your Project URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = your anon key
+   - Optional, only for [share links](#share-links): `SUPABASE_SERVICE_ROLE_KEY`, as a server-only secret. Never prefix it with `NEXT_PUBLIC_`.
 4. Click **Deploy**. Open the deployment URL on your phone and sign in.
 5. Optional but recommended: in Supabase → **Authentication → URL Configuration**, set **Site URL** to your Vercel URL.
 6. Install on your phone: Safari → Share → **Add to Home Screen** (iOS) or Chrome → **Install app** (Android).
@@ -112,6 +118,20 @@ CLI alternative: `npx vercel` (link the project), `npx vercel env add NEXT_PUBLI
 - Printable itinerary (print stylesheet → Save as PDF).
 - JSON import, "On this day" memories widget, PWA (manifest, icons, service worker).
 
+**Feature pack 2**
+- **Visa and entry tracker:** country tab "Entry" and Documents tab "Visas & entry": requirement, status, dates, fee, official source, editable checklist, linked document, and computed warnings (stay too long, apply-by date, visa window, passport validity, re-check). Nothing is pre-filled, because rules depend on your passport.
+- **Season and weather:** city "Climate" card from Open-Meteo normals (last 5 years), verdict chips on the country overview and trip route, forecast or normals on the dashboard.
+- **Time zones and jet lag:** dashboard Time tile, shift and adaptation chips on the route, a soft banner on the arrival day after a big shift.
+- **Country card:** tab "Essentials" with tap-to-call emergency numbers, plugs, tipping, tap water, embassy and notes, editable inline, plus a one-page printable card.
+- **Shareable map image:** export dialog with five shapes and three themes; PNG, SVG, copy and share.
+- **Transport on the route:** a mode per leg with its own arc style and icon on the maps, and inline editing from the route list.
+- **Photo pins:** Memories map with clusters, thumbnails and filters, a tray to geotag photos by drag or tap, city mini-map and a Photos layer on the world map.
+- **Cash wallets:** Budget tab "Cash": withdrawals, exchanges, spending, effective rate against mid-market, and fees as the only expense.
+- **Receipts:** attach by camera or file, missing-receipt filter, CSV column and a ZIP with readable file names.
+- **Extra lock:** two-factor login and a PIN for sensitive documents, enforced by the database.
+- **On this day and year recap:** dashboard widget and `/recap/[year]` story slides with PNG export.
+- **Share links:** a memory, trip story or recap on a public page you can revoke; see [Share links](#share-links).
+
 ## Project structure
 
 ```
@@ -122,7 +142,10 @@ app/api/export|import      data portability
 actions/                   server actions per module (each calls supabase.auth.getUser())
 components/                ui/, shell/, forms/, map/, charts/, photos/, and one folder per module
 lib/                       supabase clients, countries, dates, money, fx, status, data loaders, config (APP_NAME)
-supabase/migrations/       001_init.sql (Phase 1) and 002_extras.sql (Phase 2)
+supabase/migrations/       001_init.sql (Phase 1), 002_extras.sql (Phase 2), 003_improvements.sql and 004_extra_lock.sql (feature pack 2)
+app/s/[token]              public share pages, photo and preview-image routes (no login)
+app/dev/preview            development-only fixture gallery
+tests/                     Vitest tests for pure logic (`npm test`)
 proxy.ts                   Next 16 "proxy" (formerly middleware): session refresh + redirect to /login
 ```
 
@@ -145,7 +168,7 @@ proxy.ts                   Next 16 "proxy" (formerly middleware): session refres
 - **"Move a day"** swaps the day's position (number and date) with the target day, so contents travel together. Deleting a day renumbers the rest.
 - **Destructive actions** use a confirmation dialog; inside drawers/dialogs an inline "click again to confirm" button is used instead, to avoid a modal inside a modal.
 - **Top bar title** fades in once the page's own large heading scrolls away (to avoid showing the same title twice).
-- **Verification** was done against a real local Supabase (Docker) with Playwright screenshots at 1440 px and 390 px in light and dark mode, so the optional `/dev/preview` fixture route from the brief was not needed.
+- **Verification.** Phases 1 and 2 were checked against a real local Supabase. Feature pack 2 was checked with unit tests, Playwright against the `/dev/preview` fixtures at 1440 px and 390 px in light and dark mode, and migrations 001 to 004 on PGlite (real Postgres in WebAssembly) with Supabase's `auth` and `storage` schemas stubbed. See Known limitations for what that leaves out.
 - **JSON import** adds everything as new rows with remapped ids; nothing is overwritten.
 - **Flags render the same everywhere.** Windows has no flag emoji (Chrome and Edge show "TR", "IT"…), so the app self-hosts the small *Twemoji Country Flags* font (`app/fonts/`, Twemoji art under CC-BY-4.0, code MIT) and puts it first in the font stack with a `unicode-range` limited to flag code points. Only flags use it; all other text stays Geist/Fraunces.
 - **Climate verdict order and the "Freezing" threshold differ from the brief.** Checked against real Open-Meteo normals for 2021-2025, the brief's order and its "average low ≤ 0 °C = Freezing" contradict its own examples: Bangkok in July (31.7 °C, 28 wet days) would read "Hot" instead of "Rainy season", and Reykjavik in January (low −3.3 °C, 18 wet days) "Freezing" instead of "Cold". So the first match now runs Very hot → Freezing → Cold → Rainy season → Hot → Good, and Freezing starts at an average low of −5 °C. This also stops Tokyo in January (low −0.0 °C) reading "Freezing". All thresholds are constants in `lib/climate.ts`.
@@ -165,11 +188,13 @@ proxy.ts                   Next 16 "proxy" (formerly middleware): session refres
 
 ## Known limitations
 
+- **Feature pack 2 has not run against a live Supabase project.** Only transport, jet lag and the map routes were seen on a real local database. Everything else that needs one was tested in parts: the rules, SQL and screens separately, not end to end. That covers saving (entry, cash, overrides, shares), photo and receipt uploads, MFA enrollment and login, the PIN cookie flow and real share pages. Try those first after deploying.
+- **Country facts** in `data/country-extras.json` were written from general knowledge and not checked against an official source. Check emergency numbers before relying on them; the tab says so too.
 - **PIN vault against a signed-in browser:** someone with developer tools on an already signed-in session can't open a locked file, reset the PIN or read its hash, but could read the `reference_no` and `notes` columns of a locked document through the API, because row security works per row, not per column. The app never shows or sends them while locked.
 - **Unlocking is per account, not per device, on the database side.** The cookie is per browser and only that browser sees the documents as open, but the storage check looks at the account, so another signed-in browser could sign a file through a direct API call while the vault is open elsewhere.
 - **JSON import** restores trips and everything under them, but not cash wallets, entry requirements or country overrides (they are in the export, but importing them could collide with what you already have). Imported cash expenses keep "cash" as their payment method without a wallet.
 - Photo and document **files are not included in the JSON export/import** (metadata only); covers and attachments must be re-added after an import.
-- External services (Photon, Wikipedia/Wikimedia, open.er-api, map tiles) were **not reachable from the build sandbox**, so live lookups were exercised only through their fallbacks there (gradient covers, "type a name", approximate FX snapshot, blank map tiles). They work normally on Vercel and on your machine.
+- External services (Photon, Wikipedia/Wikimedia, open.er-api, map tiles) were **not reachable from the original build sandbox**, so those lookups were exercised only through their fallbacks there. Open-Meteo and map tiles have since been checked live.
 - The service worker only caches static assets; Atlas needs a connection for data (offline sync is out of scope).
 - Climate data comes from Open-Meteo's reanalysis archive, which counts drizzle generously: "wet days" run high in humid places (Bangkok in July shows 28), so "Rainy season" can appear a little more often than a local would say. The free Open-Meteo API is for non-commercial use and rate-limited per IP; shared Vercel IPs may occasionally hit that limit, which shows as "Weather unavailable".
 - HEIC documents are stored and downloadable but most browsers cannot preview them inline.

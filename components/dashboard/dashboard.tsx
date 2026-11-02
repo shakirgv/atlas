@@ -289,7 +289,7 @@ export function Dashboard({
           </Tile>
         </StaggerItem>
 
-        <StaggerItem className="md:col-span-2 lg:col-span-8">
+        <StaggerItem className={cn("md:col-span-2", time.current || time.next || weather ? "lg:col-span-8" : "lg:col-span-12")}>
           <section className="card relative h-full min-h-[300px] overflow-hidden" aria-label="World map">
             <div className="absolute left-5 top-4 z-10">
               <h2 className="flex items-center gap-2 text-xl font-semibold">
@@ -305,9 +305,11 @@ export function Dashboard({
           </section>
         </StaggerItem>
 
-        <StaggerItem className="md:col-span-1 lg:col-span-4">
-          <GlanceColumn time={time} weather={weather} />
-        </StaggerItem>
+        {(time.current || time.next || weather) && (
+          <StaggerItem className="md:col-span-2 lg:col-span-4">
+            <GlanceColumn time={time} weather={weather} />
+          </StaggerItem>
+        )}
 
         <StaggerItem className="md:col-span-1 lg:col-span-4">
           <Panel title="Up next" icon={CalendarClock} action={<Link href="/itinerary" className="text-sm font-medium text-accent hover:underline">Itinerary</Link>} className="h-full">
@@ -360,7 +362,7 @@ export function Dashboard({
           </Panel>
         </StaggerItem>
 
-        <StaggerItem className="md:col-span-1 lg:col-span-5">
+        <StaggerItem className="md:col-span-1 lg:col-span-4">
           <Panel title="Budget" icon={Wallet} action={<Link href="/budget" className="text-sm font-medium text-accent hover:underline">Details</Link>} className="h-full">
             <div className="grid grid-cols-[140px_1fr] items-center gap-4">
               <CategoryDonut
@@ -413,7 +415,7 @@ export function Dashboard({
           </Panel>
         </StaggerItem>
 
-        <StaggerItem className="md:col-span-1 lg:col-span-4">
+        <StaggerItem className="md:col-span-2 lg:col-span-4">
           <Panel title="Heads-up" icon={BellRing} className="h-full">
             {alerts.length ? (
               <ul className="flex flex-col gap-2">
@@ -438,7 +440,7 @@ export function Dashboard({
           </Panel>
         </StaggerItem>
 
-        <StaggerItem className="md:col-span-1 lg:col-span-3">
+        <StaggerItem className="md:col-span-2 lg:col-span-4">
           {onThisDay.length ? (
             <OnThisDay items={onThisDay} />
           ) : (
@@ -461,7 +463,7 @@ export function Dashboard({
           )}
         </StaggerItem>
 
-        <StaggerItem className="md:col-span-2 lg:col-span-12">
+        <StaggerItem className="md:col-span-2 lg:col-span-8">
           <section aria-label="Recent memories">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-xl font-semibold">
