@@ -13,7 +13,7 @@ export default async function TripPage({ params }: PageProps<"/trips/[id]">) {
   const { supabase, scope } = await getScope();
   const trip = scope.trips.find((t) => t.id === id);
   if (!trip) notFound();
-  const g = await loadGraph(supabase, scope.trips, [id], { days: true, places: true, expenses: true, memories: { limit: 3 }, documents: true });
+  const [g, attribution] = await Promise.all([loadGraph(supabase, scope.trips, [id], { days: true, places: true, expenses: true, memories: { limit: 3 }, documents: true }), coverAttribution(supabase, trip.cover_path)]);
   const t = g.trips[0]!;
   const steps = nextSteps({ trip: t, countries: g.countries, cities: g.cities, days: g.days, items: g.items, expenses: g.expenses, documents: g.documents });
   const spent = g.expenses.filter((e) => e.kind === "actual").reduce((s, e) => s + Number(e.amount_base), 0);
@@ -25,7 +25,7 @@ export default async function TripPage({ params }: PageProps<"/trips/[id]">) {
       legs={legs}
       climateStops={Object.fromEntries(g.countries.map((c) => [c.id, climateStopsFor(route.stops, c.id)]))}
       trip={t}
-      attribution={await coverAttribution(supabase, t.cover_path)}
+      attribution={attribution}
       countries={g.countries}
       cityCounts={Object.fromEntries(g.countries.map((c) => [c.id, g.cities.filter((x) => x.trip_country_id === c.id).length]))}
       dayCounts={Object.fromEntries(g.countries.map((c) => [c.id, g.days.filter((x) => x.trip_country_id === c.id).length]))}

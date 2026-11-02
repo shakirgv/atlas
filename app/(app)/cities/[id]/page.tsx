@@ -19,13 +19,13 @@ export default async function CityPage({ params }: PageProps<"/cities/[id]">) {
   const days = g.days.filter((d) => d.city_id === id);
   const dayIds = new Set(days.map((d) => d.id));
   const country = g.countries.find((c) => c.id === city.trip_country_id);
-  const { pins } = await loadPhotoPins(supabase, g);
+  const [{ pins }, attribution] = await Promise.all([loadPhotoPins(supabase, g), coverAttribution(supabase, city.cover_path)]);
   return (
     <CityDetail
       city={city}
       pins={pins.filter((p) => p.cityId === id)}
       stay={{ arrive: city.arrive_date ?? country?.arrive_date ?? null, depart: city.depart_date ?? country?.depart_date ?? null }}
-      attribution={await coverAttribution(supabase, city.cover_path)}
+      attribution={attribution}
       places={g.places.filter((p) => p.city_id === id)}
       days={days}
       items={g.items.filter((i) => dayIds.has(i.day_id))}

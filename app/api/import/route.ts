@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { apiError, apiUser } from "@/lib/server/api";
+import { fillMissingTimezones } from "@/lib/server/backfill";
 
 type Row = Record<string, unknown> & { id?: string };
 
@@ -83,6 +84,8 @@ export async function POST(req: Request) {
     } catch {
       // Phase 2 tables may be missing (002_extras.sql not applied).
     }
+    // A file exported before time zones existed has cities without one.
+    await fillMissingTimezones(supabase).catch(() => 0);
     revalidatePath("/", "layout");
     return NextResponse.json({ ok: true, counts });
   } catch (e) {

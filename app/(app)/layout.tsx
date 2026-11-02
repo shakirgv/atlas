@@ -5,7 +5,6 @@ import { isSupabaseConfigured } from "@/lib/config";
 import { getScope } from "@/lib/scope";
 import { countryFlag, countryName } from "@/lib/countries";
 import type { CityOption, CountryOption } from "@/lib/types";
-import { fillMissingTimezones } from "@/lib/server/backfill";
 import { getVaultState } from "@/lib/vault";
 import { isSharingEnabled } from "@/lib/supabase/admin";
 
@@ -13,16 +12,16 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   if (!isSupabaseConfigured) return <SetupRequired />;
   const { supabase, scope } = await getScope();
   const cookieStore = await cookies();
-  // One-time (idempotent) backfill: cities created before time zones existed get one from tz-lookup.
-  await fillMissingTimezones(supabase).catch(() => 0);
 
-  const { data: tcs } = scope.tripIds.length
-    ? await supabase.from("trip_countries").select("id, trip_id, country_code, order_index, arrive_date, depart_date, status").in("trip_id", scope.tripIds).order("order_index")
-    : { data: [] };
-  const tcIds = (tcs ?? []).map((t) => t.id);
-  const { data: cities } = tcIds.length
-    ? await supabase.from("cities").select("id, trip_country_id, name, lat, lng, order_index").in("trip_country_id", tcIds).order("order_index")
-    : { data: [] };
+  const [{ data: tcs }, { data: cities }, vault] = await Promise.all([
+    scope.tripIds.length
+      ? supabase.from("trip_countries").select("id, trip_id, country_code, order_index, arrive_date, depart_date, status").in("trip_id", scope.tripIds).order("order_index")
+      : { data: [] },
+    // Every city of this user, narrowed below, so this doesn't have to wait for the countries first.
+    supabase.from("cities").select("id, trip_country_id, name, lat, lng, order_index").order("order_index"),
+    getVaultState(),
+  ]);
+  const tcIds = new Set((tcs ?? []).map((t) => t.id));
 
   const tripOrder = new Map(scope.trips.map((t, i) => [t.id, i]));
   const countries: CountryOption[] = (tcs ?? [])
@@ -30,6 +29,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     .sort((a, b) => (tripOrder.get(a.trip_id) ?? 0) - (tripOrder.get(b.trip_id) ?? 0) || a.order_index - b.order_index);
   const codeById = new Map(countries.map((c) => [c.id, c.country_code]));
   const cityOptions: CityOption[] = (cities ?? [])
+    .filter((c) => tcIds.has(c.trip_country_id))
     .map((c) => ({ id: c.id, trip_country_id: c.trip_country_id, name: c.name, lat: c.lat, lng: c.lng, country_code: codeById.get(c.trip_country_id) ?? "" }))
     .sort((a, b) => countries.findIndex((x) => x.id === a.trip_country_id) - countries.findIndex((x) => x.id === b.trip_country_id));
 
@@ -47,7 +47,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         isAll: scope.isAll,
         countries,
         cities: cityOptions,
-        vault: await getVaultState(),
+        vault,
         sharingEnabled: isSharingEnabled(),
       }}
     >

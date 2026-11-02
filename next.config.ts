@@ -4,6 +4,10 @@ import type { NextConfig } from "next";
 // per-user and request-time (cookies + Supabase session), so the classic
 // dynamic rendering model is simpler and avoids Suspense-boundary build errors.
 const nextConfig: NextConfig = {
+  experimental: {
+    // Going back to a page seen in the last 30 seconds reuses what the browser has. Saving anything clears it (refreshAll).
+    staleTimes: { dynamic: 30 },
+  },
   turbopack: {
     rules: {
       "*.css": {

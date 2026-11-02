@@ -91,6 +91,8 @@ npx supabase db reset       # applies supabase/migrations/*.sql
 
 CLI alternative: `npx vercel` (link the project), `npx vercel env add NEXT_PUBLIC_SUPABASE_URL`, `npx vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY`, then `npx vercel --prod`.
 
+**Keep the server next to the database.** Every page talks to Supabase several times, so the distance between them adds up quickly. `vercel.json` runs the server in `arn1` (Stockholm), which matches a Supabase project in `eu-north-1`. If your project is somewhere else, change it to the [matching region](https://vercel.com/docs/regions).
+
 ---
 
 ## What's inside

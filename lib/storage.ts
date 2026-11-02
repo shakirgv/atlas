@@ -2,19 +2,38 @@ import "server-only";
 import type { ServerSupabase } from "@/lib/supabase/server";
 import { BUCKETS, DOCUMENT_URL_TTL, PHOTO_URL_TTL } from "@/lib/config";
 import type { Photo, PhotoView } from "@/lib/types";
+import { hashToken } from "@/lib/vault-crypto";
+
+/**
+ * Links already made, by session + path. A newly signed link is a new URL, so the browser would download
+ * the same photo again on every page. Reusing one for half its life lets the browser's own cache work.
+ */
+const signedLinks = new Map<string, { url: string; until: number }>();
 
 /** Batch-sign photo paths (1 hour). Returns path → signed URL. Never log the result. */
 export async function signPhotoPaths(supabase: ServerSupabase, paths: (string | null | undefined)[]) {
   const unique = Array.from(new Set(paths.filter((p): p is string => Boolean(p))));
   const map: Record<string, string> = {};
   if (!unique.length) return map;
-  for (let i = 0; i < unique.length; i += 500) {
-    const chunk = unique.slice(i, i + 500);
+  // Per session, so storage policies still decide who gets a link. The service-role client has no session.
+  const { data: auth } = await supabase.auth.getSession();
+  const owner = auth.session ? hashToken(auth.session.access_token) : "service";
+  const now = Date.now();
+  const missing = unique.filter((path) => {
+    const link = signedLinks.get(`${owner}:${path}`);
+    if (link && link.until > now) map[path] = link.url;
+    return !map[path];
+  });
+  for (let i = 0; i < missing.length; i += 500) {
+    const chunk = missing.slice(i, i + 500);
     const { data } = await supabase.storage.from(BUCKETS.photos).createSignedUrls(chunk, PHOTO_URL_TTL);
     for (const item of data ?? []) {
-      if (item.path && item.signedUrl) map[item.path] = item.signedUrl;
+      if (!item.path || !item.signedUrl) continue;
+      map[item.path] = item.signedUrl;
+      signedLinks.set(`${owner}:${item.path}`, { url: item.signedUrl, until: now + (PHOTO_URL_TTL * 1000) / 2 });
     }
   }
+  if (signedLinks.size > 5000) for (const [key, link] of signedLinks) if (link.until <= now) signedLinks.delete(key);
   return map;
 }
 

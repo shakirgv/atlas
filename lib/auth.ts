@@ -1,15 +1,19 @@
 import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { createClient, type ServerSupabase } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/config";
-import type { User } from "@supabase/supabase-js";
 
-/** Per-request Supabase client + verified user (deduplicated with React cache). */
-export const getAuth = cache(async (): Promise<{ supabase: ServerSupabase; user: User | null }> => {
+/**
+ * Per-request Supabase client + user (deduplicated with React cache). The session token is verified
+ * here instead of asking the auth server, which would put a network call in front of every page.
+ * The database checks the same token on every query, and actions keep the stricter `requireUser`.
+ */
+export const getAuth = cache(async () => {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-  return { supabase, user: data.user ?? null };
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
+  return { supabase, user: claims?.sub ? { id: claims.sub, email: claims.email ?? null } : null };
 });
 
 /** For Server Components: redirect to /login when signed out. */

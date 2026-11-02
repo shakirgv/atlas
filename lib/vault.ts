@@ -22,16 +22,14 @@ function isMissingFunction(error: { code?: string }) {
 export const getVaultState = cache(async (): Promise<VaultState> => {
   if (!isSupabaseConfigured) return OPEN;
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("atlas_vault_status").single();
+  const token = (await cookies()).get(VAULT_COOKIE)?.value;
+  const [{ data, error }, touched] = await Promise.all([
+    supabase.rpc("atlas_vault_status").single(),
+    token ? supabase.rpc("atlas_vault_touch", { p_token_hash: hashToken(token) }) : null,
+  ]);
   if (error) return isMissingFunction(error) ? OPEN : { hasPin: true, unlocked: false, pinLength: null, lockedUntil: null };
   if (!data.has_pin) return OPEN;
-  const token = (await cookies()).get(VAULT_COOKIE)?.value;
-  let unlocked = false;
-  if (token) {
-    const touched = await supabase.rpc("atlas_vault_touch", { p_token_hash: hashToken(token) });
-    unlocked = touched.data === true;
-  }
-  return { hasPin: true, unlocked, pinLength: data.pin_length, lockedUntil: data.locked_until };
+  return { hasPin: true, unlocked: touched?.data === true, pinLength: data.pin_length, lockedUntil: data.locked_until };
 });
 
 /** Throws for a locked sensitive document. Every action that opens or changes one goes through this. */

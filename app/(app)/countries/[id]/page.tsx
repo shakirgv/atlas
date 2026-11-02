@@ -22,7 +22,7 @@ export default async function CountryPage({ params, searchParams }: PageProps<"/
   const days = g.days.filter((d) => d.trip_country_id === id);
   const dayIds = new Set(days.map((d) => d.id));
   const route = tripRoute(tc.trip_id, g.countries, g.cities, scope.settings);
-  const { data: infoOverride } = await supabase.from("country_info_overrides").select("*").eq("country_code", country.code).maybeSingle();
+  const [{ data: infoOverride }, attribution] = await Promise.all([supabase.from("country_info_overrides").select("*").eq("country_code", country.code).maybeSingle(), coverAttribution(supabase, country.cover_path)]);
   return (
     <CountryDetail
       legs={route.legs.filter((l) => l.tripCountryId === id)}
@@ -35,7 +35,7 @@ export default async function CountryPage({ params, searchParams }: PageProps<"/
         documents: g.documents.map((d) => ({ id: d.id, title: d.title, type: d.type })),
       }}
       country={country}
-      attribution={await coverAttribution(supabase, country.cover_path)}
+      attribution={attribution}
       cities={cities}
       places={g.places.filter((p) => cityIds.has(p.city_id))}
       days={days}

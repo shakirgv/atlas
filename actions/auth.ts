@@ -1,4 +1,5 @@
 "use server";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
@@ -33,5 +34,7 @@ export async function signOut() {
     const supabase = await createClient();
     await supabase.auth.signOut();
   }
+  // The browser may still hold recent pages (staleTimes); nothing of this account stays after signing out.
+  revalidatePath("/", "layout");
   redirect("/login");
 }

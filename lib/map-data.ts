@@ -9,25 +9,8 @@ import type { MapCity, MapCountryState, RoutePoint } from "@/components/map/worl
 import type { ExportTrip } from "@/components/map/export-dialog";
 
 /** Map statuses use every trip (visited if any entry is visited); routes + cities follow the active scope. */
-/** Everything the map export needs, per trip, whichever trip is active right now. */
-export async function loadExportTrips(supabase: ServerSupabase, scope: Scope, routeFor: (tid: string) => RoutePoint[]): Promise<ExportTrip[]> {
-  const [{ data: tcs }, { data: cities }] = await Promise.all([supabase.from("trip_countries").select("id, trip_id, country_code, status"), supabase.from("cities").select("id, name, lat, lng, trip_country_id")]);
-  return scope.trips.map((t) => {
-    const own = (tcs ?? []).filter((c) => c.trip_id === t.id);
-    const ids = new Set(own.map((c) => c.id));
-    const route = routeFor(t.id);
-    return {
-      id: t.id,
-      title: t.title,
-      routes: route.length ? [route] : [],
-      cities: (cities ?? []).filter((c) => ids.has(c.trip_country_id) && c.lat != null && c.lng != null).map((c) => ({ id: c.id, name: c.name, lat: c.lat!, lng: c.lng! })),
-      countries: own.map((c) => ({ code: c.country_code.trim(), status: c.status })),
-    };
-  });
-}
-
 export async function loadMapData(supabase: ServerSupabase, scope: Scope) {
-  const { data } = await supabase.from("trip_countries").select("*").order("order_index");
+  const [{ data }, { data: cities }] = await Promise.all([supabase.from("trip_countries").select("*").order("order_index"), supabase.from("cities").select("*")]);
   const all = (data ?? []) as TripCountry[];
   const tripTitle = new Map(scope.trips.map((t) => [t.id, t.title]));
   const states: Record<string, MapCountryState> = {};
@@ -54,8 +37,7 @@ export async function loadMapData(supabase: ServerSupabase, scope: Scope) {
   const home: RoutePoint | null =
     st?.home_lat != null && st?.home_lng != null ? { id: "home", code: "", lat: st.home_lat, lng: st.home_lng, name: st.home_city ?? "Home", home: true } : null;
   const scopeTc = new Set(all.filter((t) => scope.tripIds.includes(t.trip_id)).map((t) => t.id));
-  const { data: cities } = all.length ? await supabase.from("cities").select("*") : { data: [] as City[] };
-  const cityRows = cities ?? [];
+  const cityRows: City[] = cities ?? [];
   const mapCities: MapCity[] = cityRows.filter((c) => scopeTc.has(c.trip_country_id) && c.lat != null && c.lng != null).map((c) => ({ id: c.id, name: c.name, lat: c.lat!, lng: c.lng! }));
 
   // Routes run stop by stop (so train and ferry legs between cities are drawn too). Only the first
@@ -81,5 +63,20 @@ export async function loadMapData(supabase: ServerSupabase, scope: Scope) {
   };
   const routes: RoutePoint[][] = scope.tripIds.map(routeFor).filter((r) => r.length > 0);
 
-  return { states, routes, cities: mapCities, inScopeIds: Object.fromEntries(inScopeIds) as Record<string, string>, routeFor };
+  /** Everything the map export needs, per trip, whichever trip is active right now. */
+  const exportTrips = (): ExportTrip[] =>
+    scope.trips.map((t) => {
+      const own = all.filter((c) => c.trip_id === t.id);
+      const ids = new Set(own.map((c) => c.id));
+      const route = routeFor(t.id);
+      return {
+        id: t.id,
+        title: t.title,
+        routes: route.length ? [route] : [],
+        cities: cityRows.filter((c) => ids.has(c.trip_country_id) && c.lat != null && c.lng != null).map((c) => ({ id: c.id, name: c.name, lat: c.lat!, lng: c.lng! })),
+        countries: own.map((c) => ({ code: c.country_code.trim(), status: c.status })),
+      };
+    });
+
+  return { states, routes, cities: mapCities, inScopeIds: Object.fromEntries(inScopeIds) as Record<string, string>, exportTrips };
 }

@@ -76,21 +76,19 @@ async function safe<T>(p: PromiseLike<{ data: T | null; error: unknown }>, fallb
   }
 }
 
-/** Load everything under the given trips (single user, small data → simple + fast). */
+/**
+ * Load everything under the given trips (single user, small data → simple + fast).
+ * A query waits only for the ids it filters by, so unrelated tables never hold each other up.
+ */
 export async function loadGraph(supabase: ServerSupabase, allTrips: Trip[], tripIds: string[], opts: Opts = {}): Promise<Graph> {
   const trips = allTrips.filter((t) => tripIds.includes(t.id));
   const tripTitle = new Map(trips.map((t) => [t.id, t.title]));
   const none = tripIds.length === 0;
 
-  const tcs = none ? [] : await safe(supabase.from("trip_countries").select("*").in("trip_id", tripIds).order("order_index"), [] as TripCountry[]);
-  const tcIds = tcs.map((t) => t.id);
-  const cities = tcIds.length ? await safe(supabase.from("cities").select("*").in("trip_country_id", tcIds).order("order_index"), [] as City[]) : [];
-  const cityIds = cities.map((c) => c.id);
-
-  const [places, days, expenses, memories, rawDocuments, bookings, packing, entries, photoCount] = await Promise.all([
-    opts.places && cityIds.length ? safe(supabase.from("places").select("*").in("city_id", cityIds).order("created_at"), [] as Place[]) : Promise.resolve([] as Place[]),
-    opts.days && tcIds.length ? safe(supabase.from("itinerary_days").select("*").in("trip_country_id", tcIds).order("day_number"), [] as ItineraryDay[]) : Promise.resolve([] as ItineraryDay[]),
-    opts.expenses && !none ? safe(supabase.from("expenses").select("*").in("trip_id", tripIds).order("date", { ascending: false }), [] as Expense[]) : Promise.resolve([] as Expense[]),
+  const tcsQuery = none ? Promise.resolve([] as TripCountry[]) : safe(supabase.from("trip_countries").select("*").in("trip_id", tripIds).order("order_index"), [] as TripCountry[]);
+  const citiesQuery = tcsQuery.then((rows) => (rows.length ? safe(supabase.from("cities").select("*").in("trip_country_id", rows.map((t) => t.id)).order("order_index"), [] as City[]) : ([] as City[])));
+  const daysQuery = tcsQuery.then((rows) => (opts.days && rows.length ? safe(supabase.from("itinerary_days").select("*").in("trip_country_id", rows.map((t) => t.id)).order("day_number"), [] as ItineraryDay[]) : ([] as ItineraryDay[])));
+  const memoriesQuery =
     opts.memories && !none
       ? safe(
           (() => {
@@ -99,29 +97,35 @@ export async function loadGraph(supabase: ServerSupabase, allTrips: Trip[], trip
           })(),
           [] as Memory[],
         )
-      : Promise.resolve([] as Memory[]),
-    opts.documents ? safe(supabase.from("documents").select("*").order("expiry_date", { ascending: true, nullsFirst: false }), [] as DocumentRow[]) : Promise.resolve([] as DocumentRow[]),
+      : Promise.resolve([] as Memory[]);
+
+  const [tcs, cities, days, memories, places, items, memPhotos, entries, expenses, documents, bookings, packing, photoCount, allReceipts] = await Promise.all([
+    tcsQuery,
+    citiesQuery,
+    daysQuery,
+    memoriesQuery,
+    citiesQuery.then((rows) => (opts.places && rows.length ? safe(supabase.from("places").select("*").in("city_id", rows.map((c) => c.id)).order("created_at"), [] as Place[]) : ([] as Place[]))),
+    daysQuery.then((rows) => (rows.length ? safe(supabase.from("itinerary_items").select("*").in("day_id", rows.map((d) => d.id)).order("order_index"), [] as ItineraryItem[]) : ([] as ItineraryItem[]))),
+    memoriesQuery.then((rows) => (rows.length ? safe(supabase.from("photos").select("*").eq("entity_type", "memory").in("entity_id", rows.map((m) => m.id)).order("order_index"), [] as Photo[]) : ([] as Photo[]))),
+    tcsQuery.then((rows) => (opts.entries && rows.length ? safe(supabase.from("entry_requirements").select("*").in("trip_country_id", rows.map((t) => t.id)), [] as EntryRequirement[]) : ([] as EntryRequirement[]))),
+    opts.expenses && !none ? safe(supabase.from("expenses").select("*").in("trip_id", tripIds).order("date", { ascending: false }), [] as Expense[]) : Promise.resolve([] as Expense[]),
+    // Done here so every page gets it: a locked document's secrets never leave the server.
+    opts.documents
+      ? safe(supabase.from("documents").select("*").order("expiry_date", { ascending: true, nullsFirst: false }), [] as DocumentRow[]).then(async (rows) => {
+          if (!rows.length) return rows;
+          const vault = await getVaultState();
+          return rows.map((d) => maskDocument(d, vault));
+        })
+      : Promise.resolve([] as DocumentRow[]),
     opts.bookings && !none ? safe(supabase.from("bookings").select("*").in("trip_id", tripIds).order("start_at"), [] as Booking[]) : Promise.resolve([] as Booking[]),
     opts.packing && !none ? safe(supabase.from("packing_items").select("*").in("trip_id", tripIds).order("order_index"), [] as PackingItem[]) : Promise.resolve([] as PackingItem[]),
-    opts.entries && tcIds.length ? safe(supabase.from("entry_requirements").select("*").in("trip_country_id", tcIds), [] as EntryRequirement[]) : Promise.resolve([] as EntryRequirement[]),
     opts.photoCount ? supabase.from("photos").select("id", { count: "exact", head: true }).eq("source", "upload").neq("entity_type", "expense").then((r) => r.count ?? 0) : Promise.resolve(0),
+    opts.receipts ? safe(supabase.from("photos").select("*").eq("entity_type", "expense").order("order_index"), [] as Photo[]) : Promise.resolve([] as Photo[]),
   ]);
-
-  // Done here so every page gets it: a locked document's secrets never leave the server.
-  const vault = rawDocuments.length ? await getVaultState() : null;
-  const documents = vault ? rawDocuments.map((d) => maskDocument(d, vault)) : rawDocuments;
-
-  const dayIds = days.map((d) => d.id);
-  const items = dayIds.length ? await safe(supabase.from("itinerary_items").select("*").in("day_id", dayIds).order("order_index"), [] as ItineraryItem[]) : [];
-
-  const memIds = memories.map((m) => m.id);
-  const memPhotos = memIds.length
-    ? await safe(supabase.from("photos").select("*").eq("entity_type", "memory").in("entity_id", memIds).order("order_index"), [] as Photo[])
-    : [];
 
   // Filtered here rather than with a long `in` list: a single user's receipts are a short list anyway.
   const expenseIds = new Set(expenses.map((e) => e.id));
-  const receiptPhotos = opts.receipts ? (await safe(supabase.from("photos").select("*").eq("entity_type", "expense").order("order_index"), [] as Photo[])).filter((p) => expenseIds.has(p.entity_id)) : [];
+  const receiptPhotos = allReceipts.filter((p) => expenseIds.has(p.entity_id));
 
   // One batched signing call for every cover + memory photo + receipt.
   const urls = await signPhotoPaths(supabase, [
