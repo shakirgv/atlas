@@ -17,9 +17,11 @@ export default async function CityPage({ params }: PageProps<"/cities/[id]">) {
   if (!city) notFound();
   const days = g.days.filter((d) => d.city_id === id);
   const dayIds = new Set(days.map((d) => d.id));
+  const country = g.countries.find((c) => c.id === city.trip_country_id);
   return (
     <CityDetail
       city={city}
+      stay={{ arrive: city.arrive_date ?? country?.arrive_date ?? null, depart: city.depart_date ?? country?.depart_date ?? null }}
       attribution={await coverAttribution(supabase, city.cover_path)}
       places={g.places.filter((p) => p.city_id === id)}
       days={days}

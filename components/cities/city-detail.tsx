@@ -10,6 +10,7 @@ import type { CityVM, MemoryVM, PlaceVM } from "@/lib/data";
 import type { ItineraryDay, ItineraryItem, PlaceCategory } from "@/lib/types";
 import { PLACE_CATEGORY_META } from "@/lib/icons";
 import { pluralize } from "@/lib/utils";
+import { CityClimateCard } from "@/components/climate/climate-card";
 import { CoverActions } from "@/components/cover/cover-actions";
 import { EmptyState } from "@/components/common/empty-state";
 import { Hero, HeroButton } from "@/components/common/hero";
@@ -29,6 +30,7 @@ import { CityEditDialog } from "./city-edit-dialog";
 
 export function CityDetail({
   city,
+  stay,
   attribution,
   places,
   days,
@@ -36,6 +38,7 @@ export function CityDetail({
   memories,
 }: {
   city: CityVM;
+  stay: { arrive: string | null; depart: string | null };
   attribution: string | null;
   places: PlaceVM[];
   days: ItineraryDay[];
@@ -135,6 +138,7 @@ export function CityDetail({
           )}
         </section>
         <aside className="flex min-w-0 flex-col gap-6 lg:col-span-4">
+          {city.lat != null && city.lng != null && <CityClimateCard lat={city.lat} lng={city.lng} arrive={stay.arrive} depart={stay.depart} />}
           <section className="card p-5" aria-labelledby="days-title">
             <SectionTitle>
               <span id="days-title" className="flex items-center gap-2">

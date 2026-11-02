@@ -60,6 +60,8 @@ import type { LegView } from "@/lib/server/route-data";
 import { JetLagChip } from "@/components/route/jetlag-chip";
 import { TransportChip } from "@/components/route/transport-chip";
 import { zoneCity } from "@/lib/timezones";
+import type { ClimateStop } from "@/lib/climate";
+import { CityVerdicts } from "@/components/climate/city-verdicts";
 
 const TABS = [
   { value: "overview", label: "Overview", icon: Info },
@@ -118,6 +120,7 @@ export function GenerateDaysButton({ countryId, hasDates, variant = "primary", l
 
 export function CountryDetail({
   legs,
+  climateStops,
   country,
   attribution,
   cities,
@@ -132,6 +135,7 @@ export function CountryDetail({
   openEdit,
 }: {
   legs: LegView[];
+  climateStops: ClimateStop[];
   country: CountryVM;
   attribution: string | null;
   cities: CityVM[];
@@ -285,6 +289,7 @@ export function CountryDetail({
                   </ol>
                 </section>
               )}
+              <CityVerdicts stops={climateStops} />
               {cap > 0 && (
                 <section className="card p-5">
                   <SectionTitle>Budget cap</SectionTitle>

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getScope } from "@/lib/scope";
 import { coverAttribution, loadGraph } from "@/lib/data";
 import { CountryDetail } from "@/components/countries/country-detail";
-import { tripRoute } from "@/lib/server/route-data";
+import { climateStopsFor, tripRoute } from "@/lib/server/route-data";
 
 export const metadata: Metadata = { title: "Country" };
 
@@ -24,6 +24,7 @@ export default async function CountryPage({ params, searchParams }: PageProps<"/
   return (
     <CountryDetail
       legs={route.legs.filter((l) => l.tripCountryId === id)}
+      climateStops={climateStopsFor(route.stops, id)}
       country={country}
       attribution={await coverAttribution(supabase, country.cover_path)}
       cities={cities}

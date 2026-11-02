@@ -4,6 +4,7 @@ import { countryAnchor } from "@/lib/countries";
 import { buildLegs, buildStops, type HomeStop, type Leg, type Stop } from "@/lib/route";
 import { tzForCoords } from "@/lib/server/tz-lookup";
 import type { JetLag } from "@/lib/jetlag";
+import type { ClimateStop } from "@/lib/climate";
 import type { Settings } from "@/lib/types";
 
 /** Serializable leg for client components. */
@@ -86,6 +87,13 @@ export function routesForTrips(tripIds: string[], countries: CountryVM[], cities
     legs.push(...r.legs);
   }
   return { stops, legs };
+}
+
+/** Stops of one trip country that can be looked up for climate (coordinates required). */
+export function climateStopsFor(stops: Stop[], tripCountryId: string): ClimateStop[] {
+  return stops
+    .filter((s) => s.tripCountryId === tripCountryId && s.lat != null && s.lng != null)
+    .map((s) => ({ name: s.name, lat: s.lat!, lng: s.lng!, arrive: s.arrive, depart: s.depart }));
 }
 
 /** The leg that enters a trip country (from home or from the previous country). */

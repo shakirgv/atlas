@@ -30,11 +30,13 @@ import { NextSteps } from "./next-steps";
 import { RouteList } from "./route-list";
 import { RouteTimeline } from "./route-timeline";
 import type { LegView } from "@/lib/server/route-data";
+import type { ClimateStop } from "@/lib/climate";
 
 type Stats = { cities: number; days: number; places: number; placesVisited: number; spent: number; planned: number; budget: number };
 
 export function TripDetail({
   legs,
+  climateStops,
   trip,
   attribution,
   countries,
@@ -48,6 +50,7 @@ export function TripDetail({
   isActive,
 }: {
   legs: Record<string, LegView | null>;
+  climateStops: Record<string, ClimateStop[]>;
   trip: Trip & { cover_url: string | null };
   attribution: string | null;
   countries: CountryVM[];
@@ -156,7 +159,7 @@ export function TripDetail({
                 </div>
                 <div>
                   <p className="mb-2 text-xs text-muted">Drag to change the route order. Click a transport chip to change how you get there.</p>
-                  <RouteList countries={countries} legs={legs} />
+                  <RouteList countries={countries} legs={legs} climateStops={climateStops} />
                 </div>
               </div>
             ) : (

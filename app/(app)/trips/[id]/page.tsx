@@ -4,7 +4,7 @@ import { getScope } from "@/lib/scope";
 import { coverAttribution, loadGraph } from "@/lib/data";
 import { nextSteps, tripProgress } from "@/lib/trip";
 import { TripDetail } from "@/components/trips/trip-detail";
-import { legIntoCountry, tripRoute } from "@/lib/server/route-data";
+import { climateStopsFor, legIntoCountry, tripRoute } from "@/lib/server/route-data";
 
 export const metadata: Metadata = { title: "Trip" };
 
@@ -23,6 +23,7 @@ export default async function TripPage({ params }: PageProps<"/trips/[id]">) {
   return (
     <TripDetail
       legs={legs}
+      climateStops={Object.fromEntries(g.countries.map((c) => [c.id, climateStopsFor(route.stops, c.id)]))}
       trip={t}
       attribution={await coverAttribution(supabase, t.cover_path)}
       countries={g.countries}

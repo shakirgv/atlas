@@ -4,8 +4,9 @@ import { loadMapData } from "@/lib/map-data";
 import { buildAlerts } from "@/lib/alerts";
 import { summarizeBudget } from "@/lib/budget";
 import { daysOnTheRoad } from "@/lib/trip";
-import { todayIso } from "@/lib/dates";
+import { daysUntil, todayIso } from "@/lib/dates";
 import { Dashboard } from "@/components/dashboard/dashboard";
+import type { WeatherStop } from "@/components/dashboard/weather-tile";
 import { homeStop, routesForTrips } from "@/lib/server/route-data";
 
 export default async function DashboardPage() {
@@ -45,9 +46,25 @@ export default async function DashboardPage() {
     current: curStop ? { name: curStop.name, tz: curStop.tz! } : null,
     next: nextStopTz ? { name: nextStopTz.name, tz: nextStopTz.tz!, arrive: nextStopTz.arrive } : null,
   };
+  const pinned = route.stops.filter((s) => s.lat != null && s.lng != null);
+  const hereNow = pinned.find((s) => s.arrive && s.arrive <= today && (!s.depart || s.depart >= today));
+  const weatherStop = hereNow ?? pinned.filter((s) => s.arrive && s.arrive > today).sort((a, b) => a.arrive!.localeCompare(b.arrive!))[0];
+  const weather: WeatherStop | null = weatherStop
+    ? {
+        name: weatherStop.name,
+        lat: weatherStop.lat!,
+        lng: weatherStop.lng!,
+        arrive: weatherStop.arrive,
+        depart: weatherStop.depart,
+        ongoing: Boolean(hereNow),
+        forecastDue: Boolean(hereNow) || (daysUntil(weatherStop.arrive) ?? 99) <= 14,
+        focusDate: hereNow ? today : weatherStop.arrive,
+      }
+    : null;
   return (
     <Dashboard
       time={time}
+      weather={weather}
       displayName={scope.settings?.display_name ?? ""}
       baseCurrency={scope.baseCurrency}
       activeTrip={scope.activeTrip}

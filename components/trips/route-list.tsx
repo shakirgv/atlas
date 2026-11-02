@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { DndContext, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -14,8 +14,11 @@ import { cn } from "@/lib/utils";
 import type { LegView } from "@/lib/server/route-data";
 import { JetLagChip } from "@/components/route/jetlag-chip";
 import { TransportChip } from "@/components/route/transport-chip";
+import { VerdictChip } from "@/components/climate/verdict-chip";
+import { useClimate } from "@/hooks/use-climate";
+import { verdictReason, worstVerdict, type ClimateStop } from "@/lib/climate";
 
-function Row({ c, index, leg }: { c: CountryVM; index: number; leg: LegView | null }) {
+function Row({ c, index, leg, climate }: { c: CountryVM; index: number; leg: LegView | null; climate: ReturnType<typeof worstVerdict> }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: c.id });
   const nights = daysBetween(c.arrive_date, c.depart_date);
   return (
@@ -47,6 +50,7 @@ function Row({ c, index, leg }: { c: CountryVM; index: number; leg: LegView | nu
             {nights ? ` · ${nights} days` : ""}
           </span>
         </span>
+        {climate && <VerdictChip verdict={climate.verdict} size="sm" title={`${climate.stop.name}. ${verdictReason(climate.month)}`} />}
         <GeoStatusChip status={c.display} size="sm" className="max-sm:hidden" />
         <ChevronRight className="size-4 text-muted transition-transform group-hover:translate-x-0.5" />
       </Link>
@@ -56,8 +60,10 @@ function Row({ c, index, leg }: { c: CountryVM; index: number; leg: LegView | nu
 }
 
 /** Drag to reorder the route. */
-export function RouteList({ countries, legs = {} }: { countries: CountryVM[]; legs?: Record<string, LegView | null> }) {
+export function RouteList({ countries, legs = {}, climateStops = {} }: { countries: CountryVM[]; legs?: Record<string, LegView | null>; climateStops?: Record<string, ClimateStop[]> }) {
   const [items, setItems] = useState(countries);
+  const allStops = useMemo(() => Object.values(climateStops).flat(), [climateStops]);
+  const { data: climate } = useClimate(allStops);
   const [, start] = useTransition();
   useEffect(() => {
     const t = setTimeout(() => setItems(countries), 0);
@@ -88,7 +94,7 @@ export function RouteList({ countries, legs = {} }: { countries: CountryVM[]; le
       <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
         <ol className="flex flex-col">
           {items.map((c, i) => (
-            <Row key={c.id} c={c} index={i} leg={legs[c.id] ?? null} />
+            <Row key={c.id} c={c} index={i} leg={legs[c.id] ?? null} climate={worstVerdict(climateStops[c.id] ?? [], climate)} />
           ))}
         </ol>
       </SortableContext>

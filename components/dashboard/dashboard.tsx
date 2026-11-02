@@ -19,6 +19,7 @@ import { WorldMap, type MapCity, type MapCountryState, type RoutePoint } from "@
 import { Button } from "@/components/ui/button";
 import { SetupBanner } from "@/components/common/setup-banner";
 import { TimeTile, type TimeTileData } from "./time-tile";
+import { WeatherTile, type WeatherStop } from "./weather-tile";
 import { useWorkspace } from "@/components/shell/workspace";
 
 type Stats = { visited: number; planned: number; cities: number; daysOnRoad: number; placesVisited: number; places: number; photos: number };
@@ -120,11 +121,16 @@ function NextStopHero({ c, cityCount }: { c: CountryVM | null; cityCount: number
   );
 }
 
-/** Small "at a glance" tiles (time; weather and cash join later). Empty tiles are hidden. */
-function GlanceColumn({ time }: { time: TimeTileData }) {
+/** Small "at a glance" tiles (time, weather; cash joins later). Empty tiles are hidden. */
+function GlanceColumn({ time, weather }: { time: TimeTileData; weather: WeatherStop | null }) {
   const showTime = Boolean(time.current || time.next);
-  if (!showTime) return null;
-  return <div className="flex h-full flex-col gap-4">{showTime && <TimeTile data={time} />}</div>;
+  if (!showTime && !weather) return null;
+  return (
+    <div className="flex h-full flex-col gap-4">
+      {showTime && <TimeTile data={time} />}
+      {weather && <WeatherTile stop={weather} />}
+    </div>
+  );
 }
 
 export function Dashboard({
@@ -143,6 +149,7 @@ export function Dashboard({
   alerts,
   setup,
   time,
+  weather,
 }: {
   displayName: string;
   baseCurrency: string;
@@ -159,6 +166,7 @@ export function Dashboard({
   alerts: Alert[];
   setup: { missingHome: boolean; missingPassport: boolean };
   time: TimeTileData;
+  weather: WeatherStop | null;
 }) {
   const ws = useWorkspace();
   const money = (n: number) => formatMoney(n, baseCurrency);
@@ -272,7 +280,7 @@ export function Dashboard({
         </StaggerItem>
 
         <StaggerItem className="md:col-span-1 lg:col-span-4">
-          <GlanceColumn time={time} />
+          <GlanceColumn time={time} weather={weather} />
         </StaggerItem>
 
         <StaggerItem className="md:col-span-1 lg:col-span-4">
