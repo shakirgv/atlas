@@ -13,7 +13,8 @@ import { useAutoCover } from "@/hooks/use-auto-cover";
 import { GeoStatusChip } from "@/components/common/status-chip";
 import { Button } from "@/components/ui/button";
 import { useDefaultTripId, useWorkspace } from "@/components/shell/workspace";
-import { DEFAULT_LAYERS, MapLegend, WorldMap, type Layers, type MapCity, type MapCountryState, type RoutePoint } from "./world-map";
+import { transportMeta } from "@/lib/transport";
+import { DEFAULT_LAYERS, MapLegend, modesInUse, WorldMap, type Layers, type MapCity, type MapCountryState, type RoutePoint } from "./world-map";
 
 export function MapExplorer({
   states,
@@ -81,6 +82,15 @@ export function MapExplorer({
               className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-ink/[0.04] dark:hover:bg-white/[0.04]"
             >
               <span className="num grid size-6 shrink-0 place-items-center rounded-full bg-ink text-[11px] font-semibold text-bg">{i + 1}</span>
+              {(() => {
+                const m = transportMeta(c.transport_mode);
+                return (
+                  <span className="grid size-6 shrink-0 place-items-center rounded-full bg-accent-soft" title={c.transport_mode ? m.label : "Transport not set"}>
+                    <m.icon className={cn("size-3.5", c.transport_mode ? "text-accent" : "text-muted")} />
+                    <span className="sr-only">{c.transport_mode ? m.label : "Transport not set"}</span>
+                  </span>
+                );
+              })()}
               <span className="text-xl leading-none">{c.flag}</span>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-sm font-medium">{c.name}</span>
@@ -121,7 +131,7 @@ export function MapExplorer({
               <b className="num font-display text-base">{counts.wishlist}</b> wishlist
             </span>
           </div>
-          <MapLegend className="pointer-events-auto" layers={layers} onToggle={(k) => setLayers((l) => ({ ...l, [k]: !l[k] }))} />
+          <MapLegend className="pointer-events-auto" modes={modesInUse(routes)} layers={layers} onToggle={(k) => setLayers((l) => ({ ...l, [k]: !l[k] }))} />
         </div>
         {popover && info && (
           <div className="absolute z-20 w-64 rounded-2xl border border-border bg-surface p-4 shadow-xl" style={{ left: `clamp(12px, ${popover.x - 128}px, calc(100% - 268px))`, top: `clamp(12px, ${popover.y + 12}px, calc(100% - 180px))` }} role="dialog" aria-label={`${info.name}`}>

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getScope } from "@/lib/scope";
 import { coverAttribution, loadGraph } from "@/lib/data";
 import { CountryDetail } from "@/components/countries/country-detail";
+import { tripRoute } from "@/lib/server/route-data";
 
 export const metadata: Metadata = { title: "Country" };
 
@@ -19,8 +20,10 @@ export default async function CountryPage({ params, searchParams }: PageProps<"/
   const cityIds = new Set(cities.map((c) => c.id));
   const days = g.days.filter((d) => d.trip_country_id === id);
   const dayIds = new Set(days.map((d) => d.id));
+  const route = tripRoute(tc.trip_id, g.countries, g.cities, scope.settings);
   return (
     <CountryDetail
+      legs={route.legs.filter((l) => l.tripCountryId === id)}
       country={country}
       attribution={await coverAttribution(supabase, country.cover_path)}
       cities={cities}

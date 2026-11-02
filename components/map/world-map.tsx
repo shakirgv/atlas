@@ -7,11 +7,14 @@ import { zoom as d3zoom, zoomIdentity, type ZoomBehavior } from "d3-zoom";
 import { feature } from "topojson-client";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import type { GeometryCollection, Topology } from "topojson-specification";
-import { Minus, Plus, RotateCcw } from "lucide-react";
+import { House, Minus, Plane, Plus, RotateCcw } from "lucide-react";
 import world from "world-atlas/countries-110m.json";
 import { getCountryByCcn3 } from "@/lib/countries";
 import { fmtRange } from "@/lib/dates";
 import { GEO_STATUS_META } from "@/lib/status";
+import { arcMidpoint } from "@/lib/geo";
+import { transportMeta, TRANSPORT_META } from "@/lib/transport";
+import { TRANSPORT_MODES, type TransportMode } from "@/lib/types";
 import type { DisplayStatus, GeoStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useReducedMotion } from "@/hooks/use-media-query";
@@ -60,7 +63,42 @@ export type MapCountryState = {
   depart?: string | null;
   tripTitle?: string;
 };
-export type RoutePoint = { id: string; code: string; lat: number; lng: number };
+export type RoutePoint = {
+  id: string;
+  code: string;
+  lat: number;
+  lng: number;
+  name?: string;
+  /** How I get HERE from the previous point (first point: from home). */
+  mode?: string | null;
+  note?: string | null;
+  /** The home point that starts a route (not numbered). */
+  home?: boolean;
+};
+
+export type RouteLeg = { key: string; from: RoutePoint; to: RoutePoint; d: string; mid: [number, number]; mode: string | null; greatCircle: boolean };
+
+/** Build drawable legs: flights follow the great circle, ground modes a straight projected line. */
+export function buildRouteLegs(route: RoutePoint[], proj = projection): RouteLeg[] {
+  const p = geoPath(proj);
+  return route.slice(1).map((to, i) => {
+    const from = route[i]!;
+    const meta = transportMeta(to.mode);
+    const a = proj([from.lng, from.lat]) ?? [0, 0];
+    const b = proj([to.lng, to.lat]) ?? [0, 0];
+    const gc = meta.arc.greatCircle || !to.mode;
+    const d = gc ? (p({ type: "LineString", coordinates: [[from.lng, from.lat], [to.lng, to.lat]] }) ?? "") : `M${a[0]},${a[1]}L${b[0]},${b[1]}`;
+    const m = gc ? arcMidpoint(from, to) : null;
+    const mid = (m ? proj([m.lng, m.lat]) : [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]) ?? [0, 0];
+    return { key: `${from.id}-${to.id}`, from, to, d, mid: mid as [number, number], mode: to.mode ?? null, greatCircle: gc };
+  });
+}
+
+/** Transport modes used in the given routes (for the legend). */
+export function modesInUse(routes: RoutePoint[][]): TransportMode[] {
+  const set = new Set(routes.flatMap((r) => r.slice(1).map((p) => p.mode)).filter(Boolean));
+  return TRANSPORT_MODES.filter((m) => set.has(m));
+}
 export type MapCity = { id: string; name: string; lat: number; lng: number };
 export type Layers = { visited: boolean; planned: boolean; wishlist: boolean; route: boolean; cities: boolean };
 export const DEFAULT_LAYERS: Layers = { visited: true, planned: true, wishlist: true, route: true, cities: true };
@@ -129,26 +167,19 @@ export function WorldMap({
     return GEO_STATUS_META[s.status].color;
   };
 
-  const arcs = useMemo(
-    () =>
-      routes.map((r) =>
-        r.slice(1).map((p, i) => {
-          const a = r[i]!;
-          return { key: `${a.id}-${p.id}`, d: path({ type: "LineString", coordinates: [[a.lng, a.lat], [p.lng, p.lat]] }) ?? "" };
-        }),
-      ),
-    [routes],
-  );
+  const arcs = useMemo(() => routes.map((r) => buildRouteLegs(r)), [routes]);
   const stops = useMemo(
     () =>
-      routes.flatMap((r) =>
-        r.map((p, i) => {
+      routes.flatMap((r) => {
+        let n = 0;
+        return r.map((p) => {
           const xy = projection([p.lng, p.lat]) ?? [0, 0];
-          return { ...p, n: i + 1, x: xy[0], y: xy[1] };
-        }),
-      ),
+          return { ...p, n: p.home ? 0 : ++n, x: xy[0], y: xy[1] };
+        });
+      }),
     [routes],
   );
+  const [hoverLeg, setHoverLeg] = useState<{ leg: RouteLeg; x: number; y: number; w: number } | null>(null);
   const cityDots = useMemo(() => cities.map((c) => ({ ...c, xy: projection([c.lng, c.lat]) ?? [0, 0] })), [cities]);
   const hoverState = hover ? states[hover.code] : undefined;
   const hoverShape = hover ? SHAPES.find((s) => s.code === hover.code) : undefined;
@@ -194,23 +225,38 @@ export function WorldMap({
           })}
           {layers.route &&
             arcs.map((list, ri) =>
-              list.map((a, i) => (
-                <g key={`${ri}-${a.key}`}>
-                  <path
-                    d={a.d}
-                    fill="none"
-                    stroke="var(--accent)"
-                    strokeWidth={2}
-                    strokeOpacity={0.9}
-                    strokeLinecap="round"
-                    vectorEffect="non-scaling-stroke"
-                    pathLength={1}
-                    className={reduce ? undefined : "arc-draw"}
-                    style={reduce ? undefined : { animationDelay: `${i * 0.18}s` }}
-                  />
-                  {!reduce && <path d={a.d} fill="none" stroke="var(--surface)" strokeWidth={1.2} strokeOpacity={0.9} vectorEffect="non-scaling-stroke" className="arc-flow" style={{ animationDelay: `${1.4 + i * 0.18}s` }} />}
-                </g>
-              )),
+              list.map((a, i) => {
+                const meta = transportMeta(a.mode);
+                const solid = !meta.arc.dash;
+                return (
+                  <g key={`${ri}-${a.key}`}>
+                    <path
+                      d={a.d}
+                      fill="none"
+                      stroke={a.mode ? "var(--accent)" : "var(--muted)"}
+                      strokeWidth={meta.arc.width}
+                      strokeOpacity={a.mode ? 0.9 : 0.7}
+                      strokeLinecap="round"
+                      strokeDasharray={solid ? undefined : meta.arc.dash!}
+                      vectorEffect="non-scaling-stroke"
+                      pathLength={solid ? 1 : undefined}
+                      className={reduce ? undefined : solid ? "arc-draw" : "arc-fade"}
+                      style={reduce ? undefined : { animationDelay: `${i * 0.18}s` }}
+                    />
+                    {!reduce && solid && a.mode && meta.arc.width > 2 && (
+                      <path d={a.d} fill="none" stroke="var(--surface)" strokeWidth={1.2} strokeOpacity={0.9} vectorEffect="non-scaling-stroke" className="arc-flow" style={{ animationDelay: `${1.4 + i * 0.18}s` }} />
+                    )}
+                    {!reduce && a.mode === "flight" && (
+                      <g className="pointer-events-none">
+                        <animateMotion dur={`${9 + i * 1.3}s`} repeatCount="indefinite" path={a.d} rotate="auto" begin={`${1.2 + i * 0.4}s`} />
+                        <g transform={`scale(${inv * (compact ? 0.8 : 1)}) rotate(45)`}>
+                          <Plane x={-6} y={-6} width={12} height={12} color="var(--ink)" fill="var(--surface)" strokeWidth={1.6} />
+                        </g>
+                      </g>
+                    )}
+                  </g>
+                );
+              }),
             )}
           {layers.cities &&
             t.k > 2.5 &&
@@ -225,7 +271,34 @@ export function WorldMap({
               </g>
             ))}
           {layers.route &&
+            arcs.flat().map((a) => {
+              const meta = transportMeta(a.mode);
+              const Icon = meta.icon;
+              return (
+                <g
+                  key={`badge-${a.key}`}
+                  transform={`translate(${a.mid[0]},${a.mid[1]}) scale(${inv * (compact ? 0.75 : 1)})`}
+                  className={compact ? undefined : "cursor-help"}
+                  onMouseEnter={(e) => !compact && setHoverLeg({ leg: a, ...localPoint(e) } as { leg: RouteLeg; x: number; y: number; w: number })}
+                  onMouseLeave={() => setHoverLeg(null)}
+                  role="img"
+                  aria-label={`${a.from.name ?? ""} to ${a.to.name ?? ""} by ${a.mode ? meta.label.toLowerCase() : "unknown transport"}`}
+                >
+                  <circle r={10} fill="var(--surface)" stroke={a.mode ? "var(--accent)" : "var(--border)"} strokeWidth={1.5} strokeDasharray={a.mode ? undefined : "2 2"} />
+                  <Icon x={-6} y={-6} width={12} height={12} color={a.mode ? "var(--accent)" : "var(--muted)"} strokeWidth={2} />
+                </g>
+              );
+            })}
+          {layers.route &&
             stops.map((s) => {
+              if (s.home) {
+                return (
+                  <g key={`home-${s.id}`} transform={`translate(${s.x},${s.y}) scale(${inv * (compact ? 0.9 : 1)})`} role="img" aria-label={`Home: ${s.name ?? ""}`}>
+                    <circle r={8} fill="var(--surface)" stroke="var(--ink)" strokeWidth={1.5} />
+                    <House x={-5} y={-5} width={10} height={10} color="var(--ink)" strokeWidth={2.2} />
+                  </g>
+                );
+              }
               const ongoing = states[s.code]?.display === "ongoing";
               return (
                 <g key={`stop-${s.id}`} transform={`translate(${s.x},${s.y}) scale(${inv * (compact ? 0.9 : 1)})`}>
@@ -263,6 +336,17 @@ export function WorldMap({
         </div>
       )}
 
+      {hoverLeg && !compact && (
+        <div className="pointer-events-none absolute z-10 rounded-xl border border-border bg-surface px-3 py-2 text-sm shadow-lg" style={{ left: Math.min(hoverLeg.x + 14, hoverLeg.w - 260), top: hoverLeg.y + 14 }}>
+          <p className="font-medium">
+            {hoverLeg.leg.from.name ?? "Start"} → {hoverLeg.leg.to.name ?? ""}
+          </p>
+          <p className="text-xs text-muted">
+            {[hoverLeg.leg.mode ? transportMeta(hoverLeg.leg.mode).label.toLowerCase() : "transport not set", hoverLeg.leg.to.note].filter(Boolean).join(" · ")}
+          </p>
+        </div>
+      )}
+
       {!compact && (
         <div className={cn("absolute bottom-3 right-3 flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-sm", controlsClassName)}>
           <button type="button" onClick={() => zoomBy(1.6)} className="grid size-10 place-items-center hover:bg-ink/5" aria-label="Zoom in">
@@ -280,7 +364,7 @@ export function WorldMap({
   );
 }
 
-export function MapLegend({ layers, onToggle, className }: { layers: Layers; onToggle?: (key: keyof Layers) => void; className?: string }) {
+export function MapLegend({ layers, onToggle, className, modes = [] }: { layers: Layers; onToggle?: (key: keyof Layers) => void; className?: string; modes?: TransportMode[] }) {
   const items: { key: keyof Layers; label: string; color: string }[] = [
     { key: "visited", label: "Visited", color: "var(--visited)" },
     { key: "planned", label: "Planned", color: "var(--planned)" },
@@ -312,6 +396,19 @@ export function MapLegend({ layers, onToggle, className }: { layers: Layers; onT
           {i.label}
         </button>
       ))}
+      {layers.route &&
+        modes.map((m) => {
+          const meta = TRANSPORT_META[m];
+          return (
+            <span key={m} className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border bg-surface/90 px-2.5 text-xs font-medium backdrop-blur">
+              <svg width="18" height="6" aria-hidden className="shrink-0">
+                <line x1="1" y1="3" x2="17" y2="3" stroke="var(--accent)" strokeWidth={Math.min(2.5, meta.arc.width)} strokeLinecap="round" strokeDasharray={meta.arc.dash ?? undefined} />
+              </svg>
+              <meta.icon className="size-3.5 text-accent" />
+              {meta.label}
+            </span>
+          );
+        })}
     </div>
   );
 }

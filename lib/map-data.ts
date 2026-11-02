@@ -1,7 +1,7 @@
 import "server-only";
 import type { ServerSupabase } from "@/lib/supabase/server";
 import type { Scope } from "@/lib/scope";
-import { getCountry } from "@/lib/countries";
+import { countryAnchor, getCountry } from "@/lib/countries";
 import { displayStatus, strongerStatus } from "@/lib/status";
 import type { GeoStatus, TripCountry } from "@/lib/types";
 import type { MapCity, MapCountryState, RoutePoint } from "@/components/map/world-map";
@@ -31,16 +31,24 @@ export async function loadMapData(supabase: ServerSupabase, scope: Scope) {
   // Only entries in the active scope are "in trip" for click navigation.
   const inScopeIds = new Map(all.filter((t) => scope.tripIds.includes(t.trip_id)).map((t) => [t.country_code.trim(), t.id]));
 
-  const routes: RoutePoint[][] = scope.tripIds.map((tid) =>
-    all
-      .filter((t) => t.trip_id === tid)
-      .sort((a, b) => a.order_index - b.order_index)
-      .map((t) => {
-        const c = getCountry(t.country_code);
-        return c ? { id: t.id, code: c.cca2, lat: c.latlng[0], lng: c.latlng[1] } : null;
-      })
-      .filter((p): p is RoutePoint => Boolean(p)),
-  ).filter((r) => r.length > 0);
+  const st = scope.settings;
+  const home: RoutePoint | null =
+    st?.home_lat != null && st?.home_lng != null ? { id: "home", code: "", lat: st.home_lat, lng: st.home_lng, name: st.home_city ?? "Home", home: true } : null;
+  const routes: RoutePoint[][] = scope.tripIds
+    .map((tid) => {
+      const pts = all
+        .filter((t) => t.trip_id === tid)
+        .sort((a, b) => a.order_index - b.order_index)
+        .map((t) => {
+          const c = getCountry(t.country_code);
+          const [lat, lng] = countryAnchor(c?.cca2) ?? c?.latlng ?? [0, 0];
+          return c ? { id: t.id, code: c.cca2, lat, lng, name: c.name, mode: t.transport_mode, note: t.transport_note } : null;
+        })
+        .filter((p): p is NonNullable<typeof p> => Boolean(p)) as RoutePoint[];
+      // The route starts at home when it is set (the first stop's mode means "from home").
+      return home && pts.length ? [home, ...pts] : pts;
+    })
+    .filter((r) => r.length > 0);
 
   const scopeTc = all.filter((t) => scope.tripIds.includes(t.trip_id)).map((t) => t.id);
   const { data: cities } = scopeTc.length

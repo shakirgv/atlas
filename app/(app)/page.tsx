@@ -6,6 +6,7 @@ import { summarizeBudget } from "@/lib/budget";
 import { daysOnTheRoad } from "@/lib/trip";
 import { todayIso } from "@/lib/dates";
 import { Dashboard } from "@/components/dashboard/dashboard";
+import { homeStop, routesForTrips } from "@/lib/server/route-data";
 
 export default async function DashboardPage() {
   const { supabase, scope } = await getScope();
@@ -34,8 +35,19 @@ export default async function DashboardPage() {
   const md = today.slice(5);
   const onThisDay = g.memories.filter((m) => m.date.slice(5) === md && m.date.slice(0, 4) < today.slice(0, 4));
 
+  const route = routesForTrips(scope.tripIds, g.countries, g.cities, scope.settings);
+  const home = homeStop(scope.settings);
+  const curStop = route.stops.find((s) => s.tz && s.arrive && s.arrive <= today && (!s.depart || s.depart >= today)) ?? null;
+  const nextStopTz = route.stops.filter((s) => s.tz && s.arrive && s.arrive > today).sort((a, b) => a.arrive!.localeCompare(b.arrive!))[0] ?? null;
+  const time = {
+    homeTz: home?.tz ?? null,
+    homeName: scope.settings?.home_city ?? null,
+    current: curStop ? { name: curStop.name, tz: curStop.tz! } : null,
+    next: nextStopTz ? { name: nextStopTz.name, tz: nextStopTz.tz!, arrive: nextStopTz.arrive } : null,
+  };
   return (
     <Dashboard
+      time={time}
       displayName={scope.settings?.display_name ?? ""}
       baseCurrency={scope.baseCurrency}
       activeTrip={scope.activeTrip}

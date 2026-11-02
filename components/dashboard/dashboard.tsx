@@ -18,6 +18,7 @@ import { MemoryMini } from "@/components/memories/memory-mini";
 import { WorldMap, type MapCity, type MapCountryState, type RoutePoint } from "@/components/map/world-map";
 import { Button } from "@/components/ui/button";
 import { SetupBanner } from "@/components/common/setup-banner";
+import { TimeTile, type TimeTileData } from "./time-tile";
 import { useWorkspace } from "@/components/shell/workspace";
 
 type Stats = { visited: number; planned: number; cities: number; daysOnRoad: number; placesVisited: number; places: number; photos: number };
@@ -119,6 +120,13 @@ function NextStopHero({ c, cityCount }: { c: CountryVM | null; cityCount: number
   );
 }
 
+/** Small "at a glance" tiles (time; weather and cash join later). Empty tiles are hidden. */
+function GlanceColumn({ time }: { time: TimeTileData }) {
+  const showTime = Boolean(time.current || time.next);
+  if (!showTime) return null;
+  return <div className="flex h-full flex-col gap-4">{showTime && <TimeTile data={time} />}</div>;
+}
+
 export function Dashboard({
   displayName,
   baseCurrency,
@@ -134,6 +142,7 @@ export function Dashboard({
   onThisDay,
   alerts,
   setup,
+  time,
 }: {
   displayName: string;
   baseCurrency: string;
@@ -149,6 +158,7 @@ export function Dashboard({
   onThisDay: MemoryVM[];
   alerts: Alert[];
   setup: { missingHome: boolean; missingPassport: boolean };
+  time: TimeTileData;
 }) {
   const ws = useWorkspace();
   const money = (n: number) => formatMoney(n, baseCurrency);
@@ -259,6 +269,10 @@ export function Dashboard({
               <WorldMap compact states={map.states} routes={map.routes} cities={map.cities} className="h-full min-h-[260px]" />
             </Link>
           </section>
+        </StaggerItem>
+
+        <StaggerItem className="md:col-span-1 lg:col-span-4">
+          <GlanceColumn time={time} />
         </StaggerItem>
 
         <StaggerItem className="md:col-span-1 lg:col-span-4">

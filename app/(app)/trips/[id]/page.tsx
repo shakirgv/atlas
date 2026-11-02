@@ -4,6 +4,7 @@ import { getScope } from "@/lib/scope";
 import { coverAttribution, loadGraph } from "@/lib/data";
 import { nextSteps, tripProgress } from "@/lib/trip";
 import { TripDetail } from "@/components/trips/trip-detail";
+import { legIntoCountry, tripRoute } from "@/lib/server/route-data";
 
 export const metadata: Metadata = { title: "Trip" };
 
@@ -17,8 +18,11 @@ export default async function TripPage({ params }: PageProps<"/trips/[id]">) {
   const steps = nextSteps({ trip: t, countries: g.countries, cities: g.cities, days: g.days, items: g.items, expenses: g.expenses, documents: g.documents });
   const spent = g.expenses.filter((e) => e.kind === "actual").reduce((s, e) => s + Number(e.amount_base), 0);
   const planned = g.expenses.filter((e) => e.kind === "planned").reduce((s, e) => s + Number(e.amount_base), 0);
+  const route = tripRoute(id, g.countries, g.cities, scope.settings);
+  const legs = Object.fromEntries(g.countries.map((c) => [c.id, legIntoCountry(route.legs, c.id)]));
   return (
     <TripDetail
+      legs={legs}
       trip={t}
       attribution={await coverAttribution(supabase, t.cover_path)}
       countries={g.countries}

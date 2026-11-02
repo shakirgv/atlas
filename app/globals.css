@@ -221,6 +221,18 @@
   stroke-dasharray: 4 8;
   animation: arc-flow 2.4s linear infinite;
 }
+@keyframes arc-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.arc-fade {
+  opacity: 0;
+  animation: arc-fade 0.9s ease-out forwards;
+}
 @keyframes pulse-ring {
   0% {
     transform: scale(0.8);
@@ -284,6 +296,9 @@
   }
   .arc-draw {
     stroke-dashoffset: 0;
+  }
+  .arc-fade {
+    opacity: 1;
   }
   .card-hover:hover {
     transform: none;

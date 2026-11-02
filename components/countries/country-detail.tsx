@@ -56,6 +56,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkspace } from "@/components/shell/workspace";
 import { CountryEditDialog } from "./country-edit-dialog";
+import type { LegView } from "@/lib/server/route-data";
+import { JetLagChip } from "@/components/route/jetlag-chip";
+import { TransportChip } from "@/components/route/transport-chip";
+import { zoneCity } from "@/lib/timezones";
 
 const TABS = [
   { value: "overview", label: "Overview", icon: Info },
@@ -113,6 +117,7 @@ export function GenerateDaysButton({ countryId, hasDates, variant = "primary", l
 }
 
 export function CountryDetail({
+  legs,
   country,
   attribution,
   cities,
@@ -126,6 +131,7 @@ export function CountryDetail({
   initialTab,
   openEdit,
 }: {
+  legs: LegView[];
   country: CountryVM;
   attribution: string | null;
   cities: CityVM[];
@@ -153,6 +159,8 @@ export function CountryDetail({
   const citiesWithDays = cities.filter((c) => days.some((d) => d.city_id === c.id)).length;
   const nights = daysBetween(country.arrive_date, country.depart_date);
   const markers = cities.filter((c) => c.lat != null && c.lng != null).map((c, i) => ({ id: c.id, lat: c.lat!, lng: c.lng!, label: c.name, number: i + 1 }));
+
+  const legIn = legs.find((l) => l.fromTripCountryId !== country.id) ?? null;
 
   const changeTab = (v: string) => {
     setTab(v);
@@ -215,9 +223,10 @@ export function CountryDetail({
           </>
         }
       >
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="grid size-12 place-items-center rounded-xl bg-white/90 text-3xl shadow-sm">{country.flag}</span>
           <GeoStatusChip status={country.display} onPhoto />
+          <JetLagChip jetlag={legIn?.jetlag} onPhoto from={legIn?.fromName} />
         </div>
         <h1 className="mt-3 text-[40px] font-semibold leading-none sm:text-[56px]">{country.name}</h1>
         <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-white/85">
@@ -257,6 +266,25 @@ export function CountryDetail({
                   <Progress value={cities.length ? (citiesWithDays / cities.length) * 100 : 0} color="var(--visited)" />
                 </div>
               </section>
+              {legs.length > 0 && (
+                <section className="card p-5" aria-label="Getting here and around">
+                  <SectionTitle>Getting here</SectionTitle>
+                  <ol className="flex flex-col gap-3">
+                    {legs.map((l) => (
+                      <li key={l.key} className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+                        <span className="min-w-0 text-sm">
+                          <span className="text-muted">{l.fromHome ? "Home" : l.fromName}</span> → <span className="font-medium">{l.toName}</span>
+                          {l.toTz && <span className="ml-1.5 text-xs text-muted">{zoneCity(l.toTz)} time</span>}
+                        </span>
+                        <span className="flex flex-wrap items-center gap-1.5">
+                          <TransportChip mode={l.mode} note={l.note} owner={l.owner} toName={l.toName} />
+                          <JetLagChip jetlag={l.jetlag} from={l.fromName} />
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              )}
               {cap > 0 && (
                 <section className="card p-5">
                   <SectionTitle>Budget cap</SectionTitle>

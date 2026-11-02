@@ -29,10 +29,12 @@ import { useWorkspace } from "@/components/shell/workspace";
 import { NextSteps } from "./next-steps";
 import { RouteList } from "./route-list";
 import { RouteTimeline } from "./route-timeline";
+import type { LegView } from "@/lib/server/route-data";
 
 type Stats = { cities: number; days: number; places: number; placesVisited: number; spent: number; planned: number; budget: number };
 
 export function TripDetail({
+  legs,
   trip,
   attribution,
   countries,
@@ -45,6 +47,7 @@ export function TripDetail({
   baseCurrency,
   isActive,
 }: {
+  legs: Record<string, LegView | null>;
   trip: Trip & { cover_url: string | null };
   attribution: string | null;
   countries: CountryVM[];
@@ -152,8 +155,8 @@ export function TripDetail({
                   <RouteTimeline countries={countries} />
                 </div>
                 <div>
-                  <p className="mb-2 text-xs text-muted">Drag to change the route order.</p>
-                  <RouteList countries={countries} />
+                  <p className="mb-2 text-xs text-muted">Drag to change the route order. Click a transport chip to change how you get there.</p>
+                  <RouteList countries={countries} legs={legs} />
                 </div>
               </div>
             ) : (

@@ -1,4 +1,5 @@
 import data from "@/lib/data/countries.json";
+import { capitalCoords } from "@/lib/country-extras";
 
 export type CountryInfo = {
   cca2: string;
@@ -70,4 +71,15 @@ export function searchCountries(query: string) {
     .filter((x) => x.s < 9)
     .sort((a, b) => a.s - b.s || a.c.name.localeCompare(b.c.name))
     .map((x) => x.c);
+}
+
+/**
+ * Representative point for a country on the route: its capital when known (from
+ * data/country-extras.json), otherwise the geographic centroid from world-countries.
+ */
+export function countryAnchor(cca2: string | null | undefined): [number, number] | null {
+  const c = getCountry(cca2);
+  if (!c) return null;
+  const cap = capitalCoords(c.cca2);
+  return cap ?? c.latlng;
 }

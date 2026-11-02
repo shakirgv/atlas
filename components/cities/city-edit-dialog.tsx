@@ -11,6 +11,7 @@ import { Field, Input } from "@/components/ui/input";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { ChoiceChips, MoreDetails, SubmitButton } from "@/components/forms/form-bits";
 import { GEO_STATUS_OPTIONS } from "@/components/countries/country-edit-dialog";
+import { TransportField } from "@/components/route/transport-field";
 
 type In = z.input<typeof citySchema>;
 type Out = z.output<typeof citySchema>;
@@ -19,7 +20,7 @@ export function CityEditDialog({ open, onOpenChange, city }: { open: boolean; on
   const [pending, start] = useTransition();
   const form = useForm<In, unknown, Out>({
     resolver: zodResolver(citySchema),
-    values: { name: city.name, status: city.status as Out["status"], arrive_date: city.arrive_date ?? "", depart_date: city.depart_date ?? "", notes: city.notes ?? "", lat: city.lat, lng: city.lng },
+    values: { name: city.name, status: city.status as Out["status"], arrive_date: city.arrive_date ?? "", depart_date: city.depart_date ?? "", notes: city.notes ?? "", lat: city.lat, lng: city.lng, timezone: city.timezone ?? "", transport_mode: (city.transport_mode ?? "") as In["transport_mode"], transport_note: city.transport_note ?? "" },
   });
   const { register, handleSubmit, control, formState } = form;
   const onSubmit = handleSubmit((v) =>
@@ -61,7 +62,12 @@ export function CityEditDialog({ open, onOpenChange, city }: { open: boolean; on
         <Field label="Status">
           <Controller control={control} name="status" render={({ field }) => <ChoiceChips name="Status" value={field.value} onChange={field.onChange} options={GEO_STATUS_OPTIONS} />} />
         </Field>
-        <MoreDetails label="Coordinates">
+        <Controller
+          control={control}
+          name="transport_mode"
+          render={({ field }) => <TransportField value={field.value} onChange={(v) => field.onChange(v ?? "")} noteProps={register("transport_note")} />}
+        />
+        <MoreDetails label="Coordinates & time zone">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Latitude" htmlFor="city-lat" error={formState.errors.lat?.message}>
               <Input id="city-lat" inputMode="decimal" {...register("lat")} />
@@ -70,6 +76,9 @@ export function CityEditDialog({ open, onOpenChange, city }: { open: boolean; on
               <Input id="city-lng" inputMode="decimal" {...register("lng")} />
             </Field>
           </div>
+          <Field label="Time zone (IANA)" htmlFor="city-tz" error={formState.errors.timezone?.message} hint="Filled automatically from the coordinates. Clear it to look it up again.">
+            <Input id="city-tz" placeholder="Asia/Tokyo" {...register("timezone")} />
+          </Field>
         </MoreDetails>
       </form>
     </ResponsiveDialog>

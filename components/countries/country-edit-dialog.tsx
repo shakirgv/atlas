@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { ChoiceChips, SubmitButton } from "@/components/forms/form-bits";
+import { TransportField } from "@/components/route/transport-field";
 
 type In = z.input<typeof tripCountrySchema>;
 type Out = z.output<typeof tripCountrySchema>;
@@ -31,6 +32,8 @@ export function CountryEditDialog({ open, onOpenChange, country, name, baseCurre
       depart_date: country.depart_date ?? "",
       budget: country.budget ?? "",
       notes: country.notes ?? "",
+      transport_mode: (country.transport_mode ?? "") as In["transport_mode"],
+      transport_note: country.transport_note ?? "",
     },
   });
   const { register, handleSubmit, control, formState } = form;
@@ -71,6 +74,11 @@ export function CountryEditDialog({ open, onOpenChange, country, name, baseCurre
         <Field label="Status">
           <Controller control={control} name="status" render={({ field }) => <ChoiceChips name="Status" value={field.value} onChange={field.onChange} options={GEO_STATUS_OPTIONS} />} />
         </Field>
+        <Controller
+          control={control}
+          name="transport_mode"
+          render={({ field }) => <TransportField value={field.value} onChange={(v) => field.onChange(v ?? "")} noteProps={register("transport_note")} isFirst={country.order_index === 0} />}
+        />
         <Field label={`Budget cap (${baseCurrency})`} htmlFor="c-budget" error={formState.errors.budget?.message} hint="Optional. Shows a progress bar on the budget page.">
           <Input id="c-budget" inputMode="decimal" placeholder="2500" {...register("budget")} />
         </Field>
