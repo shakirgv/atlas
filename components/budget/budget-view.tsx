@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import { Banknote, CalendarClock, ChartPie, Coins, PiggyBank, Plus, Receipt, Target, TrendingUp, Wallet } from "lucide-react";
-import type { BudgetSummary } from "@/lib/budget";
+import { Banknote, CalendarClock, ChartPie, Coins, Flag, PiggyBank, Plus, Receipt, Target, TrendingUp, Wallet } from "lucide-react";
+import { totalOfCaps, type BudgetSummary } from "@/lib/budget";
 import type { CashSummary } from "@/lib/cash";
 import { CashTab } from "@/components/cash/cash-tab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,11 +14,14 @@ import { PageHeader } from "@/components/common/page-header";
 import { CountUp, PageTransition, Stagger, StaggerItem } from "@/components/common/motion";
 import { ExpenseSheet } from "@/components/forms/expense-sheet";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/misc";
 import { useWorkspace } from "@/components/shell/workspace";
+import { CountryCaps } from "./country-caps";
 import { ExpenseTable } from "./expense-table";
 
 type Opt = { id: string; name: string; flag: string; trip_id: string };
+
+/** Full size until the longest figure would outgrow its card, then only as small as that length needs. */
+const fitFigure = (length: number) => `min(24px, calc(100cqi / ${(length * 0.6).toFixed(1)}))`;
 
 export function BudgetView({
   expenses,
@@ -53,15 +56,17 @@ export function BudgetView({
     window.history.replaceState(null, "", url);
   };
   const money = (n: number) => formatMoney(n, baseCurrency);
+  const cappedCount = s.byCountry.filter((c) => c.cap > 0).length;
   const cards = [
     { label: "Total budget", value: s.totalBudget, icon: Target, tone: "var(--ink)", hint: s.totalBudget ? "Trip total or country caps" : "Not set" },
+    { label: "Total budget cap", value: totalOfCaps(s.byCountry), icon: Flag, tone: "var(--wishlist)", hint: cappedCount ? `${cappedCount} of ${s.byCountry.length} ${s.byCountry.length === 1 ? "country" : "countries"}` : "No caps set" },
     { label: "Planned", value: s.planned, icon: CalendarClock, tone: "var(--planned)", hint: "Upcoming costs" },
     { label: "Spent", value: s.spent, icon: Receipt, tone: "var(--visited)", hint: s.totalBudget ? `${Math.round((s.spent / s.totalBudget) * 100)}% of budget` : "So far" },
     { label: "Remaining", value: s.remaining, icon: PiggyBank, tone: s.remaining < 0 ? "var(--danger)" : "var(--accent)", hint: s.totalBudget ? (s.remaining < 0 ? "Over budget" : "Left to spend") : "Set a budget" },
     { label: "Average per day", value: s.avgPerDay, icon: TrendingUp, tone: "var(--wishlist)", hint: s.daysElapsed ? `Over ${s.daysElapsed} days` : "Trip not started" },
     { label: "Remaining per day", value: s.remainingPerDay ?? 0, icon: Coins, tone: "var(--visited)", hint: s.daysRemaining ? `${s.daysRemaining} days left` : "—" },
   ];
-  const capped = s.byCountry.filter((c) => c.cap > 0);
+  const longestFigure = Math.max(...cards.map((c) => money(c.value).length));
   const donut = s.byCategory.map((c) => ({ category: c.category, value: c.actual }));
 
   return (
@@ -102,14 +107,18 @@ export function BudgetView({
         />
       ) : (
         <>
-          <Stagger className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
-            {cards.map((c) => (
-              <StaggerItem key={c.label}>
+          <Stagger className="grid grid-cols-2 gap-3 lg:grid-cols-12">
+            {cards.map((c, i) => (
+              <StaggerItem key={c.label} className={cn(i < 4 ? "lg:col-span-3" : "lg:col-span-4", i === cards.length - 1 && "max-lg:col-span-2")}>
                 <div className="card flex h-full flex-col gap-2 p-4">
                   <div className="flex items-center gap-2 text-[13px] text-muted">
-                    <c.icon className="size-4" style={{ color: c.tone }} /> {c.label}
+                    <c.icon className="size-4 shrink-0" style={{ color: c.tone }} /> {c.label}
                   </div>
-                  <CountUp value={c.value} format={(n) => money(n)} className={cn("num font-display text-[24px] font-semibold leading-none", c.label === "Remaining" && c.value < 0 && "text-danger")} />
+                  <div className="@container">
+                    <div style={{ fontSize: fitFigure(longestFigure) }}>
+                      <CountUp value={c.value} format={(n) => money(n)} className={cn("num block whitespace-nowrap font-display font-semibold leading-none", c.label === "Remaining" && c.value < 0 && "text-danger")} />
+                    </div>
+                  </div>
                   <span className="text-xs text-muted">{c.hint}</span>
                 </div>
               </StaggerItem>
@@ -126,7 +135,7 @@ export function BudgetView({
                 center={
                   <div>
                     <p className="text-xs text-muted">Spent</p>
-                    <p className="num font-display text-xl font-semibold">{formatMoney(s.spent, baseCurrency, { compact: s.spent >= 100000 })}</p>
+                    <p className="num font-display text-lg font-semibold">{formatMoney(s.spent, baseCurrency, { compact: s.spent >= 10000 })}</p>
                   </div>
                 }
               />
@@ -140,32 +149,11 @@ export function BudgetView({
             </section>
             <section className="card p-5 lg:col-span-8" aria-label="Cumulative spend">
               <h2 className="mb-3 text-xl font-semibold">Spending over time</h2>
-              <CumulativeSpend data={s.cumulative} currency={baseCurrency} budget={s.totalBudget || undefined} />
+              <CumulativeSpend data={s.cumulative} currency={baseCurrency} budget={s.totalBudget || undefined} height={320} />
             </section>
             <section className="card p-5 lg:col-span-4" aria-label="Country budget caps">
               <h2 className="mb-3 text-xl font-semibold">Country caps</h2>
-              {capped.length ? (
-                <ul className="flex flex-col gap-4">
-                  {capped.map((c) => {
-                    const pct = (c.actual / c.cap) * 100;
-                    return (
-                      <li key={c.id}>
-                        <div className="mb-1.5 flex items-center justify-between text-sm">
-                          <span className="font-medium">
-                            {c.flag} {c.name}
-                          </span>
-                          <span className={cn("num text-xs", pct > 100 ? "font-semibold text-danger" : "text-muted")}>
-                            {money(c.actual)} / {money(c.cap)}
-                          </span>
-                        </div>
-                        <Progress value={pct} color={pct > 100 ? "var(--danger)" : pct > 85 ? "var(--planned)" : "var(--visited)"} />
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <p className="text-sm text-muted">Give a country a budget cap (Country → Edit) to track it here.</p>
-              )}
+              <CountryCaps countries={s.byCountry} currency={baseCurrency} />
             </section>
           </div>
 

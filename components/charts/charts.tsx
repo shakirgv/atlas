@@ -74,7 +74,7 @@ export function PlannedVsActual({ data, currency, height = 280 }: { data: { name
         <BarChart data={data.map((d) => ({ ...d, label: `${d.flag} ${d.name.length > 10 ? `${d.name.slice(0, 9)}…` : d.name}` }))} barGap={3} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 4" />
           <XAxis dataKey="label" tick={axisTick} tickLine={false} axisLine={false} interval={0} />
-          <YAxis tick={axisTick} tickLine={false} axisLine={false} width={56} tickFormatter={(v: number) => formatMoney(v, currency, { compact: true })} />
+          <YAxis tick={axisTick} tickLine={false} axisLine={false} width="auto" tickFormatter={(v: number) => formatMoney(v, currency, { compact: true })} />
           <Tooltip cursor={{ fill: "var(--accent-soft)" }} content={<ChartTooltip currency={currency} />} />
           <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, color: "var(--muted)" }} />
           <Bar dataKey="planned" name="Planned" fill="var(--planned)" radius={[6, 6, 0, 0]} maxBarSize={28} isAnimationActive={!reduce} />
@@ -101,7 +101,7 @@ export function CumulativeSpend({ data, currency, budget, height = 260 }: { data
           </defs>
           <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 4" />
           <XAxis dataKey="date" tick={axisTick} tickLine={false} axisLine={false} tickFormatter={(d: string) => fmtShort(d)} minTickGap={24} />
-          <YAxis tick={axisTick} tickLine={false} axisLine={false} width={56} tickFormatter={(v: number) => formatMoney(v, currency, { compact: true })} domain={[0, (max: number) => Math.max(max, budget ?? 0) * 1.05]} />
+          <YAxis tick={axisTick} tickLine={false} axisLine={false} width="auto" tickFormatter={(v: number) => formatMoney(v, currency, { compact: true })} domain={[0, (max: number) => Math.max(max, budget ?? 0) * 1.05]} />
           <Tooltip content={<ChartTooltip currency={currency} labelFormat={(l) => fmtShort(l)} />} />
           <Area type="monotone" dataKey="spent" name="Spent so far" stroke="var(--accent)" strokeWidth={2.5} fill="url(#spendFill)" isAnimationActive={!reduce} />
         </AreaChart>

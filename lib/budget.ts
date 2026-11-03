@@ -1,6 +1,7 @@
 import { differenceInCalendarDays } from "date-fns";
 import { toDate, todayIso } from "@/lib/dates";
 import type { CountryVM } from "@/lib/data";
+import { normalizeName } from "@/lib/normalize-name";
 import { EXPENSE_CATEGORIES, type Expense, type ExpenseCategory, type Trip } from "@/lib/types";
 
 export type BudgetSummary = {
@@ -16,6 +17,26 @@ export type BudgetSummary = {
   byCountry: { id: string; name: string; flag: string; actual: number; planned: number; cap: number }[];
   cumulative: { date: string; spent: number }[];
 };
+
+type CountryBudget = BudgetSummary["byCountry"][number];
+
+/** What the caps add up to, whatever total the trip itself has. */
+export function totalOfCaps(byCountry: CountryBudget[]) {
+  return byCountry.reduce((s, c) => s + c.cap, 0);
+}
+
+/** Countries with a cap, closest to going over first, so a shortened list still shows what needs attention. */
+export function cappedCountries(byCountry: CountryBudget[]) {
+  return byCountry.filter((c) => c.cap > 0).sort((a, b) => b.actual / b.cap - a.actual / a.cap);
+}
+
+/** Every country whose name matches, capped or not, so "no cap yet" is an answer too. */
+export function searchCountryBudgets(byCountry: CountryBudget[], query: string) {
+  // Both, because normalizeName turns "Saint" into "St", which would hide Saint Lucia while "sain" is being typed.
+  const plain = query.trim().toLowerCase();
+  const folded = normalizeName(query);
+  return byCountry.filter((c) => c.name.toLowerCase().includes(plain) || normalizeName(c.name).includes(folded));
+}
 
 /** All money is already in the base currency (amount_base). */
 export function summarizeBudget(expenses: Expense[], trips: Trip[], countries: CountryVM[]): BudgetSummary {
