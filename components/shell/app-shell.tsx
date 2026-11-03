@@ -78,7 +78,7 @@ export function AppShell({ workspace, sidebarCollapsed, children }: { workspace:
               <Sidebar collapsed={collapsed} onToggle={toggleSidebar} />
               <div className="flex min-w-0 flex-1 flex-col">
                 <Topbar />
-                <main id="main" className="mx-auto w-full max-w-[1280px] flex-1 px-4 pb-32 pt-6 md:px-8 md:pb-16 md:pt-8">
+                <main id="main" className="mx-auto w-full max-w-[1280px] flex-1 px-4 pb-32 pt-6 has-[[data-full-bleed]]:max-w-none md:px-8 md:pb-16 md:pt-8">
                   {children}
                 </main>
               </div>

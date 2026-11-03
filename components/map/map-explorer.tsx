@@ -3,16 +3,18 @@ import { useMemo, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronUp, Earth, ImageDown, Plus, X } from "lucide-react";
+import { ChevronUp, Earth, ImageDown, Plus, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { addCountries } from "@/actions/countries";
 import { getCountry } from "@/lib/countries";
 import { fmtRange } from "@/lib/dates";
+import { searchRoute } from "@/lib/map-view";
 import type { CountryVM } from "@/lib/data";
 import { cn, pluralize } from "@/lib/utils";
 import { useAutoCover } from "@/hooks/use-auto-cover";
 import { GeoStatusChip } from "@/components/common/status-chip";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useDefaultTripId, useWorkspace } from "@/components/shell/workspace";
 import { transportMeta } from "@/lib/transport";
 import type { PhotoBadge } from "@/lib/photo-pins";
@@ -52,6 +54,8 @@ export function MapExplorer({
   const [popover, setPopover] = useState<{ code: string; x: number; y: number } | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [hl, setHl] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const rows = useMemo(() => searchRoute(countries, query), [countries, query]);
   const [pending, start] = useTransition();
   const counts = useMemo(() => {
     const v = Object.values(states);
@@ -74,27 +78,41 @@ export function MapExplorer({
       setPopover(null);
     });
 
-  const panel = (
+  const panel = (titled: boolean) => (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between px-5 pb-3 pt-5">
-        <div>
-          <h2 className="text-xl font-semibold">Route</h2>
-          <p className="text-xs text-muted">{pluralize(countries.length, "country", "countries")} in route order</p>
+      <div className={cn("flex shrink-0 flex-col gap-3 px-5 pb-3", titled && "pt-5")}>
+        {titled && (
+          <div>
+            <h2 className="text-xl font-semibold">Route</h2>
+            <p className="text-xs text-muted">{pluralize(countries.length, "country", "countries")} in route order</p>
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search countries" aria-label="Search countries in the route" className="pl-9 pr-9" />
+            {query && (
+              <button type="button" onClick={() => setQuery("")} className="absolute right-1 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full text-muted hover:bg-ink/5" aria-label="Clear search">
+                <X className="size-4" />
+              </button>
+            )}
+          </div>
+          <Button variant="secondary" className="shrink-0" onClick={() => ws.openQuickAdd("country")}>
+            <Plus /> Add
+          </Button>
         </div>
-        <Button size="sm" variant="secondary" onClick={() => ws.openQuickAdd("country")}>
-          <Plus /> Add
-        </Button>
       </div>
-      <ol className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
-        {countries.map((c, i) => (
+      {/* Relative so the list's screen-reader labels stay inside its scroll area instead of stretching the page. */}
+      <ol className="relative min-h-0 flex-1 overflow-y-auto px-3 pb-3">
+        {rows.map(({ country: c, n }) => (
           <li key={c.id}>
             <Link
               href={`/countries/${c.id}`}
               onMouseEnter={() => setHl(c.code)}
               onMouseLeave={() => setHl(null)}
-              className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-ink/[0.04] dark:hover:bg-white/[0.04]"
+              className="flex items-start gap-3 rounded-xl px-2 py-2 hover:bg-ink/[0.04] dark:hover:bg-white/[0.04]"
             >
-              <span className="num grid size-6 shrink-0 place-items-center rounded-full bg-ink text-[11px] font-semibold text-bg">{i + 1}</span>
+              <span className="num grid size-6 shrink-0 place-items-center rounded-full bg-ink text-[11px] font-semibold text-bg">{n}</span>
               {(() => {
                 const m = transportMeta(c.transport_mode);
                 return (
@@ -106,15 +124,17 @@ export function MapExplorer({
               })()}
               <span className="text-xl leading-none">{c.flag}</span>
               <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-sm font-medium">{c.name}</span>
-                <span className="truncate text-xs text-muted">
-                  {fmtRange(c.arrive_date, c.depart_date)} · {pluralize(cityCounts[c.id] ?? 0, "city", "cities")}
+                <span className="text-sm font-medium [overflow-wrap:anywhere]">{c.name}</span>
+                <span className="text-xs text-muted">{fmtRange(c.arrive_date, c.depart_date)}</span>
+                <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+                  <GeoStatusChip status={c.display} size="sm" />
+                  {pluralize(cityCounts[c.id] ?? 0, "city", "cities")}
                 </span>
               </span>
-              <GeoStatusChip status={c.display} size="sm" />
             </Link>
           </li>
         ))}
+        {countries.length > 0 && !rows.length && <li className="px-4 py-10 text-center text-sm text-muted">No countries in your route match “{query.trim()}”.</li>}
         {!countries.length && (
           <li className="flex flex-col items-center gap-2 px-4 py-10 text-center text-sm text-muted">
             <Earth className="size-6 text-accent" />
@@ -129,7 +149,7 @@ export function MapExplorer({
   const st = popover ? states[popover.code] : null;
 
   return (
-    <div className="-mx-4 -mb-32 -mt-6 grid h-[calc(100dvh-3.5rem-64px-env(safe-area-inset-bottom))] md:-mx-8 md:-mb-16 md:-mt-8 md:h-[calc(100dvh-4rem)] lg:grid-cols-[1fr_340px]">
+    <div data-full-bleed className="-mx-4 -mb-32 -mt-6 grid h-[calc(100dvh-3.5rem-1px-64px-env(safe-area-inset-bottom))] grid-rows-[minmax(0,1fr)] md:-mx-8 md:-mb-16 md:-mt-8 md:h-[calc(100dvh-4rem-1px)] lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="relative min-h-0 overflow-hidden bg-ocean">
         <WorldMap states={states} routes={routes} cities={cities} photoBadges={photoBadges} layers={layers} onCountryClick={onClick} highlight={hl ?? popover?.code} className="size-full" controlsClassName="max-lg:bottom-[84px]" />
         <Button variant="secondary" size="sm" onClick={() => setExporting(true)} className="absolute right-3 top-3 z-10 md:right-5 md:top-5">
@@ -176,11 +196,11 @@ export function MapExplorer({
             </span>
             <ChevronUp className={cn("size-5 text-muted transition-transform", sheetOpen && "rotate-180")} />
           </button>
-          {sheetOpen && <div className="h-[calc(100%-68px)] [&>div>div:first-child]:hidden">{panel}</div>}
+          {sheetOpen && <div className="h-[calc(100%-68px)]">{panel(false)}</div>}
         </div>
       </div>
       <aside className="hidden min-h-0 border-l border-border bg-surface lg:block" aria-label="Countries in route order">
-        {panel}
+        {panel(true)}
       </aside>
       {exporting && <ExportDialog trips={exportTrips} activeTripId={activeTripId} onOpenChange={setExporting} />}
     </div>

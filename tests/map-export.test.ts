@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { WORLD_COUNTRY_COUNT } from "@/lib/countries";
-import { EXPORT_ASPECTS, exportSize, exportStats, MAX_EXPORT_SIDE, UN_RECOGNISED_CODES, worldPercent, worldShare, wrapText, type ExportAspect } from "@/lib/map-export";
+import { EXPORT_ASPECTS, EXPORT_PRESETS, exportPresetFor, exportSize, exportStats, MAX_EXPORT_SIDE, UN_RECOGNISED_CODES, worldPercent, worldShare, wrapText, type ExportAspect } from "@/lib/map-export";
 
 describe("export size", () => {
   it("gives the spec's story sizes", () => {
@@ -54,6 +54,25 @@ describe("stats strip", () => {
   });
   it("is empty with nothing to say", () => {
     expect(exportStats([], 0)).toEqual([]);
+  });
+});
+
+describe("presets", () => {
+  it("both show country colors and route lines", () => {
+    for (const { layers } of Object.values(EXPORT_PRESETS)) expect(layers).toMatchObject({ visited: true, planned: true, wishlist: true, route: true });
+  });
+  it("differ on city dots and transport icons", () => {
+    expect(EXPORT_PRESETS.clean.layers).toMatchObject({ cities: false, transport: false });
+    expect(EXPORT_PRESETS.detailed.layers).toMatchObject({ cities: true, transport: true });
+  });
+  it("recognises a preset, ignoring image details", () => {
+    expect(exportPresetFor(EXPORT_PRESETS.clean.layers)).toBe("clean");
+    const withDetails = { ...EXPORT_PRESETS.detailed.layers, stats: false, legend: false };
+    expect(exportPresetFor(withDetails)).toBe("detailed");
+  });
+  it("reports nothing after a manual change", () => {
+    expect(exportPresetFor({ ...EXPORT_PRESETS.clean.layers, cities: true })).toBeNull();
+    expect(exportPresetFor({ ...EXPORT_PRESETS.detailed.layers, route: false })).toBeNull();
   });
 });
 

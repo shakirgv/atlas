@@ -13,6 +13,7 @@ import { getCountryByCcn3 } from "@/lib/countries";
 import { fmtRange } from "@/lib/dates";
 import { GEO_STATUS_META } from "@/lib/status";
 import { arcMidpoint } from "@/lib/geo";
+import { clusterStops, clusterView, frameView, MAX_ZOOM, visibleRect, type MapRect } from "@/lib/map-view";
 import { transportMeta, TRANSPORT_META } from "@/lib/transport";
 import { TRANSPORT_MODES, type TransportMode } from "@/lib/types";
 import type { DisplayStatus, GeoStatus } from "@/lib/types";
@@ -47,19 +48,10 @@ export const SHAPES = FEATURES.map((f: Feature<Geometry>) => {
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
 /** Zoom transform that frames the given route points (with padding), capped so context stays visible. */
-function fitTransform(routes: RoutePoint[][], maxK: number) {
+function fitTransform(routes: RoutePoint[][], maxK: number, rect: MapRect) {
   const pts = routes.flat().map((p) => projection([p.lng, p.lat])).filter((p): p is [number, number] => Boolean(p));
   if (pts.length < 2) return { k: 1, x: 0, y: 0 };
-  const xs = pts.map((p) => p[0]);
-  const ys = pts.map((p) => p[1]);
-  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
-  const pad = 70;
-  const k = Math.max(1, Math.min(maxK, Math.min(W / (x1 - x0 + pad * 2), H / (y1 - y0 + pad * 2))));
-  const cx = (x0 + x1) / 2;
-  const cy = (y0 + y1) / 2;
-  const x = Math.min(0, Math.max(W - W * k, W / 2 - cx * k));
-  const y = Math.min(0, Math.max(H - H * k, H / 2 - cy * k));
-  return { k: Math.round(k * 10000) / 10000, x: r2(x), y: r2(y) };
+  return frameView(pts.map(([x, y]) => ({ x, y })), rect, W, H, { maxK });
 }
 
 export type MapCountryState = {
@@ -146,7 +138,10 @@ export function WorldMap({
   const wrapRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
-  const initial = useMemo(() => (fitRoute ? fitTransform(routes, compact ? 2.2 : 3) : { k: 1, x: 0, y: 0 }), [fitRoute, routes, compact]);
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
+  const placed = useRef(false);
+  const rect = useMemo(() => visibleRect(box, W, H), [box]);
+  const initial = useMemo(() => (fitRoute ? fitTransform(routes, compact ? 2.2 : 3, rect) : { k: 1, x: 0, y: 0 }), [fitRoute, routes, compact, rect]);
   const [t, setT] = useState(initial);
   const [hover, setHover] = useState<{ code: string; x: number; y: number; w?: number } | null>(null);
   const reduce = useReducedMotion();
@@ -155,7 +150,7 @@ export function WorldMap({
     const svg = svgRef.current;
     if (compact || !svg) return;
     const z = d3zoom<SVGSVGElement, unknown>()
-      .scaleExtent([1, 14])
+      .scaleExtent([1, MAX_ZOOM])
       .translateExtent([
         [0, 0],
         [W, H],
@@ -163,12 +158,36 @@ export function WorldMap({
       .on("zoom", (e) => setT({ k: e.transform.k, x: e.transform.x, y: e.transform.y }));
     zoomRef.current = z;
     select(svg).call(z).on("dblclick.zoom", null);
-    select(svg).call(z.transform, zoomIdentity.translate(initial.x, initial.y).scale(initial.k));
     return () => {
       select(svg).on(".zoom", null);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compact]);
+
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    if (compact || !wrap) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const [w, h] = [Math.round(entry!.contentRect.width), Math.round(entry!.contentRect.height)];
+      if (w && h) setBox((b) => (b?.w === w && b.h === h ? b : { w, h }));
+    });
+    observer.observe(wrap);
+    return () => observer.disconnect();
+  }, [compact]);
+
+  // Zoom limits follow the element, so the map can be panned to any edge of the box it fills.
+  useEffect(() => {
+    const svg = svgRef.current;
+    const z = zoomRef.current;
+    if (!svg || !z || !box) return;
+    z.extent([
+      [rect.x0, rect.y0],
+      [rect.x1, rect.y1],
+    ]);
+    if (placed.current) select(svg).call(z.translateBy, 0, 0);
+    else select(svg).call(z.transform, zoomIdentity.translate(initial.x, initial.y).scale(initial.k));
+    placed.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [box]);
 
   const zoomBy = (f: number) => svgRef.current && zoomRef.current && select(svgRef.current).transition().duration(reduce ? 0 : 280).call(zoomRef.current.scaleBy, f);
   const reset = () =>
@@ -195,6 +214,14 @@ export function WorldMap({
       }),
     [routes],
   );
+  const clusters = useMemo(() => (compact ? [] : clusterStops(stops.filter((s) => !s.home && !s.minor), t.k).filter((c) => c.members.length > 1)), [compact, stops, t.k]);
+  const clusteredStops = useMemo(() => new Set(clusters.flatMap((c) => c.members.map((m) => m.id))), [clusters]);
+  const clusterOfCountry = useMemo(() => new Map(clusters.flatMap((c, i) => c.members.map((m) => [m.code, i] as const))), [clusters]);
+  const zoomToCluster = (members: { x: number; y: number }[]) => {
+    if (!svgRef.current || !zoomRef.current) return;
+    const v = clusterView(members, rect, W, H, t.k);
+    select(svgRef.current).transition().duration(reduce ? 0 : 420).call(zoomRef.current.transform, zoomIdentity.translate(v.x, v.y).scale(v.k));
+  };
   const [hoverLeg, setHoverLeg] = useState<{ leg: RouteLeg; x: number; y: number; w: number } | null>(null);
   const cityDots = useMemo(
     () =>
@@ -214,7 +241,7 @@ export function WorldMap({
   };
 
   return (
-    <div ref={wrapRef} className={cn("relative select-none overflow-hidden", className)}>
+    <div ref={wrapRef} className={cn("relative select-none overflow-hidden", !compact && !box && "invisible", className)}>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
@@ -294,7 +321,7 @@ export function WorldMap({
               </g>
             ))}
           {layers.route &&
-            arcs.flat().filter((a) => a.length * t.k >= MIN_BADGE_LENGTH).map((a) => {
+            arcs.flat().filter((a) => a.length * t.k >= MIN_BADGE_LENGTH && (clusterOfCountry.get(a.from.code) === undefined || clusterOfCountry.get(a.from.code) !== clusterOfCountry.get(a.to.code))).map((a) => {
               const meta = transportMeta(a.mode);
               const Icon = meta.icon;
               return (
@@ -323,12 +350,14 @@ export function WorldMap({
                 );
               }
               if (s.minor) {
+                if (clusterOfCountry.has(s.code)) return null;
                 return (
                   <g key={`stop-${s.id}`} transform={`translate(${s.x},${s.y}) scale(${inv * (compact ? 0.9 : 1)})`} role="img" aria-label={s.name ?? "Stop"}>
                     <circle r={4} fill="var(--ink)" stroke="var(--surface)" strokeWidth={1.5} />
                   </g>
                 );
               }
+              if (clusteredStops.has(s.id)) return null;
               const ongoing = states[s.code]?.display === "ongoing";
               return (
                 <g key={`stop-${s.id}`} transform={`translate(${s.x},${s.y}) scale(${inv * (compact ? 0.9 : 1)})`}>
@@ -336,6 +365,35 @@ export function WorldMap({
                   <circle r={8} fill="var(--ink)" stroke="var(--surface)" strokeWidth={1.5} />
                   <text textAnchor="middle" dy="0.35em" fontSize={9} fontWeight={700} fill="var(--surface)" className="num">
                     {s.n}
+                  </text>
+                </g>
+              );
+            })}
+          {layers.route &&
+            clusters.map((c) => {
+              const label = `${c.members.length} stops: ${c.members.map((m) => `${m.n}. ${m.name ?? m.code}`).join(", ")}`;
+              return (
+                <g
+                  key={c.members[0]!.id}
+                  data-testid="route-cluster"
+                  transform={`translate(${r2(c.x)},${r2(c.y)}) scale(${inv})`}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${label}. Zoom in`}
+                  className="cursor-pointer"
+                  onClick={() => zoomToCluster(c.members)}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter" && e.key !== " ") return;
+                    e.preventDefault();
+                    zoomToCluster(c.members);
+                  }}
+                >
+                  <title>{label}</title>
+                  {c.members.some((m) => states[m.code]?.display === "ongoing") && <circle r={12} fill="var(--accent)" className="pulse-ring" />}
+                  <circle r={16} fill="var(--accent)" fillOpacity={0.25} />
+                  <circle r={12} fill="var(--accent)" stroke="var(--surface)" strokeWidth={1.5} />
+                  <text textAnchor="middle" dy="0.35em" fontSize={11} fontWeight={700} fill="var(--bg)" className="num">
+                    {c.members.length}
                   </text>
                 </g>
               );

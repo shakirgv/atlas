@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Copy, Download, FileCode2, Loader2, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { canShareFile, copyImage, downloadBlob, embedFonts, fileSlug, fontStack, serializeSvg, svgToPng } from "@/lib/export-image";
-import { EXPORT_ASPECTS, exportSize, exportStats, type ExportAspect, type ExportTheme } from "@/lib/map-export";
+import { EXPORT_ASPECTS, EXPORT_PRESETS, exportPresetFor, exportSize, exportStats, type ExportAspect, type ExportPreset, type ExportTheme } from "@/lib/map-export";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Field, Input, NativeSelect } from "@/components/ui/input";
@@ -16,12 +16,21 @@ export type ExportTrip = { id: string; title: string; routes: RoutePoint[][]; ci
 
 const ALL = "all";
 
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+function Toggle({ label, checked, onChange, disabled }: { label: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
-    <label className="flex min-h-9 items-center justify-between gap-3 text-sm">
+    <label className={cn("flex min-h-9 items-center justify-between gap-3 text-sm", disabled && "text-muted")}>
       {label}
-      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
+      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} disabled={disabled} />
     </label>
+  );
+}
+
+function SettingsGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <fieldset className="flex flex-col border-t border-border pt-3">
+      <legend className="float-left mb-1 w-full text-[13px] font-medium text-ink/90">{title}</legend>
+      <div className="clear-both flex flex-col">{children}</div>
+    </fieldset>
   );
 }
 
@@ -34,7 +43,8 @@ export function ExportDialog({ trips, activeTripId, onOpenChange }: { trips: Exp
   const [scale, setScale] = useState(2);
   const [title, setTitle] = useState(active?.title ?? "My travels");
   const [touchedTitle, setTouchedTitle] = useState(false);
-  const [show, setShow] = useState<ExportOptions["show"]>({ visited: true, planned: true, wishlist: true, route: true, cities: true, stats: true, legend: true });
+  const [show, setShow] = useState<ExportOptions["show"]>({ ...EXPORT_PRESETS.detailed.layers, stats: true, legend: true });
+  const preset = exportPresetFor(show);
   const [busy, setBusy] = useState<string | null>(null);
   const [fonts, setFonts] = useState({ display: "serif", body: "sans-serif" });
   const [canShare, setCanShare] = useState(false);
@@ -105,6 +115,7 @@ export function ExportDialog({ trips, activeTripId, onOpenChange }: { trips: Exp
       title="Export map image"
       description="A picture of your map for stories, wallpapers or printing."
       className="max-w-5xl"
+      bodyClassName="md:overflow-y-hidden"
       footer={
         <>
           <Button variant="secondary" onClick={svgFile} disabled={Boolean(busy)}>
@@ -124,14 +135,22 @@ export function ExportDialog({ trips, activeTripId, onOpenChange }: { trips: Exp
         </>
       }
     >
-      <div className="grid gap-5 pb-2 md:grid-cols-[1fr_280px]">
+      {/* Only the settings scroll: the preview stays in view (pinned to the top of the sheet on phones). */}
+      <div className="grid gap-5 pb-2 md:h-[calc(min(88vh,820px)-13rem)] md:grid-cols-[minmax(0,1fr)_280px] md:grid-rows-[minmax(0,1fr)] md:pb-0">
         <div
-          className={cn("grid min-h-64 place-items-center overflow-hidden rounded-xl p-3 md:h-[64vh]", theme === "transparent" ? "bg-[conic-gradient(#ddd_25%,#fff_0_50%,#ddd_0_75%,#fff_0)] bg-[length:20px_20px]" : "bg-surface-2")}
+          className={cn("z-10 grid h-[32dvh] place-items-center overflow-hidden rounded-xl p-3 max-md:sticky max-md:top-0 max-md:shadow-[0_-12px_0_var(--surface),0_8px_12px_-8px_rgb(0_0_0/0.2)] md:h-full", theme === "transparent" ? "bg-[conic-gradient(#ddd_25%,#fff_0_50%,#ddd_0_75%,#fff_0)] bg-[length:20px_20px]" : "bg-surface-2")}
           data-testid="export-preview"
         >
-          <ExportMap ref={svg} options={options} content={content} display={fonts.display} body={fonts.body} className="max-h-[60vh] max-w-full rounded-lg shadow-lift md:max-h-full" />
+          <ExportMap ref={svg} options={options} content={content} display={fonts.display} body={fonts.body} className="max-h-full max-w-full rounded-lg shadow-lift" />
         </div>
-        <div className="flex flex-col gap-3.5">
+        <div className="flex flex-col gap-3.5 md:min-h-0 md:overflow-y-auto md:pl-1 md:pr-3" data-testid="export-settings">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[13px] font-medium text-ink/90">Preset</span>
+            <Segmented<ExportPreset> size="sm" className="w-full [&>button]:flex-1 [&>button]:justify-center" value={preset ?? ("" as ExportPreset)} onChange={(p) => setShow({ ...show, ...EXPORT_PRESETS[p].layers })} options={(Object.keys(EXPORT_PRESETS) as ExportPreset[]).map((p) => ({ value: p, label: EXPORT_PRESETS[p].label }))} />
+            <span className="text-xs text-muted" data-testid="export-preset-hint">
+              {preset ? EXPORT_PRESETS[preset].hint : "Custom: adjusted by hand. Pick a preset to reset the map layers."}
+            </span>
+          </div>
           <Field label="Title" htmlFor="export-title">
             <Input
               id="export-title"
@@ -181,15 +200,18 @@ export function ExportDialog({ trips, activeTripId, onOpenChange }: { trips: Exp
               {size.width} × {size.height} px
             </span>
           </div>
-          <div className="flex flex-col border-t border-border pt-2">
+          <SettingsGroup title="Map layers">
             <Toggle label="Visited" checked={show.visited} onChange={(v) => setShow({ ...show, visited: v })} />
             <Toggle label="Planned" checked={show.planned} onChange={(v) => setShow({ ...show, planned: v })} />
             <Toggle label="Wishlist" checked={show.wishlist} onChange={(v) => setShow({ ...show, wishlist: v })} />
             <Toggle label="Route" checked={show.route} onChange={(v) => setShow({ ...show, route: v })} />
             <Toggle label="City dots" checked={show.cities} onChange={(v) => setShow({ ...show, cities: v })} />
+            <Toggle label="Transport icons" checked={show.transport} disabled={!show.route} onChange={(v) => setShow({ ...show, transport: v })} />
+          </SettingsGroup>
+          <SettingsGroup title="Image details">
             <Toggle label="Stats" checked={show.stats} onChange={(v) => setShow({ ...show, stats: v })} />
             <Toggle label="Legend" checked={show.legend} onChange={(v) => setShow({ ...show, legend: v })} />
-          </div>
+          </SettingsGroup>
         </div>
       </div>
     </ResponsiveDialog>

@@ -2,7 +2,7 @@
 import { forwardRef, useMemo } from "react";
 import { geoNaturalEarth1, geoPath } from "d3-geo";
 import { House } from "lucide-react";
-import { EXPORT_ASPECTS, EXPORT_PALETTES, wrapText, type ExportAspect, type ExportPalette, type ExportTheme } from "@/lib/map-export";
+import { EXPORT_ASPECTS, EXPORT_PALETTES, wrapText, type ExportAspect, type ExportLayers, type ExportPalette, type ExportTheme } from "@/lib/map-export";
 import { transportMeta, TRANSPORT_META } from "@/lib/transport";
 import { TRANSPORT_MODES } from "@/lib/types";
 import { buildRouteLegs, modesInUse, SHAPES, type MapCity, type RoutePoint } from "./world-map";
@@ -11,7 +11,7 @@ export type ExportOptions = {
   aspect: ExportAspect;
   theme: ExportTheme;
   title: string;
-  show: { visited: boolean; planned: boolean; wishlist: boolean; route: boolean; cities: boolean; stats: boolean; legend: boolean };
+  show: ExportLayers & { stats: boolean; legend: boolean };
 };
 
 export type ExportContent = {
@@ -90,6 +90,7 @@ export const ExportMap = forwardRef<SVGSVGElement, { options: ExportOptions; con
           return xy ? <circle key={c.id} cx={xy[0]} cy={xy[1]} r={3.2 * unit} fill={p.surface} stroke={p.ink} strokeWidth={1.3 * unit} /> : null;
         })}
       {show.route &&
+        show.transport &&
         legs
           .filter((leg) => leg.length > 60 * unit)
           .map((leg) => {
@@ -115,6 +116,8 @@ export const ExportMap = forwardRef<SVGSVGElement, { options: ExportOptions; con
               </g>
             );
           }
+          // A later stop in a country is a city, so it follows the city dots.
+          if (pt.minor && !show.cities) return null;
           return <circle key={`stop-${pt.id}`} cx={xy[0]} cy={xy[1]} r={(pt.minor ? 3.5 : 5.5) * unit} fill={p.ink} stroke={p.surface} strokeWidth={1.4 * unit} />;
         })}
 

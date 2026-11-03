@@ -52,6 +52,21 @@ export function exportStats(countries: { code: string; status: string }[], cityC
   return cities;
 }
 
+/** What the map draws; Stats and Legend are details of the image, and presets leave them alone. */
+export type ExportLayers = { visited: boolean; planned: boolean; wishlist: boolean; route: boolean; cities: boolean; transport: boolean };
+export type ExportPreset = "clean" | "detailed";
+
+export const EXPORT_PRESETS: Record<ExportPreset, { label: string; hint: string; layers: ExportLayers }> = {
+  clean: { label: "Clean Map", hint: "Country colors and route lines only.", layers: { visited: true, planned: true, wishlist: true, route: true, cities: false, transport: false } },
+  detailed: { label: "Detailed Route", hint: "Country colors and route lines, with city dots and transport icons.", layers: { visited: true, planned: true, wishlist: true, route: true, cities: true, transport: true } },
+};
+
+/** The preset these layers match, or null once they've been changed by hand. */
+export function exportPresetFor(layers: ExportLayers): ExportPreset | null {
+  const keys = Object.keys(EXPORT_PRESETS.clean.layers) as (keyof ExportLayers)[];
+  return (Object.keys(EXPORT_PRESETS) as ExportPreset[]).find((p) => keys.every((k) => EXPORT_PRESETS[p].layers[k] === layers[k])) ?? null;
+}
+
 export type ExportPalette = { bg: string | null; ocean: string; land: string; landStroke: string; ink: string; muted: string; accent: string; visited: string; planned: string; wishlist: string; surface: string };
 
 /** Written out in full: a serialized SVG can't see the page's CSS variables. */
