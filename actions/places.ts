@@ -3,26 +3,17 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { placeSchema, type PlaceInput } from "@/lib/validation";
 import { cleanupEntityPhotos } from "@/lib/storage";
-import { findPlacePin } from "@/lib/server/geocode";
 import { fail, must, ok, refreshAll } from "@/actions/_util";
 import type { ActionResult, PlaceStatus } from "@/lib/types";
 import { PLACE_STATUSES } from "@/lib/types";
 
-export async function createPlace(input: PlaceInput): Promise<ActionResult<{ id: string; pinned: boolean }>> {
+export async function createPlace(input: PlaceInput): Promise<ActionResult<{ id: string }>> {
   try {
     const { supabase } = await requireUser();
     const data = placeSchema.parse(input);
-    // A pin the owner chose always wins; without one, the name is enough to look for it.
-    const pin = data.lat == null || data.lng == null ? await findPlacePin(supabase, data.city_id, data.name) : null;
-    const row = must(
-      await supabase
-        .from("places")
-        .insert(pin ? { ...data, lat: pin.lat, lng: pin.lng, address: data.address ?? pin.address } : data)
-        .select("id, lat")
-        .single(),
-    );
+    const row = must(await supabase.from("places").insert(data).select("id").single());
     refreshAll();
-    return ok({ id: row.id, pinned: row.lat != null });
+    return ok({ id: row.id });
   } catch (e) {
     return fail(e);
   }

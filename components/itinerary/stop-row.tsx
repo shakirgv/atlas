@@ -144,9 +144,7 @@ export function StopRow({ item, places, highlighted, onChanged }: { item: Itiner
                 start(async () => {
                   const res = await createPlaceFromStop(item.id);
                   if (!res.ok) return void toast.error(res.error);
-                  const saved = `Saved “${item.title}” as a place in ${res.data.cityName}`;
-                  if (res.data.pinned) toast.success(`${saved} and pinned it on the map`);
-                  else toast.warning(`${saved}, but couldn’t find it on the map. Edit the place to drop a pin.`);
+                  toast.success(`Saved “${item.title}” as a place in ${res.data.cityName}`);
                   void requestCover("place", res.data.placeId);
                 })
               }
