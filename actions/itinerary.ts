@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import type { ServerSupabase } from "@/lib/supabase/server";
 import { daySchema, stopSchema, type StopInput } from "@/lib/validation";
 import { datesInRange, shiftIso } from "@/lib/dates";
+import { findPlacePin } from "@/lib/server/geocode";
 import { fail, must, mustMaybe, ok, refreshAll } from "@/actions/_util";
 import type { ActionResult, City, ItineraryDay, PlaceCategory, StopType } from "@/lib/types";
 
@@ -287,8 +288,8 @@ const STOP_TO_CATEGORY: Record<StopType, PlaceCategory> = {
   free: "other",
 };
 
-/** One click: turn a stop into a Place in the day's city and link it. */
-export async function createPlaceFromStop(stopId: string): Promise<ActionResult<{ placeId: string; cityName: string }>> {
+/** One click: turn a stop into a Place in the day's city, pin it if it can be found, and link it. */
+export async function createPlaceFromStop(stopId: string): Promise<ActionResult<{ placeId: string; cityName: string; pinned: boolean }>> {
   try {
     const { supabase } = await requireUser();
     const sid = z.uuid().parse(stopId);
@@ -301,7 +302,8 @@ export async function createPlaceFromStop(stopId: string): Promise<ActionResult<
       cityId = first[0]?.id ?? null;
     }
     if (!cityId) throw new Error("Add a city to this country first, then try again.");
-    const city = must(await supabase.from("cities").select("name, lat, lng").eq("id", cityId).single());
+    const city = must(await supabase.from("cities").select("name").eq("id", cityId).single());
+    const pin = await findPlacePin(supabase, cityId, stop.title);
     const place = must(
       await supabase
         .from("places")
@@ -311,13 +313,16 @@ export async function createPlaceFromStop(stopId: string): Promise<ActionResult<
           category: STOP_TO_CATEGORY[(stop.type as StopType) ?? "activity"] ?? "sight",
           status: "planned",
           notes: stop.notes,
+          lat: pin?.lat ?? null,
+          lng: pin?.lng ?? null,
+          address: pin?.address ?? null,
         })
         .select("id")
         .single(),
     );
     must(await supabase.from("itinerary_items").update({ place_id: place.id }).eq("id", sid));
     refreshAll();
-    return ok({ placeId: place.id, cityName: city.name });
+    return ok({ placeId: place.id, cityName: city.name, pinned: pin != null });
   } catch (e) {
     return fail(e);
   }

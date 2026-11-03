@@ -82,10 +82,12 @@ export function PlaceDialog({
     start(async () => {
       const res = place ? await updatePlace(place.id, values) : await createPlace(values);
       if (!res.ok) return void toast.error(res.error);
-      toast.success(place ? "Place updated" : "Place added");
-      if (!place && res.data && typeof res.data === "object" && "id" in res.data) {
-        autoCover("place", [res.data.id]);
-        onSaved?.(res.data.id);
+      const created = !place && res.data && typeof res.data === "object" && "id" in res.data ? res.data : null;
+      if (created && !created.pinned) toast.warning("Place added, but it couldn’t be found on the map. Edit it to drop a pin.");
+      else toast.success(!created ? "Place updated" : values.lat == null ? "Place added and pinned on the map" : "Place added");
+      if (created) {
+        autoCover("place", [created.id]);
+        onSaved?.(created.id);
       }
       setQuery("");
       onOpenChange(false);
@@ -97,7 +99,7 @@ export function PlaceDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={place ? "Edit place" : "Add a place"}
-      description={place ? undefined : "Search for it, drop a pin, or just type a name."}
+      description={place ? undefined : "Search for it, drop a pin, or just type a name and Atlas will look it up."}
       className="max-w-xl"
       footer={
         <>
