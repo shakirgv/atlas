@@ -1,8 +1,9 @@
 "use client";
 import { useState, useTransition } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Building2, CalendarDays, Camera, Crosshair, Flag, MapPin, MoreHorizontal, Pencil, Plus, Trash2, Wallet, Share2 } from "lucide-react";
+import { ArrowRight, Building2, CalendarClock, CalendarDays, Camera, Crosshair, Flag, ListOrdered, MapPin, MoreHorizontal, Pencil, Plus, Trash2, Wallet, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteTrip } from "@/actions/trips";
 import { setActiveTrip } from "@/actions/workspace";
@@ -29,9 +30,12 @@ import { useWorkspace } from "@/components/shell/workspace";
 import { NextSteps } from "./next-steps";
 import { RouteList } from "./route-list";
 import { ShareDialog } from "@/components/share/share-dialog";
+import { DateShiftDialog } from "@/components/route/date-shift-dialog";
 import { RouteTimeline } from "./route-timeline";
 import type { LegView } from "@/lib/server/route-data";
 import type { ClimateStop } from "@/lib/climate";
+
+const RoutePasteDialog = dynamic(() => import("@/components/countries/route-paste-dialog").then((m) => m.RoutePasteDialog), { ssr: false });
 
 type Stats = { cities: number; days: number; places: number; placesVisited: number; spent: number; planned: number; budget: number };
 
@@ -69,6 +73,7 @@ export function TripDetail({
   const confirm = useConfirm();
   const [editOpen, setEditOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [tool, setTool] = useState<"reorder" | "shift" | null>(null);
   const [, start] = useTransition();
   const money = (n: number) => formatMoney(n, baseCurrency);
   const totalDays = daysBetween(trip.start_date, trip.end_date);
@@ -150,9 +155,21 @@ export function TripDetail({
           <section className="card p-5" aria-labelledby="route-title">
             <SectionTitle
               action={
-                <Button size="sm" variant="secondary" onClick={() => ws.openQuickAdd({ kind: "country", tripId: trip.id })}>
-                  <Plus /> Add countries
-                </Button>
+                <div className="flex flex-wrap justify-end gap-1.5">
+                  {countries.length > 0 && (
+                    <>
+                      <Button size="sm" variant="ghost" onClick={() => setTool("shift")}>
+                        <CalendarClock /> Shift dates
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setTool("reorder")}>
+                        <ListOrdered /> Reorder route
+                      </Button>
+                    </>
+                  )}
+                  <Button size="sm" variant="secondary" onClick={() => ws.openQuickAdd({ kind: "country", tripId: trip.id })}>
+                    <Plus /> Add countries
+                  </Button>
+                </div>
               }
             >
               <span id="route-title">Route</span>
@@ -284,6 +301,8 @@ export function TripDetail({
       </div>
       {editOpen && <TripDialog open onOpenChange={setEditOpen} trip={trip} />}
       {sharing && <ShareDialog kind="trip" targetId={trip.id} title={trip.title} enabled={ws.sharingEnabled} onOpenChange={setSharing} />}
+      {tool === "shift" && <DateShiftDialog tripId={trip.id} onOpenChange={(o) => !o && setTool(null)} />}
+      {tool === "reorder" && <RoutePasteDialog countries={countries} trips={[{ id: trip.id, title: trip.title }]} initialTripId={trip.id} onOpenChange={(o) => !o && setTool(null)} />}
     </PageTransition>
   );
 }

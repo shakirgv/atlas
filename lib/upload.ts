@@ -29,7 +29,7 @@ async function readExif(file: File) {
   }
 }
 
-async function toJpegIfHeic(file: File): Promise<File> {
+export async function toJpegIfHeic(file: File): Promise<File> {
   if (!isHeic(file)) return file;
   const heic2any = (await import("heic2any")).default;
   const out = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.92 });

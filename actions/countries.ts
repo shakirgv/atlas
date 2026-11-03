@@ -74,6 +74,28 @@ export async function reorderCountries(ids: string[]): Promise<ActionResult> {
   }
 }
 
+/**
+ * The whole route in a new order, from "Reorder route". One statement, so it lands completely or not at all,
+ * and only `order_index` changes: the other columns in the row are there because an upsert needs them.
+ */
+export async function applyRouteOrder(tripId: string, ids: string[]): Promise<ActionResult> {
+  try {
+    const { supabase } = await requireUser();
+    const tid = z.uuid().parse(tripId);
+    const list = z.array(z.uuid()).min(1).max(500).parse(ids);
+    const rows = must(await supabase.from("trip_countries").select("id, trip_id, country_code").eq("trip_id", tid));
+    const given = new Set(list);
+    // Every stop exactly once: a stale tab can't drop a country or pull in another trip's.
+    if (given.size !== list.length || rows.length !== list.length || rows.some((r) => !given.has(r.id))) throw new Error("The route changed in the meantime. Close this and try again.");
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    must(await supabase.from("trip_countries").upsert(list.map((id, order_index) => ({ ...byId.get(id)!, order_index })), { onConflict: "id" }));
+    refreshAll();
+    return ok();
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 export async function deleteTripCountry(id: string): Promise<ActionResult> {
   try {
     const { supabase } = await requireUser();

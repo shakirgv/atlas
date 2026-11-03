@@ -22,7 +22,7 @@ export const GEO_STATUS_OPTIONS = [
   { value: "visited" as const, label: "Visited", icon: CircleCheck, color: "var(--visited)" },
 ];
 
-export function CountryEditDialog({ open, onOpenChange, country, name, baseCurrency }: { open: boolean; onOpenChange: (o: boolean) => void; country: TripCountry; name: string; baseCurrency: string }) {
+export function CountryEditDialog({ open, onOpenChange, country, name, baseCurrency, onSaved }: { open: boolean; onOpenChange: (o: boolean) => void; country: TripCountry; name: string; baseCurrency: string; onSaved?: (status: Out["status"]) => void }) {
   const [pending, start] = useTransition();
   const form = useForm<In, unknown, Out>({
     resolver: zodResolver(tripCountrySchema),
@@ -43,6 +43,7 @@ export function CountryEditDialog({ open, onOpenChange, country, name, baseCurre
       if (!res.ok) return void toast.error(res.error);
       toast.success("Saved");
       onOpenChange(false);
+      onSaved?.(v.status);
     }),
   );
   return (

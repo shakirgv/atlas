@@ -24,6 +24,8 @@ export type CountryInfoOverride = Row<"country_info_overrides">;
 export type CashWallet = Row<"cash_wallets">;
 export type CashTransaction = Row<"cash_transactions">;
 export type Share = Row<"shares">;
+export type CountryReview = Row<"country_reviews">;
+export type DateShift = Row<"date_shifts">;
 
 export const TRIP_STATUSES = ["dreaming", "planning", "ongoing", "completed"] as const;
 export type TripStatus = (typeof TRIP_STATUSES)[number];
@@ -121,6 +123,9 @@ export type EntryStatus = (typeof ENTRY_STATUSES)[number];
 
 export const SHARE_KINDS = ["memory", "trip", "recap"] as const;
 export type ShareKind = (typeof SHARE_KINDS)[number];
+
+export const RETURN_AGAIN = ["yes", "maybe", "no"] as const;
+export type ReturnAgain = (typeof RETURN_AGAIN)[number];
 
 export type ActionResult<T = undefined> = { ok: true; data: T } | { ok: false; error: string };
 

@@ -20,6 +20,7 @@ const fileSchema = z.object({
   bookings: z.array(z.record(z.string(), z.unknown())).default([]),
   packing_items: z.array(z.record(z.string(), z.unknown())).default([]),
   packing_templates: z.array(z.record(z.string(), z.unknown())).default([]),
+  country_reviews: z.array(z.record(z.string(), z.unknown())).default([]),
 });
 
 const STRIP = ["id", "user_id", "created_at"];
@@ -83,6 +84,11 @@ export async function POST(req: Request) {
       await insert("packing_templates", data.packing_templates, {});
     } catch {
       // Phase 2 tables may be missing (002_extras.sql not applied).
+    }
+    try {
+      await insert("country_reviews", data.country_reviews, { trip_country_id: true });
+    } catch {
+      // Closing notes need 005_route_tools.sql.
     }
     // A file exported before time zones existed has cities without one.
     await fillMissingTimezones(supabase).catch(() => 0);

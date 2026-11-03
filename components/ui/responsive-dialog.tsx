@@ -14,10 +14,12 @@ type Props = {
   children: React.ReactNode;
   className?: string;
   bodyClassName?: string;
+  /** Mobile only: false stops a swipe or a tap outside from closing the sheet. */
+  dismissible?: boolean;
 };
 
 /** Centered dialog on desktop, bottom sheet on mobile. */
-export function ResponsiveDialog({ open, onOpenChange, title, description, footer, children, className, bodyClassName }: Props) {
+export function ResponsiveDialog({ open, onOpenChange, title, description, footer, children, className, bodyClassName, dismissible }: Props) {
   const isDesktop = useIsDesktop();
   if (isDesktop) {
     return (
@@ -34,7 +36,7 @@ export function ResponsiveDialog({ open, onOpenChange, title, description, foote
     );
   }
   return (
-    <Drawer.Root open={open} onOpenChange={onOpenChange} repositionInputs={false}>
+    <Drawer.Root open={open} onOpenChange={onOpenChange} repositionInputs={false} dismissible={dismissible}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-50 bg-overlay" />
         <Drawer.Content

@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, LayoutGrid, Map as MapIcon, Plus, Search } from "lucide-react";
+import { Building2, Images, LayoutGrid, Map as MapIcon, Plus, Search } from "lucide-react";
 import type { CityVM } from "@/lib/data";
 import type { DisplayStatus } from "@/lib/types";
 import { GEO_STATUS_META } from "@/lib/status";
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input, NativeSelect } from "@/components/ui/input";
 import { FilterChip, Segmented } from "@/components/ui/misc";
 import { useWorkspace } from "@/components/shell/workspace";
+import { ManageCoversDialog } from "@/components/cover/manage-covers-dialog";
 
 export function CitiesView({
   cities,
@@ -32,6 +33,7 @@ export function CitiesView({
   const [country, setCountry] = useState("all");
   const [status, setStatus] = useState<DisplayStatus | "all">("all");
   const [view, setView] = useState<"grid" | "map">("grid");
+  const [coversOpen, setCoversOpen] = useState(false);
   const filtered = useMemo(
     () =>
       cities.filter(
@@ -48,11 +50,19 @@ export function CitiesView({
         title="Cities"
         description={cities.length ? `${cities.length} cities pinned across ${countries.length} countries.` : "Search cities and pin them on the map."}
         actions={
-          <Button onClick={() => ws.openQuickAdd("city")}>
-            <Plus /> Add cities
-          </Button>
+          <>
+            {cities.length > 0 && (
+              <Button variant="secondary" onClick={() => setCoversOpen(true)}>
+                <Images /> Manage covers
+              </Button>
+            )}
+            <Button onClick={() => ws.openQuickAdd("city")}>
+              <Plus /> Add cities
+            </Button>
+          </>
         }
       />
+      {coversOpen && <ManageCoversDialog tab="city" tripIds={ws.isAll ? ws.trips.map((t) => t.id) : ws.activeTripId ? [ws.activeTripId] : []} onOpenChange={setCoversOpen} />}
       {!cities.length ? (
         <EmptyState
           icon={Building2}

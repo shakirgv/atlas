@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useMemo, useState, useTransition } from "react";
+import dynamic from "next/dynamic";
 import { DndContext, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Flag, GripVertical, Plus, Search } from "lucide-react";
+import { CalendarClock, Flag, GripVertical, Images, ListOrdered, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { reorderCountries } from "@/actions/countries";
 import type { CountryVM } from "@/lib/data";
@@ -18,6 +19,11 @@ import { Button } from "@/components/ui/button";
 import { Input, NativeSelect } from "@/components/ui/input";
 import { FilterChip } from "@/components/ui/misc";
 import { useWorkspace } from "@/components/shell/workspace";
+import { ManageCoversDialog } from "@/components/cover/manage-covers-dialog";
+import { DateShiftDialog } from "@/components/route/date-shift-dialog";
+
+// Holds the country names in every spelling, so it loads when it is opened.
+const RoutePasteDialog = dynamic(() => import("./route-paste-dialog").then((m) => m.RoutePasteDialog), { ssr: false });
 
 type Sort = "route" | "date" | "name";
 const STATUSES: (DisplayStatus | "all")[] = ["all", "ongoing", "planned", "visited", "wishlist"];
@@ -62,6 +68,7 @@ export function CountriesView({
   const [tripFilter, setTripFilter] = useState("all");
   const [sort, setSort] = useState<Sort>("route");
   const [order, setOrder] = useState(countries);
+  const [tool, setTool] = useState<"reorder" | "shift" | "covers" | null>(null);
   const [, start] = useTransition();
   useEffect(() => {
     const t = setTimeout(() => setOrder(countries), 0);
@@ -98,6 +105,12 @@ export function CountriesView({
     });
   };
 
+  const closeTool = (open: boolean) => {
+    if (!open) setTool(null);
+  };
+  // With every trip in view, the tools start on the one being filtered to.
+  const toolTripId = !singleTrip && tripFilter !== "all" ? tripFilter : (ws.activeTripId ?? trips[0]?.id ?? null);
+
   const counts = useMemo(() => {
     const m: Record<string, number> = { all: countries.length };
     countries.forEach((c) => (m[c.display] = (m[c.display] ?? 0) + 1));
@@ -111,11 +124,29 @@ export function CountriesView({
         title="Countries"
         description={countries.length ? `${countries.length} on your route${singleTrip ? "" : " across all trips"}.` : "Build the route one flag at a time."}
         actions={
-          <Button onClick={() => ws.openQuickAdd("country")}>
-            <Plus /> Add countries
-          </Button>
+          <>
+            {countries.length > 0 && (
+              <>
+                <Button variant="secondary" onClick={() => setTool("covers")}>
+                  <Images /> Manage covers
+                </Button>
+                <Button variant="secondary" onClick={() => setTool("shift")}>
+                  <CalendarClock /> Shift dates
+                </Button>
+                <Button variant="secondary" onClick={() => setTool("reorder")}>
+                  <ListOrdered /> Reorder route
+                </Button>
+              </>
+            )}
+            <Button onClick={() => ws.openQuickAdd("country")}>
+              <Plus /> Add countries
+            </Button>
+          </>
         }
       />
+      {tool === "reorder" && <RoutePasteDialog countries={countries} trips={trips} initialTripId={toolTripId} onOpenChange={closeTool} />}
+      {tool === "shift" && toolTripId && <DateShiftDialog tripId={toolTripId} trips={singleTrip ? undefined : trips} onOpenChange={closeTool} />}
+      {tool === "covers" && <ManageCoversDialog tab="country" tripIds={trips.map((t) => t.id)} onOpenChange={closeTool} />}
       {!countries.length ? (
         <EmptyState
           icon={Flag}

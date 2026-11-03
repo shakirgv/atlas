@@ -31,6 +31,13 @@ export function mustMaybe<T>(res: { data: T; error: { message: string } | null }
   return res.data;
 }
 
+/** The table or function isn't there yet: the SQL file that adds it hasn't been run. */
+export function isMissingSchema(error: { code?: string } | null | undefined) {
+  return ["PGRST202", "PGRST205", "42883", "42P01"].includes(error?.code ?? "");
+}
+
+export const MIGRATION_005 = "This needs one more SQL step: run supabase/migrations/005_route_tools.sql in the Supabase SQL editor, then try again.";
+
 /** Revalidate the whole app layout (sidebar data, dashboard, lists). */
 export function refreshAll() {
   revalidatePath("/", "layout");

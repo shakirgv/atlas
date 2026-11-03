@@ -17,12 +17,13 @@ Built with **Next.js 16** (App Router, React 19, TypeScript strict), **Tailwind 
      NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
      ```
    - The `service_role` key is optional and only for share links; see [Share links](#share-links). Never prefix it with `NEXT_PUBLIC_`.
-2. **Run the files in `supabase/migrations/` in order in the Supabase SQL editor: `001`, `002`, `003`, `004`.**
+2. **Run the files in `supabase/migrations/` in order in the Supabase SQL editor: `001`, `002`, `003`, `004`, `005`.**
    - Dashboard → **SQL Editor** → **New query** → paste the *whole* file `supabase/migrations/001_init.sql` → **Run**.
    - Then a new query for each of the others, in order:
      - `002_extras.sql`: bookings, packing lists, packing templates.
      - `003_improvements.sql`: entry requirements, cash wallets, country overrides, share links, transport, time zones.
      - `004_extra_lock.sql`: two-factor enforcement and the PIN vault. Run it after `003`; it replaces two of its functions.
+     - `005_route_tools.sql`: closing notes and date shifts with undo. Run it after `004`. Until then those two say so when used, and everything else works.
    - This creates every table, row-level security, the two **private** storage buckets (`photos`, `documents`) and their storage policies.
 3. **In Supabase Auth: create your user, and turn off "Allow new users to sign up".**
    - **Authentication → Users → Add user → Create new user**: your email + a password, tick **Auto Confirm User**.
@@ -40,7 +41,13 @@ Until the two env vars exist, the app shows a friendly **Setup required** screen
 
 Everything is private until you share one memory, trip story or year recap. Open **Share** on a memory, a trip's menu or a recap, pick the options and copy the link. Links default to 30 days, city-level locations and all photos.
 
-**Setup (once):** add `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project Settings → API) to `.env.local` and to Vercel's environment variables as a server-only secret. Without it the app runs normally and the Share dialog says sharing is off.
+**Setup (once):**
+
+1. Supabase → **Project Settings → API Keys**: copy the **secret** key (`sb_secret_…`). On an older project it is the **service_role** key under Legacy API keys. Either works.
+2. Vercel → the project → **Settings → Environment Variables**: add `SUPABASE_SERVICE_ROLE_KEY` with that value for **Production**, marked **Sensitive**. Never prefix it with `NEXT_PUBLIC_`. For local runs, put the same line in `.env.local`.
+3. Vercel → **Deployments** → the latest production one → **Redeploy**. A running deployment doesn't see a new variable until then.
+
+Without it the app runs normally and the Share dialog says sharing is off.
 
 **Revoke:** Settings → Share links, or the Share dialog. It takes effect on the next request, including for photos.
 
@@ -64,7 +71,7 @@ npm run dev
 
 Other scripts: `npm run build`, `npm run start`, `npm run lint`, `npm test`, `npx tsc --noEmit`.
 
-In development, `/dev/preview` shows every new feature's states on fixtures with no database (plus `/dev/preview/dashboard`, `/dev/preview/card` and `/dev/preview/share`). These routes answer 404 in production.
+In development, `/dev/preview` shows every new feature's states on fixtures with no database (plus `/dev/preview/dashboard`, `/dev/preview/card`, `/dev/preview/share` and `/dev/preview/tools`). These routes answer 404 in production.
 
 ### Optional: fully local Supabase (Docker)
 
@@ -134,6 +141,12 @@ CLI alternative: `npx vercel` (link the project), `npx vercel env add NEXT_PUBLI
 - **On this day and year recap:** dashboard widget and `/recap/[year]` story slides with PNG export.
 - **Share links:** a memory, trip story or recap on a public page you can revoke; see [Share links](#share-links).
 
+**Route tools**
+- **Shift dates** (Countries, a trip's Route, a country's menu): a stay got longer or a whole stop moves, and later countries, cities and itinerary days follow. Every change is listed first, booked flights and hotels are called out instead of moved, and one Undo puts it all back.
+- **Closing notes:** when you leave a country, a short form asks for the best experience and food, what wasn't worth it, the hotel you'd recommend, how many days would have been enough, whether you'd come back and what's left for next time.
+- **Reorder route** (Countries, a trip's Route): paste countries as a list, by name or code, check what matched, then apply. Only the order changes.
+- **Manage covers** (Countries, Cities): pick new photos row by row, preview them, and save them all at once with progress and per-row retry.
+
 ## Project structure
 
 ```
@@ -144,7 +157,7 @@ app/api/export|import      data portability
 actions/                   server actions per module (each calls supabase.auth.getUser())
 components/                ui/, shell/, forms/, map/, charts/, photos/, and one folder per module
 lib/                       supabase clients, countries, dates, money, fx, status, data loaders, config (APP_NAME)
-supabase/migrations/       001_init.sql (Phase 1), 002_extras.sql (Phase 2), 003_improvements.sql and 004_extra_lock.sql (feature pack 2)
+supabase/migrations/       001_init.sql (Phase 1), 002_extras.sql (Phase 2), 003_improvements.sql and 004_extra_lock.sql (feature pack 2), 005_route_tools.sql (route tools)
 app/s/[token]              public share pages, photo and preview-image routes (no login)
 app/dev/preview            development-only fixture gallery
 tests/                     Vitest tests for pure logic (`npm test`)
@@ -186,10 +199,16 @@ proxy.ts                   Next 16 "proxy" (formerly middleware): session refres
 - **Recap slides are SVG, on screen and in the download,** so the 1080×1920 PNG is exactly what you see. Only things that already happened count: a stay's days up to today, spent (not planned) expenses, past memories and photos. Wishlist stays never count. Distance is the sum of straight lines between stops in the year, labelled approximate. A slide with no data is skipped. "On this day" looks across all trips, since last year's memories belong to a different trip than the active one.
 - **The service role key appears in one place only.** `lib/supabase/admin.ts` is imported only by the public share code. Every query there is scoped by the share's owner, and each public view is built field by field in `lib/share.ts`, so a new column can't reach a visitor by accident. A recap's money is left out by that same builder.
 - **View counts are set by the proxy.** It marks real GET page loads with a request header, stripping any sent by the visitor, and leaves out bots, link previews, prefetches and "Preview as visitor". No IP is stored; the rate limit keeps counts in memory only, per server instance, so on Vercel it is best effort.
+- **A date shift plans in one pure function, on the browser and again on the server.** `lib/date-shift.ts` works out every change without touching anything, so the preview is instant, and applying plans again on fresh rows so a stale tab can't write old dates. A later country already marked visited and undated stops stay put. A shift is one database function, so it lands completely or not at all, and it logs every before and after. Undo puts back only what still holds the shifted value: a date edited by hand since then stays, and the toast says how many. Shifts undo newest first, so the dates can't end up half way.
+- **Bookings never move on their own.** A flight or hotel is a real reservation, so changing its date here wouldn't change it in the world. They are listed apart with what no longer lines up, and a tick moves one if it has really been rebooked. A longer stay doesn't create new itinerary days either: "Generate days" already does that safely.
+- **A pasted route applies in one statement.** `applyRouteOrder` upserts every stop at once, with only `order_index` changing, and refuses a list that doesn't hold exactly this trip's stops. Names are matched through `lib/data/country-aliases.json` (official, native, Turkish and Russian names from `world-countries`, plus common English and Azerbaijani ones by hand; run `scripts/gen-country-aliases.mjs` to rebuild). A name that fairly means two countries ("Congo", "Korea") is never guessed unless only one of them is on the route, and close spellings are offered but not applied.
+- **Manage covers uploads only on save.** Choosing a photo only makes a local preview, so cancelling leaves nothing behind. A row remembers a finished upload, so retrying after a failed save doesn't upload again, and a saved row is never sent twice. The previous cover stays in the place's photos, as with any other cover change.
+- **Closing notes ask once.** The dashboard asks about the country left most recently, within the last 30 days. The form opens by itself once per country on each device, and a card stays until it's written or dismissed. Marking a country visited also opens it. Names of places left for next time are stored as text, so they survive the place being deleted later.
 - **Map tiles come from OpenStreetMap, not CARTO.** CARTO's basemap server now answers with "API key required" watermark tiles, so Leaflet maps use `tile.openstreetmap.org` (no key) and restyle it with CSS filters: softened and warm in light mode, inverted in dark mode. The URL and attribution live in `lib/config.ts` (`MAP_TILE_URL`) if you ever want another provider. OSM's tile policy is fine for a single-user personal app.
 
 ## Known limitations
 
+- **Route tools have not run against a live Supabase project.** The migration was run on PGlite (real Postgres in WebAssembly), including apply, undo, row security and two-factor, and the screens were driven in a browser on fixtures at `/dev/preview/tools`, but not end to end with real uploads.
 - **Feature pack 2 has not run against a live Supabase project.** Only transport, jet lag and the map routes were seen on a real local database. Everything else that needs one was tested in parts: the rules, SQL and screens separately, not end to end. That covers saving (entry, cash, overrides, shares), photo and receipt uploads, MFA enrollment and login, the PIN cookie flow and real share pages. Try those first after deploying.
 - **Country facts** in `data/country-extras.json` were written from general knowledge and not checked against an official source. Check emergency numbers before relying on them; the tab says so too.
 - **PIN vault against a signed-in browser:** someone with developer tools on an already signed-in session can't open a locked file, reset the PIN or read its hash, but could read the `reference_no` and `notes` columns of a locked document through the API, because row security works per row, not per column. The app never shows or sends them while locked.

@@ -11,6 +11,7 @@ import {
   PLACE_CATEGORIES,
   PLACE_STATUSES,
   REQUIREMENT_TYPES,
+  RETURN_AGAIN,
   STOP_TYPES,
   TRANSPORT_MODES,
   TRIP_STATUSES,
@@ -367,6 +368,21 @@ export const bookingSchema = z.object({
   add_expense: z.boolean().optional(),
 });
 export type BookingInput = z.input<typeof bookingSchema>;
+
+export const countryReviewSchema = z.object({
+  best_experience: optText(2000),
+  best_food: optText(2000),
+  overpriced: optText(2000),
+  recommended_hotel: optText(500),
+  enough_days: optNumber.refine((v) => v === null || (Number.isInteger(v) && v >= 1 && v <= 999), "Use a whole number of days"),
+  return_again: z
+    .enum(RETURN_AGAIN)
+    .or(z.literal(""))
+    .nullish()
+    .transform((v) => (v ? v : null)),
+  next_visit: z.array(z.string().trim().min(1).max(160)).max(100).default([]),
+});
+export type CountryReviewInput = z.input<typeof countryReviewSchema>;
 
 export const photoMetaSchema = z.object({
   path: z.string().min(10).max(400),

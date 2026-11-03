@@ -59,6 +59,7 @@ const BASE = {
     { id: "c", level: "info", kind: "jetlag", title: "Big time shift arriving in Tokyo", detail: "+6h east · ~6 days to adjust", href: "/" },
   ] as Props["alerts"],
   setup: { missingHome: false, missingPassport: false },
+  closing: null,
   time: { homeTz: "Asia/Baku", homeName: "Baku", current: { name: "Rome", tz: "Europe/Rome" }, next: { name: "Tokyo", tz: "Asia/Tokyo", arrive: "2026-11-08" } },
   weather: { name: "Rome", lat: 41.9, lng: 12.5, arrive: "2026-10-29", depart: "2026-11-07", ongoing: true, forecastDue: true, focusDate: "2026-11-02" },
   onThisDay: [] as Props["onThisDay"],

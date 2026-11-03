@@ -23,7 +23,47 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "bookings": {
+            "country_reviews": {
+                  Row: {
+                    "best_experience": string | null,"best_food": string | null,"completed_at": string | null,"created_at": string,"dismissed_at": string | null,"enough_days": number | null,"id": string,"next_visit": string[],"overpriced": string | null,"recommended_hotel": string | null,"return_again": string | null,"trip_country_id": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "best_experience"?: string | null,"best_food"?: string | null,"completed_at"?: string | null,"created_at"?: string,"dismissed_at"?: string | null,"enough_days"?: number | null,"id"?: string,"next_visit"?: string[],"overpriced"?: string | null,"recommended_hotel"?: string | null,"return_again"?: string | null,"trip_country_id": string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "best_experience"?: string | null,"best_food"?: string | null,"completed_at"?: string | null,"created_at"?: string,"dismissed_at"?: string | null,"enough_days"?: number | null,"id"?: string,"next_visit"?: string[],"overpriced"?: string | null,"recommended_hotel"?: string | null,"return_again"?: string | null,"trip_country_id"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "country_reviews_trip_country_id_fkey"
+      columns: ["trip_country_id"]
+isOneToOne: true
+      referencedRelation: "trip_countries"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"date_shifts": {
+                  Row: {
+                    "changes": Json,"created_at": string,"days": number,"id": string,"label": string,"trip_id": string,"undone_at": string | null,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "changes": Json,"created_at"?: string,"days": number,"id"?: string,"label": string,"trip_id": string,"undone_at"?: string | null,"user_id"?: string
+                  }
+                  Update: {
+                    "changes"?: Json,"created_at"?: string,"days"?: number,"id"?: string,"label"?: string,"trip_id"?: string,"undone_at"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "date_shifts_trip_id_fkey"
+      columns: ["trip_id"]
+isOneToOne: false
+      referencedRelation: "trips"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"bookings": {
                   Row: {
                     "city_id": string | null,"confirmation_no": string | null,"cost": number | null,"created_at": string,"currency": string | null,"document_id": string | null,"end_at": string | null,"from_label": string | null,"id": string,"start_at": string | null,"status": string,"title": string,"to_label": string | null,"trip_country_id": string | null,"trip_id": string,"type": string,"user_id": string
                   }
@@ -471,7 +511,13 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "atlas_document_open":
+            "atlas_apply_date_shift":
+{ Args: { "p_changes": Json,"p_days": number,"p_label": string,"p_trip_id": string }; Returns: string
+                           },
+"atlas_undo_date_shift":
+{ Args: { "p_id": string }; Returns: Json
+                           },
+"atlas_document_open":
 { Args: { "p_path": string }; Returns: boolean
                            },
 "atlas_mfa_ok":

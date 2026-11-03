@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
+  BookOpenCheck,
   Building2,
+  CalendarClock,
   CalendarDays,
   Camera,
   Coins,
@@ -67,7 +69,10 @@ import { CityVerdicts } from "@/components/climate/city-verdicts";
 import type { InfoOverride } from "@/lib/country-info";
 import { EssentialsTab } from "./essentials-tab";
 import { EntryTab, type EntryDocument } from "@/components/entry/entry-tab";
-import type { EntryRequirement } from "@/lib/types";
+import type { CountryReview, EntryRequirement } from "@/lib/types";
+import { hasLeft } from "@/lib/closing-notes";
+import { DateShiftDialog } from "@/components/route/date-shift-dialog";
+import { ClosingNotesCard, ClosingNotesDialog } from "./closing-notes";
 
 const TABS = [
   { value: "overview", label: "Overview", icon: Info },
@@ -143,6 +148,7 @@ export function CountryDetail({
   baseCurrency,
   initialTab,
   openEdit,
+  closing,
 }: {
   legs: LegView[];
   climateStops: ClimateStop[];
@@ -160,12 +166,15 @@ export function CountryDetail({
   baseCurrency: string;
   initialTab: string;
   openEdit: boolean;
+  closing: { available: boolean; review: CountryReview | null; hotels: string[] };
 }) {
   const ws = useWorkspace();
   const router = useRouter();
   const confirm = useConfirm();
   const [tab, setTab] = useState(TABS.some((t) => t.value === initialTab) ? initialTab : "overview");
   const [editOpen, setEditOpen] = useState(openEdit);
+  const [closingOpen, setClosingOpen] = useState(false);
+  const [shifting, setShifting] = useState(false);
   const [, start] = useTransition();
   const info = getCountry(country.code);
   const money = (n: number) => formatMoney(n, baseCurrency);
@@ -229,6 +238,12 @@ export function CountryDetail({
               <DropdownMenuContent>
                 <DropdownMenuItem onSelect={() => setEditOpen(true)}>
                   <Pencil /> Edit dates, status, budget
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setShifting(true)}>
+                  <CalendarClock /> Shift dates from here
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setClosingOpen(true)}>
+                  <BookOpenCheck /> Closing notes
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem destructive onSelect={onDelete}>
@@ -301,6 +316,7 @@ export function CountryDetail({
                   </ol>
                 </section>
               )}
+              {(hasLeft(country) || country.status === "visited" || closing.review?.completed_at) && <ClosingNotesCard review={closing.review} stayed={nights} available={closing.available} onEdit={() => setClosingOpen(true)} />}
               <CityVerdicts stops={climateStops} />
               {cap > 0 && (
                 <section className="card p-5">
@@ -342,7 +358,6 @@ export function CountryDetail({
           </SectionTitle>
           {cities.length ? (
             <CitySortGrid cities={cities} places={places} days={days} />
-
           ) : (
             <EmptyState icon={Building2} title="No cities yet" description="Search as you type — each city is pinned and gets a photo." action={<Button onClick={() => ws.openQuickAdd({ kind: "city", tripCountryId: country.id })}><Plus /> Add cities</Button>} />
           )}
@@ -484,7 +499,21 @@ export function CountryDetail({
           <NotesEditor initial={country.notes} onSave={(v) => saveCountryNotes(country.id, v)} />
         </TabsContent>
       </Tabs>
-      {editOpen && <CountryEditDialog open onOpenChange={setEditOpen} country={country} name={country.name} baseCurrency={baseCurrency} />}
+      {editOpen && (
+        <CountryEditDialog
+          open
+          onOpenChange={setEditOpen}
+          country={country}
+          name={country.name}
+          baseCurrency={baseCurrency}
+          onSaved={(status) => {
+            // Marking it visited is the moment of leaving, so that's when the notes get asked for.
+            if (status === "visited" && country.status !== "visited" && closing.available && !closing.review?.completed_at) setClosingOpen(true);
+          }}
+        />
+      )}
+      {closingOpen && <ClosingNotesDialog country={country} review={closing.review} places={places} hotels={closing.hotels} onOpenChange={setClosingOpen} />}
+      {shifting && <DateShiftDialog tripId={country.trip_id} initialCountryId={country.id} onOpenChange={setShifting} />}
     </PageTransition>
   );
 }

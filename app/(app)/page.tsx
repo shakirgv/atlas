@@ -12,18 +12,23 @@ import { homeStop, routesForTrips } from "@/lib/server/route-data";
 import { loadCash } from "@/lib/server/cash";
 import { loadOnThisDay, loadRecapYears } from "@/lib/server/recap";
 import { recapEntry } from "@/lib/recap";
+import { closingPrompt, hotelNames } from "@/lib/closing-notes";
 
 export default async function DashboardPage() {
   const { supabase, scope } = await getScope();
   const todayDate = todayIso();
-  const [g, map, cash, onThisDay, recapYears] = await Promise.all([
+  const [g, map, cash, onThisDay, recapYears, reviews] = await Promise.all([
     loadGraph(supabase, scope.trips, scope.tripIds, { days: true, places: true, expenses: true, memories: true, documents: true, photoCount: true, bookings: true, entries: true }),
     loadMapData(supabase, scope),
     loadCash(supabase, scope.baseCurrency),
     loadOnThisDay(supabase, todayDate),
     loadRecapYears(supabase, todayDate),
+    supabase.from("country_reviews").select("trip_country_id, completed_at, dismissed_at"),
   ]);
   const today = todayDate;
+  // No table means the SQL file hasn't been run yet, and asking would only end in an error.
+  const left = reviews.error ? null : closingPrompt(g.countries, reviews.data ?? [], today);
+  const leftPlaces = left ? g.places.filter((p) => g.cities.some((c) => c.id === p.city_id && c.trip_country_id === left.id)) : [];
   const ongoing = g.countries.find((c) => c.display === "ongoing");
   const upcoming = g.countries.filter((c) => c.arrive_date && c.arrive_date > today).sort((a, b) => a.arrive_date!.localeCompare(b.arrive_date!))[0];
   const nextStop = ongoing ?? upcoming ?? null;
@@ -94,6 +99,7 @@ export default async function DashboardPage() {
       onThisDay={onThisDay}
       recap={recapEntry(today, recapYears)}
       setup={{ missingHome: !scope.settings?.home_city, missingPassport: !scope.settings?.passport_country }}
+      closing={left ? { country: { id: left.id, name: left.name, flag: left.flag, arrive_date: left.arrive_date, depart_date: left.depart_date }, places: leftPlaces.map((p) => ({ name: p.name, status: p.status })), hotels: hotelNames(g.bookings.filter((b) => b.trip_country_id === left.id), leftPlaces) } : null}
       alerts={buildAlerts({
         documents: g.documents,
         trips: g.trips,

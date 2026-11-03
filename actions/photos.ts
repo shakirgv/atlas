@@ -20,7 +20,7 @@ export async function savePhotos(
   entityType: PhotoEntityType,
   entityId: string,
   photos: PhotoMeta[],
-  opts: { setCover?: boolean } = {},
+  opts: { setCover?: boolean; skipRefresh?: boolean } = {},
 ): Promise<ActionResult<{ ids: string[] }>> {
   try {
     const { supabase, user } = await requireUser();
@@ -44,8 +44,19 @@ export async function savePhotos(
     if (table && opts.setCover !== false) {
       must(await supabase.from(table).update({ cover_path: list[0]!.path }).eq("id", eid));
     }
-    refreshAll();
+    // A batch refreshes once at the end, instead of re-rendering the page for every photo.
+    if (!opts.skipRefresh) refreshAll();
     return ok({ ids: rows.map((r) => r.id) });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function refreshAfterBatch(): Promise<ActionResult> {
+  try {
+    await requireUser();
+    refreshAll();
+    return ok();
   } catch (e) {
     return fail(e);
   }

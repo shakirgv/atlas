@@ -18,6 +18,7 @@ import { MemoryMini } from "@/components/memories/memory-mini";
 import { WorldMap, type MapCity, type MapCountryState, type RoutePoint } from "@/components/map/world-map";
 import { Button } from "@/components/ui/button";
 import { SetupBanner } from "@/components/common/setup-banner";
+import { ClosingPrompt, type ClosingCountry } from "@/components/countries/closing-notes";
 import { TimeTile, type TimeTileData } from "./time-tile";
 import { WeatherTile, type WeatherStop } from "./weather-tile";
 import { OnThisDay } from "./on-this-day";
@@ -152,6 +153,7 @@ export function Dashboard({
   recap,
   alerts,
   setup,
+  closing,
   time,
   weather,
 }: {
@@ -171,6 +173,7 @@ export function Dashboard({
   recap: { year: number; prominent: boolean } | null;
   alerts: Alert[];
   setup: { missingHome: boolean; missingPassport: boolean };
+  closing: { country: ClosingCountry; places: { name: string; status: string }[]; hotels: string[] } | null;
   time: TimeTileData;
   weather: WeatherStop | null;
 }) {
@@ -240,6 +243,7 @@ export function Dashboard({
       </div>
 
       <SetupBanner {...setup} />
+      {closing && <ClosingPrompt key={closing.country.id} {...closing} />}
 
       {recap?.prominent && (
         <Link href={`/recap/${recap.year}`} className="card card-hover flex items-center gap-4 overflow-hidden bg-ink p-5 text-bg">

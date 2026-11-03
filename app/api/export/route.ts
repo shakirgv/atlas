@@ -5,7 +5,7 @@ import { getVaultState } from "@/lib/vault";
 import { maskDocument } from "@/lib/vault-mask";
 import type { DocumentRow } from "@/lib/types";
 
-const TABLES = ["settings", "trips", "trip_countries", "cities", "places", "itinerary_days", "itinerary_items", "expenses", "memories", "documents", "photos", "bookings", "packing_items", "packing_templates", "country_info_overrides", "entry_requirements", "cash_wallets", "cash_transactions"] as const;
+const TABLES = ["settings", "trips", "trip_countries", "cities", "places", "itinerary_days", "itinerary_items", "expenses", "memories", "documents", "photos", "bookings", "packing_items", "packing_templates", "country_info_overrides", "entry_requirements", "cash_wallets", "cash_transactions", "country_reviews"] as const;
 
 function csvCell(v: unknown) {
   if (v === null || v === undefined) return "";

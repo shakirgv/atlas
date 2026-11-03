@@ -13,6 +13,15 @@ import { Field, NativeSelect } from "@/components/ui/input";
 import { Checkbox, Switch } from "@/components/ui/misc";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 
+/** The app can't fix this by itself: the key is a secret that only the Supabase and Vercel dashboards hold. */
+function SharingOff() {
+  return (
+    <p className="rounded-xl bg-planned-soft px-3 py-2.5 text-sm" data-testid="sharing-off">
+      Sharing is off because this deployment has no server key. In Vercel → Settings → Environment Variables, add <code className="break-all font-mono text-[13px]">SUPABASE_SERVICE_ROLE_KEY</code> with the secret key from Supabase → Project Settings → API Keys, then redeploy.
+    </p>
+  );
+}
+
 const linkFor = (token: string) => `${window.location.origin}/s/${token}`;
 
 function CopyButton({ token, label = "Copy" }: { token: string; label?: string }) {
@@ -159,7 +168,7 @@ export function ShareDialog({
     <ResponsiveDialog open onOpenChange={onOpenChange} title="Share" description={title}>
       <div className="flex flex-col gap-4 pb-2" data-testid="share-dialog">
         {!enabled ? (
-          <p className="rounded-xl bg-planned-soft px-3 py-2.5 text-sm">Sharing needs a server key. See README.</p>
+          <SharingOff />
         ) : (
           <p className="text-xs text-muted">Anyone with the link can see this, without signing in. Budget, cash, documents, visa details, private notes and your home are never included.</p>
         )}
@@ -230,7 +239,7 @@ export function ShareLinksSection({ enabled }: { enabled: boolean }) {
   useEffect(() => {
     if (enabled) refresh();
   }, [enabled, refresh]);
-  if (!enabled) return <p className="rounded-xl bg-planned-soft px-3 py-2.5 text-sm">Sharing needs a server key. See README.</p>;
+  if (!enabled) return <SharingOff />;
   if (!rows) return <Loader2 className="size-4 animate-spin text-muted" />;
   return <ShareList rows={rows} onChanged={refresh} showLabel />;
 }
