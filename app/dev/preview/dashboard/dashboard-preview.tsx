@@ -23,6 +23,7 @@ const BASE = {
     planned: 3200,
     spent: 2450,
     remaining: 6550,
+    afterEstimates: 5800,
     avgPerDay: 188,
     remainingPerDay: 385,
     daysElapsed: 13,
@@ -60,8 +61,7 @@ const BASE = {
   ] as Props["alerts"],
   setup: { missingHome: false, missingPassport: false },
   closing: null,
-  time: { homeTz: "Asia/Baku", homeName: "Baku", current: { name: "Rome", tz: "Europe/Rome" }, next: { name: "Tokyo", tz: "Asia/Tokyo", arrive: "2026-11-08" } },
-  weather: { name: "Rome", lat: 41.9, lng: 12.5, arrive: "2026-10-29", depart: "2026-11-07", ongoing: true, forecastDue: true, focusDate: "2026-11-02" },
+  destination: { name: "Tokyo", tz: "Asia/Tokyo", arrive: "2026-11-08", isHome: false, weather: { name: "Tokyo", lat: 35.68, lng: 139.65, arrive: "2026-11-08", depart: "2026-11-20", forecastDue: true, focusDate: "2026-11-08" } },
   onThisDay: [] as Props["onThisDay"],
   recap: { year: 2025, prominent: false },
 } satisfies Props;
@@ -83,7 +83,7 @@ const WORKSPACE = {
   openPalette: () => {},
 };
 
-/** `?state=rich` adds On this day and a prominent recap; `?state=empty` hides every optional tile. */
+/** `?state=rich` adds On this day and a prominent recap; `?state=home` makes Baku the next destination; `?state=empty` hides every optional tile. */
 export function DashboardPreview() {
   const state = useSearchParams().get("state");
   const props: Props =
@@ -97,8 +97,10 @@ export function DashboardPreview() {
           ],
         }
       : state === "empty"
-        ? { ...BASE, cash: null, weather: null, recap: null, alerts: [], time: { homeTz: null, homeName: null, current: null, next: null } }
-        : BASE;
+        ? { ...BASE, cash: null, recap: null, alerts: [], destination: null }
+        : state === "home"
+          ? { ...BASE, destination: { name: "Baku", tz: "Asia/Baku", arrive: "2026-11-21", isHome: true, weather: { name: "Baku", lat: 40.41, lng: 49.87, arrive: "2026-11-21", depart: null, forecastDue: false, focusDate: "2026-11-21" } } }
+          : BASE;
   return (
     <TooltipProvider>
       <ConfirmProvider>

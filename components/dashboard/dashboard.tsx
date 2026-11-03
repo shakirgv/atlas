@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, BellRing, Building2, CalendarDays, Camera, CalendarClock, Earth, FileText, Flag, Info, MapPin, Plane, Plus, Sparkles, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowRight, BellRing, Building2, CalendarDays, Camera, CalendarClock, Earth, Flag, Info, MapPin, Plane, Plus, Sparkles, Wallet } from "lucide-react";
 import type { BudgetSummary } from "@/lib/budget";
 import type { Alert } from "@/lib/alerts";
 import type { CityVM, CountryVM, MemoryVM } from "@/lib/data";
@@ -19,8 +19,7 @@ import { WorldMap, type MapCity, type MapCountryState, type RoutePoint } from "@
 import { Button } from "@/components/ui/button";
 import { SetupBanner } from "@/components/common/setup-banner";
 import { ClosingPrompt, type ClosingCountry } from "@/components/countries/closing-notes";
-import { TimeTile, type TimeTileData } from "./time-tile";
-import { WeatherTile, type WeatherStop } from "./weather-tile";
+import { NextDestinationCard, type NextDestinationData } from "./next-destination-card";
 import { OnThisDay } from "./on-this-day";
 import type { OnThisDayItem } from "@/lib/recap";
 import { useWorkspace } from "@/components/shell/workspace";
@@ -124,18 +123,6 @@ function NextStopHero({ c, cityCount }: { c: CountryVM | null; cityCount: number
   );
 }
 
-/** Small "at a glance" tiles (time, weather; cash joins later). Empty tiles are hidden. */
-function GlanceColumn({ time, weather }: { time: TimeTileData; weather: WeatherStop | null }) {
-  const showTime = Boolean(time.current || time.next);
-  if (!showTime && !weather) return null;
-  return (
-    <div className="flex h-full flex-col gap-4">
-      {showTime && <TimeTile data={time} />}
-      {weather && <WeatherTile stop={weather} />}
-    </div>
-  );
-}
-
 export function Dashboard({
   displayName,
   baseCurrency,
@@ -154,8 +141,7 @@ export function Dashboard({
   alerts,
   setup,
   closing,
-  time,
-  weather,
+  destination,
 }: {
   displayName: string;
   baseCurrency: string;
@@ -174,8 +160,7 @@ export function Dashboard({
   alerts: Alert[];
   setup: { missingHome: boolean; missingPassport: boolean };
   closing: { country: ClosingCountry; places: { name: string; status: string }[]; hotels: string[] } | null;
-  time: TimeTileData;
-  weather: WeatherStop | null;
+  destination: NextDestinationData | null;
 }) {
   const ws = useWorkspace();
   const money = (n: number) => formatMoney(n, baseCurrency);
@@ -221,25 +206,13 @@ export function Dashboard({
             {first ? `, ${first}` : ""}.
           </h1>
         </div>
-        <div className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0" role="group" aria-label="Quick actions">
-          {recap && !recap.prominent && (
-            <Button variant="ghost" size="sm" asChild className="h-9 shrink-0">
-              <Link href={`/recap/${recap.year}`}>
-                <Sparkles className="!size-3.5 text-accent" /> {recap.year} recap
-              </Link>
-            </Button>
-          )}
-          {[
-            { kind: "country" as const, label: "Country", icon: Flag },
-            { kind: "expense" as const, label: "Expense", icon: Wallet },
-            { kind: "memory" as const, label: "Memory", icon: Camera },
-            { kind: "document" as const, label: "Document", icon: FileText },
-          ].map((a) => (
-            <Button key={a.kind} variant="secondary" size="sm" onClick={() => ws.openQuickAdd(a.kind)} className="h-9 shrink-0">
-              <Plus className="!size-3.5 text-accent" /> {a.label}
-            </Button>
-          ))}
-        </div>
+        {recap && !recap.prominent && (
+          <Button variant="ghost" size="sm" asChild className="h-9 shrink-0 self-start sm:self-auto">
+            <Link href={`/recap/${recap.year}`}>
+              <Sparkles className="!size-3.5 text-accent" /> {recap.year} recap
+            </Link>
+          </Button>
+        )}
       </div>
 
       <SetupBanner {...setup} />
@@ -293,7 +266,7 @@ export function Dashboard({
           </Tile>
         </StaggerItem>
 
-        <StaggerItem className={cn("md:col-span-2", time.current || time.next || weather ? "lg:col-span-8" : "lg:col-span-12")}>
+        <StaggerItem className="md:col-span-2 lg:col-span-8">
           <section className="card relative h-full min-h-[300px] overflow-hidden" aria-label="World map">
             <div className="absolute left-5 top-4 z-10">
               <h2 className="flex items-center gap-2 text-xl font-semibold">
@@ -309,11 +282,9 @@ export function Dashboard({
           </section>
         </StaggerItem>
 
-        {(time.current || time.next || weather) && (
-          <StaggerItem className="md:col-span-2 lg:col-span-4">
-            <GlanceColumn time={time} weather={weather} />
-          </StaggerItem>
-        )}
+        <StaggerItem className="md:col-span-2 lg:col-span-4">
+          <NextDestinationCard destination={destination} />
+        </StaggerItem>
 
         <StaggerItem className="md:col-span-1 lg:col-span-4">
           <Panel title="Up next" icon={CalendarClock} action={<Link href="/itinerary" className="text-sm font-medium text-accent hover:underline">Itinerary</Link>} className="h-full">
@@ -368,7 +339,39 @@ export function Dashboard({
 
         <StaggerItem className="md:col-span-1 lg:col-span-4">
           <Panel title="Budget" icon={Wallet} action={<Link href="/budget" className="text-sm font-medium text-accent hover:underline">Details</Link>} className="h-full">
-            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+            <dl className="flex flex-col gap-2 text-sm">
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted">Total budget</dt>
+                <dd className="num whitespace-nowrap font-medium">{budget.totalBudget ? money(budget.totalBudget) : "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted">Estimated trip costs</dt>
+                <dd className="num whitespace-nowrap font-medium">{money(budget.planned)}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted">Spent</dt>
+                <dd className="num whitespace-nowrap font-medium">{money(budget.spent)}</dd>
+              </div>
+              <div className="flex justify-between gap-3 border-t border-border pt-2">
+                <dt className="text-muted">Budget after estimates</dt>
+                <dd className={cn("num whitespace-nowrap font-semibold", budget.totalBudget > 0 && budget.afterEstimates < 0 && "text-danger")}>{budget.totalBudget ? money(budget.afterEstimates) : "—"}</dd>
+              </div>
+            </dl>
+            {cash && (
+              <div className="mt-2 flex flex-col gap-2 border-t border-border pt-2 text-sm">
+                <Link href="/budget?tab=cash" className="flex justify-between gap-3 hover:text-accent">
+                  <span className="text-muted">Cash on hand</span>
+                  <span className="num whitespace-nowrap font-medium">{money(cash.onHand)}</span>
+                </Link>
+                {cash.fees > 0 && (
+                  <div className="flex justify-between gap-3">
+                    <span className="text-muted">Fees paid</span>
+                    <span className="num whitespace-nowrap font-medium">{money(cash.fees)}</span>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="mx-auto mt-4 w-[140px]">
               <CategoryDonut
                 height={140}
                 currency={baseCurrency}
@@ -380,40 +383,8 @@ export function Dashboard({
                   </div>
                 }
               />
-              <div className="flex flex-col gap-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted">Planned</span>
-                  <span className="num font-medium">{money(budget.planned)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted">Spent</span>
-                  <span className="num font-medium">{money(budget.spent)}</span>
-                </div>
-                {budget.totalBudget > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted">Remaining</span>
-                    <span className={cn("num font-medium", budget.remaining < 0 && "text-danger")}>{money(budget.remaining)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between border-t border-border pt-2">
-                  <span className="text-muted">Left per day</span>
-                  <span className="num font-semibold">{budget.remainingPerDay !== null ? money(budget.remainingPerDay) : "—"}</span>
-                </div>
-                {cash && (
-                  <Link href="/budget?tab=cash" className="flex justify-between border-t border-border pt-2 hover:text-accent">
-                    <span className="text-muted">Cash on hand</span>
-                    <span className="num font-medium">{money(cash.onHand)}</span>
-                  </Link>
-                )}
-                {cash && cash.fees > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted">Fees paid</span>
-                    <span className="num font-medium">{money(cash.fees)}</span>
-                  </div>
-                )}
-              </div>
             </div>
-            <div className="mt-4 hidden sm:block">
+            <div className="mt-4">
               <DonutLegend currency={baseCurrency} data={budget.byCategory.map((c) => ({ category: c.category, value: c.actual })).sort((a, b) => b.value - a.value).slice(0, 4)} />
             </div>
           </Panel>
@@ -444,30 +415,13 @@ export function Dashboard({
           </Panel>
         </StaggerItem>
 
-        <StaggerItem className="md:col-span-2 lg:col-span-4">
-          {onThisDay.length ? (
+        {onThisDay.length > 0 && (
+          <StaggerItem className="md:col-span-2 lg:col-span-4">
             <OnThisDay items={onThisDay} />
-          ) : (
-            <Panel title="Trip at a glance" icon={Plane} className="h-full">
-              <dl className="flex flex-col gap-3 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-muted">Avg. per day</dt>
-                  <dd className="num font-medium">{money(budget.avgPerDay)}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted">Days remaining</dt>
-                  <dd className="num font-medium">{budget.daysRemaining || "—"}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted">Total budget</dt>
-                  <dd className="num font-medium">{budget.totalBudget ? money(budget.totalBudget) : "—"}</dd>
-                </div>
-              </dl>
-            </Panel>
-          )}
-        </StaggerItem>
+          </StaggerItem>
+        )}
 
-        <StaggerItem className="md:col-span-2 lg:col-span-8">
+        <StaggerItem className={cn("md:col-span-2", onThisDay.length ? "lg:col-span-8" : "lg:col-span-12")}>
           <section aria-label="Recent memories">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-xl font-semibold">

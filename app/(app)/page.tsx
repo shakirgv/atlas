@@ -7,8 +7,9 @@ import { summarizeBudget } from "@/lib/budget";
 import { daysOnTheRoad } from "@/lib/trip";
 import { daysUntil, todayIso } from "@/lib/dates";
 import { Dashboard } from "@/components/dashboard/dashboard";
-import type { WeatherStop } from "@/components/dashboard/weather-tile";
-import { homeStop, routesForTrips } from "@/lib/server/route-data";
+import type { NextDestinationData } from "@/components/dashboard/next-destination-card";
+import { isHomeCity, nextDestination } from "@/lib/next-destination";
+import { routesForTrips } from "@/lib/server/route-data";
 import { loadCash } from "@/lib/server/cash";
 import { loadOnThisDay, loadRecapYears } from "@/lib/server/recap";
 import { recapEntry } from "@/lib/recap";
@@ -48,34 +49,30 @@ export default async function DashboardPage() {
   const codes = (status: (s: string) => boolean) => new Set(g.countries.filter((c) => status(c.status)).map((c) => c.code)).size;
 
   const route = routesForTrips(scope.tripIds, g.countries, g.cities, scope.settings);
-  const home = homeStop(scope.settings);
-  const curStop = route.stops.find((s) => s.tz && s.arrive && s.arrive <= today && (!s.depart || s.depart >= today)) ?? null;
-  const nextStopTz = route.stops.filter((s) => s.tz && s.arrive && s.arrive > today).sort((a, b) => a.arrive!.localeCompare(b.arrive!))[0] ?? null;
-  const time = {
-    homeTz: home?.tz ?? null,
-    homeName: scope.settings?.home_city ?? null,
-    current: curStop ? { name: curStop.name, tz: curStop.tz! } : null,
-    next: nextStopTz ? { name: nextStopTz.name, tz: nextStopTz.tz!, arrive: nextStopTz.arrive } : null,
-  };
-  const pinned = route.stops.filter((s) => s.lat != null && s.lng != null);
-  const hereNow = pinned.find((s) => s.arrive && s.arrive <= today && (!s.depart || s.depart >= today));
-  const weatherStop = hereNow ?? pinned.filter((s) => s.arrive && s.arrive > today).sort((a, b) => a.arrive!.localeCompare(b.arrive!))[0];
-  const weather: WeatherStop | null = weatherStop
+  const next = nextDestination(route.stops, g.days, today);
+  const destination: NextDestinationData | null = next
     ? {
-        name: weatherStop.name,
-        lat: weatherStop.lat!,
-        lng: weatherStop.lng!,
-        arrive: weatherStop.arrive,
-        depart: weatherStop.depart,
-        ongoing: Boolean(hereNow),
-        forecastDue: Boolean(hereNow) || (daysUntil(weatherStop.arrive) ?? 99) <= 14,
-        focusDate: hereNow ? today : weatherStop.arrive,
+        name: next.stop.name,
+        tz: next.stop.tz,
+        arrive: next.arrive,
+        isHome: isHomeCity(next.stop),
+        weather:
+          next.stop.lat != null && next.stop.lng != null
+            ? {
+                name: next.stop.name,
+                lat: next.stop.lat,
+                lng: next.stop.lng,
+                arrive: next.arrive,
+                depart: next.stop.depart,
+                forecastDue: (daysUntil(next.arrive) ?? 99) <= 14,
+                focusDate: next.arrive,
+              }
+            : null,
       }
     : null;
   return (
     <Dashboard
-      time={time}
-      weather={weather}
+      destination={destination}
       displayName={scope.settings?.display_name ?? ""}
       baseCurrency={scope.baseCurrency}
       activeTrip={scope.activeTrip}

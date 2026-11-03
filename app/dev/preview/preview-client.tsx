@@ -29,7 +29,7 @@ import { ConfirmProvider } from "@/components/ui/confirm";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const VERDICTS: Verdict[] = ["good", "hot", "rainy", "cold", "very_hot", "freezing"];
-const TOKYO: WeatherStop = { name: "Tokyo", lat: 35.68, lng: 139.65, arrive: "2027-07-05", depart: "2027-07-20", ongoing: false, forecastDue: true, focusDate: null };
+const TOKYO: WeatherStop = { name: "Tokyo", lat: 35.68, lng: 139.65, arrive: "2027-07-05", depart: "2027-07-20", forecastDue: true, focusDate: null };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { cappedCountries, searchCountryBudgets, summarizeBudget, totalOfCaps } from "@/lib/budget";
 import type { CountryVM } from "@/lib/data";
-import type { Trip } from "@/lib/types";
+import type { Expense, Trip } from "@/lib/types";
 
 const row = (name: string, cap: number, actual = 0) => ({ id: name, name, flag: "", actual, planned: 0, cap });
 
@@ -51,5 +51,18 @@ describe("searchCountryBudgets", () => {
 
   it("finds nothing for a name that is not in the budget", () => {
     expect(names("atlantis")).toEqual([]);
+  });
+});
+
+describe("budget after estimates", () => {
+  const expense = (kind: string, amount_base: number) => ({ kind, amount_base, category: "food", date: "2026-11-01", trip_country_id: "ge" }) as Expense;
+
+  it("is the total budget minus estimates, whatever has been spent", () => {
+    const summary = summarizeBudget([expense("planned", 3200), expense("actual", 2450)], [{ total_budget: 9000 }] as Trip[], []);
+    expect(summary.afterEstimates).toBe(5800);
+  });
+
+  it("goes negative when estimates pass the budget", () => {
+    expect(summarizeBudget([expense("planned", 1200)], [{ total_budget: 1000 }] as Trip[], []).afterEstimates).toBe(-200);
   });
 });

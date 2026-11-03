@@ -1,6 +1,6 @@
 "use client";
-import { CloudOff, CloudSun, Droplets } from "lucide-react";
-import { CLIMATE_LABEL, climateKey, MONTH_NAMES, monthsInStay, verdictForStay, verdictReason, weatherFromCode, type ClimateMonth, type ForecastDay } from "@/lib/climate";
+import { CloudOff, Droplets } from "lucide-react";
+import { climateKey, monthsInStay, typicalWeatherLabel, verdictForStay, verdictReason, weatherFromCode, type ClimateMonth, type ForecastDay } from "@/lib/climate";
 import { fmtDate } from "@/lib/dates";
 import { useClimate, useForecast } from "@/hooks/use-climate";
 import { Skeleton } from "@/components/ui/misc";
@@ -12,10 +12,9 @@ export type WeatherStop = {
   lng: number;
   arrive: string | null;
   depart: string | null;
-  ongoing: boolean;
-  /** Decided on the server: ongoing, or arriving within the next 14 days. */
+  /** Decided on the server: arriving within the next 14 days. */
   forecastDue: boolean;
-  /** The day to show the forecast for (today while ongoing, else the arrival date). */
+  /** The day to show the forecast for: the arrival date. */
   focusDate: string | null;
 };
 
@@ -62,9 +61,11 @@ export function ForecastView({ days, stop }: { days: ForecastDay[]; stop: Weathe
 export function NormalsView({ months, stop }: { months: ClimateMonth[]; stop: WeatherStop }) {
   const planned = monthsInStay(stop.arrive, stop.depart);
   const month = months.find((m) => m.month === planned[0]) ?? months[0]!;
-  const v = verdictForStay(months, stop.arrive, stop.depart);
+  // Only the labelled month, so a stay running into December can't put its verdict on "Typical November weather".
+  const v = verdictForStay(months, stop.arrive ?? stop.depart, stop.arrive ?? stop.depart);
   return (
     <>
+      <p className="text-xs font-medium text-muted">{typicalWeatherLabel(month.month)}</p>
       <div className="flex items-start justify-between gap-2">
         <p className="num font-display text-[26px] font-semibold leading-none">
           {Math.round(month.tmax)}° <span className="text-lg text-muted">{Math.round(month.tmin)}°</span>
@@ -72,43 +73,38 @@ export function NormalsView({ months, stop }: { months: ClimateMonth[]; stop: We
         {v && <VerdictChip verdict={v.verdict} size="sm" title={verdictReason(v.month)} />}
       </div>
       <p className="text-xs text-muted">
-        {MONTH_NAMES[month.month - 1]}: {Math.round(month.precip)} mm, {Math.round(month.wetDays)} wet days
+        {Math.round(month.precip)} mm, {Math.round(month.wetDays)} wet days · last 5 years
       </p>
-      <p className="mt-auto text-[11px] text-muted">{CLIMATE_LABEL}</p>
     </>
   );
 }
 
-/** Forecast when the stop is 14 days away or less, otherwise climate normals. Falls back to normals if the forecast fails. */
-export function WeatherTile({ stop }: { stop: WeatherStop }) {
+/** Typical weather for the travel month, plus the real forecast once the arrival date is within its range. */
+export function DestinationWeather({ stop }: { stop: WeatherStop }) {
   const forecast = useForecast(stop.lat, stop.lng, stop.forecastDue);
-  const showForecast = stop.forecastDue && !forecast.failed;
-  const climate = useClimate(showForecast ? [] : [stop]);
+  const climate = useClimate([stop]);
   const months = climate.data[climateKey(stop.lat, stop.lng)];
-  const loading = showForecast ? forecast.loading : climate.loading;
+  const forecastDays = forecast.days?.some((d) => d.date === stop.focusDate) ? forecast.days : null;
 
   return (
-    <section className="card flex h-full flex-col gap-3 p-5" aria-label="Weather at next stop">
-      <div>
-        <h2 className="flex items-center gap-2 text-xl font-semibold">
-          <CloudSun className="size-5 text-accent" /> Weather
-        </h2>
-        <p className="mt-0.5 truncate text-xs text-muted">
-          {stop.name}
-          {stop.ongoing ? " · today" : stop.focusDate ? ` · ${fmtDate(stop.focusDate, "dd MMM")}` : ""}
-        </p>
-      </div>
-      {loading ? (
+    <div className="flex flex-1 flex-col gap-3 border-t border-border pt-3">
+      {climate.loading ? (
         <Skeleton className="h-20 w-full" />
-      ) : showForecast && forecast.days ? (
-        <ForecastView days={forecast.days} stop={stop} />
       ) : months ? (
-        <NormalsView months={months} stop={stop} />
+        <div className="flex flex-col gap-2">
+          <NormalsView months={months} stop={stop} />
+        </div>
       ) : (
         <p className="flex items-center gap-2 text-sm text-muted">
           <CloudOff className="size-4 shrink-0" /> Weather unavailable
         </p>
       )}
-    </section>
+      {forecastDays && (
+        <div className="flex flex-col gap-2 border-t border-border pt-3">
+          <p className="text-xs font-medium text-muted">Forecast · {fmtDate(stop.focusDate, "dd MMM")}</p>
+          <ForecastView days={forecastDays} stop={stop} />
+        </div>
+      )}
+    </div>
   );
 }

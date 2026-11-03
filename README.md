@@ -105,7 +105,7 @@ CLI alternative: `npx vercel` (link the project), `npx vercel env add NEXT_PUBLI
 ## What's inside
 
 **Phase 1**
-- **Dashboard** — greeting, next-stop hero with countdown (or "Day 5 of 10 in Italy"), count-up stat tiles, compact world map with animated great-circle route arcs, up next, budget snapshot donut, heads-up alerts (expiring documents, passport validity, undated countries, over-budget countries), recent memories, quick actions.
+- **Dashboard** — greeting, next-stop hero with countdown (or "Day 5 of 10 in Italy"), count-up stat tiles, compact world map with animated great-circle route arcs, up next, budget card with spending donut, next destination card, heads-up alerts (expiring documents, passport validity, undated countries, over-budget countries), recent memories.
 - **World map** — custom SVG (d3-geo `geoNaturalEarth1`, d3-zoom), status fills, hover tooltip, click to open or "Add to trip", numbered route, city dots when zoomed in, layer toggles, route panel (bottom sheet on mobile).
 - **Trips** — cover cards, trip page with progress, *Next steps* checklist, route timeline date bar + drag-to-reorder list, stats, budget and memories shortcuts.
 - **Countries** — bulk add (searchable list of ~250 countries with flags), filters (status, continent, trip), search, sort, drag reorder; country page with Overview, Cities, Itinerary, Places, Budget, Memories, Documents and Notes tabs.
@@ -129,8 +129,8 @@ CLI alternative: `npx vercel` (link the project), `npx vercel env add NEXT_PUBLI
 
 **Feature pack 2**
 - **Visa and entry tracker:** country tab "Entry" and Documents tab "Visas & entry": requirement, status, dates, fee, official source, editable checklist, linked document, and computed warnings (stay too long, apply-by date, visa window, passport validity, re-check). Nothing is pre-filled, because rules depend on your passport.
-- **Season and weather:** city "Climate" card from Open-Meteo normals (last 5 years), verdict chips on the country overview and trip route, forecast or normals on the dashboard.
-- **Time zones and jet lag:** dashboard Time tile, shift and adaptation chips on the route, a soft banner on the arrival day after a big shift.
+- **Season and weather:** city "Climate" card from Open-Meteo normals (last 5 years), verdict chips on the country overview and trip route, typical weather for the travel month on the dashboard, plus the forecast once arrival is within 14 days.
+- **Time zones and jet lag:** dashboard Next destination card (local time against Baku), shift and adaptation chips on the route, a soft banner on the arrival day after a big shift.
 - **Country card:** tab "Essentials" with tap-to-call emergency numbers, plugs, tipping, tap water, embassy and notes, editable inline, plus a one-page printable card.
 - **Shareable map image:** export dialog with five shapes and three themes; PNG, SVG, copy and share.
 - **Transport on the route:** a mode per leg with its own arc style and icon on the maps, and inline editing from the route list.

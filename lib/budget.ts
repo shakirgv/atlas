@@ -9,6 +9,7 @@ export type BudgetSummary = {
   planned: number;
   spent: number;
   remaining: number;
+  afterEstimates: number;
   avgPerDay: number;
   remainingPerDay: number | null;
   daysElapsed: number;
@@ -88,6 +89,7 @@ export function summarizeBudget(expenses: Expense[], trips: Trip[], countries: C
     planned,
     spent,
     remaining,
+    afterEstimates: totalBudget - planned,
     avgPerDay: daysElapsed ? spent / daysElapsed : 0,
     remainingPerDay: totalBudget && daysRemaining ? remaining / daysRemaining : null,
     daysElapsed,

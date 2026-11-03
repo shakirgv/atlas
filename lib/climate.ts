@@ -19,6 +19,11 @@ export const CLIMATE = {
 export const CLIMATE_LABEL = "Typical conditions (last 5 years)";
 export const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] as const;
 
+/** month is 1–12. */
+export function typicalWeatherLabel(month: number) {
+  return `Typical ${MONTH_NAMES[month - 1]} weather`;
+}
+
 export type ClimateMonth = { month: number; tmax: number; tmin: number; precip: number; wetDays: number };
 export type Verdict = "very_hot" | "freezing" | "cold" | "rainy" | "hot" | "good";
 export type VerdictTone = "good" | "info" | "warning" | "danger";
