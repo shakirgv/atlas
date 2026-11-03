@@ -2,7 +2,7 @@ import { Building2, CalendarDays, MapPin, Plane } from "lucide-react";
 import { FlagChip } from "@/components/common/flag";
 import { PhotoCard } from "@/components/common/photo-card";
 import { GeoStatusChip, TripStatusChip } from "@/components/common/status-chip";
-import { fmtRange } from "@/lib/dates";
+import { durationLabel, fmtRange } from "@/lib/dates";
 import type { CityVM, CountryVM } from "@/lib/data";
 import type { Trip, TripStatus } from "@/lib/types";
 import { pluralize } from "@/lib/utils";
@@ -64,12 +64,12 @@ export function CountryCard({ c, cityCount, dayCount, showTrip }: { c: CountryVM
       fallbackFlag={c.flag}
       status={<GeoStatusChip status={c.display} onPhoto />}
       footer={
-        <div className="flex items-center gap-4 text-muted">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-muted">
           <span className="flex items-center gap-1.5">
             <Building2 className="size-3.5" /> {pluralize(cityCount, "city", "cities")}
           </span>
           <span className="flex items-center gap-1.5">
-            <CalendarDays className="size-3.5" /> {pluralize(dayCount, "day")}
+            <CalendarDays className="size-3.5" /> {durationLabel(c.arrive_date, c.depart_date, dayCount)}
           </span>
           {showTrip && <span className="ml-auto truncate text-xs">{c.trip_title}</span>}
         </div>

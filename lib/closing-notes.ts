@@ -31,6 +31,27 @@ export function placesLeft<T extends { status: string; name: string }>(places: T
   return Array.from(new Set(places.filter((p) => p.status !== "visited").map((p) => p.name)));
 }
 
+export type NextVisitGroup = { name: string; places: string[] };
+
+/**
+ * The choices for "left for next time", by city. A name already written in the notes but no longer on offer
+ * (typed by hand, or since visited) stays in its own group, so saving can't drop it unnoticed.
+ */
+export function nextVisitGroups(places: { name: string; status: string; city_name?: string | null }[], chosen: string[]): NextVisitGroup[] {
+  const seen = new Set<string>();
+  const groups: NextVisitGroup[] = [];
+  for (const p of places) {
+    if (p.status === "visited" || seen.has(p.name)) continue;
+    seen.add(p.name);
+    const city = p.city_name?.trim() || "Other places";
+    const group = groups.find((g) => g.name === city);
+    if (group) group.places.push(p.name);
+    else groups.push({ name: city, places: [p.name] });
+  }
+  const added = Array.from(new Set(chosen.filter((name) => !seen.has(name))));
+  return added.length ? [...groups, { name: "Added by you", places: added }] : groups;
+}
+
 /** Places I stayed, to offer when asking which hotel I'd recommend. */
 export function hotelNames(bookings: { type: string; title: string; status: string }[], places: { category: string; name: string }[]) {
   const stays = new Set(["hotel", "hostel", "apartment"]);

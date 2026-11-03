@@ -121,6 +121,10 @@ export type RequirementType = (typeof REQUIREMENT_TYPES)[number];
 export const ENTRY_STATUSES = ["not_checked", "not_needed", "to_apply", "applied", "approved", "rejected"] as const;
 export type EntryStatus = (typeof ENTRY_STATUSES)[number];
 
+/** Which end of the stay a destination counts passport validity from. */
+export const VALIDITY_RULE_FROM = ["arrival", "departure"] as const;
+export type ValidityRuleFrom = (typeof VALIDITY_RULE_FROM)[number];
+
 export const SHARE_KINDS = ["memory", "trip", "recap"] as const;
 export type ShareKind = (typeof SHARE_KINDS)[number];
 

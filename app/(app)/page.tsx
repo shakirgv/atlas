@@ -96,13 +96,13 @@ export default async function DashboardPage() {
       onThisDay={onThisDay}
       recap={recapEntry(today, recapYears)}
       setup={{ missingHome: !scope.settings?.home_city, missingPassport: !scope.settings?.passport_country }}
-      closing={left ? { country: { id: left.id, name: left.name, flag: left.flag, arrive_date: left.arrive_date, depart_date: left.depart_date }, places: leftPlaces.map((p) => ({ name: p.name, status: p.status })), hotels: hotelNames(g.bookings.filter((b) => b.trip_country_id === left.id), leftPlaces) } : null}
+      closing={left ? { country: { id: left.id, name: left.name, flag: left.flag, arrive_date: left.arrive_date, depart_date: left.depart_date }, places: leftPlaces.map((p) => ({ name: p.name, status: p.status, city_name: p.city_name })), hotels: hotelNames(g.bookings.filter((b) => b.trip_country_id === left.id), leftPlaces) } : null}
       alerts={buildAlerts({
         documents: g.documents,
         trips: g.trips,
         countries: g.countries,
         expenses: g.expenses,
-        entries: entryOverview(g.countries, g.entries, { today, passportExpiry: latestPassportExpiry(g.documents) }),
+        entries: entryOverview(g.countries, g.entries, { today, passportExpiry: latestPassportExpiry(g.documents), passportCountry: scope.settings?.passport_country }),
         legs: route.legs,
       })}
     />

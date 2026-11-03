@@ -34,6 +34,7 @@ export function fmtRange(start: string | null | undefined, end: string | null | 
   if (!s && !e) return "No dates yet";
   if (s && !e) return `From ${format(s, DATE_FORMAT)}`;
   if (!s && e) return `Until ${format(e, DATE_FORMAT)}`;
+  if (format(s!, DATE_FORMAT) === format(e!, DATE_FORMAT)) return format(s!, DATE_FORMAT);
   if (s!.getFullYear() === e!.getFullYear()) {
     if (s!.getMonth() === e!.getMonth()) return `${format(s!, "dd")} – ${format(e!, DATE_FORMAT)}`;
     return `${format(s!, "dd MMM")} – ${format(e!, DATE_FORMAT)}`;
@@ -60,6 +61,39 @@ export function daysBetween(start: string | null | undefined, end: string | null
   const e = toDate(end);
   if (!s || !e) return 0;
   return Math.max(0, differenceInCalendarDays(e, s) + 1);
+}
+
+/** "9-day stay", counting both the day of arrival and the day of departure. Empty without both dates. */
+export function stayLabel(start: string | null | undefined, end: string | null | undefined) {
+  const n = daysBetween(start, end);
+  return n ? `${n}-day stay` : "";
+}
+
+/** Days planned in the itinerary, kept apart from the length of the stay: "9-day stay · 0 itinerary days". */
+export function durationLabel(start: string | null | undefined, end: string | null | undefined, itineraryDays: number) {
+  return [stayLabel(start, end), `${itineraryDays} itinerary ${itineraryDays === 1 ? "day" : "days"}`].filter(Boolean).join(" · ");
+}
+
+export const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] as const;
+
+/** Stands in for a date that is only part filled in. It fails the forms' date check, so it is refused rather than saved as no date. */
+export const INCOMPLETE_DATE = "incomplete";
+
+export type DateParts = { day: string; month: string; year: string };
+
+export function splitDate(value: string | null | undefined): DateParts {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value ?? "");
+  return m ? { year: m[1]!, month: m[2]!, day: m[3]! } : { day: "", month: "", year: "" };
+}
+
+/** Days to offer for a month. Before a month or a year is chosen, the most a date could still need. */
+export function daysInMonth(year: string, month: string) {
+  return new Date(/^\d{4}$/.test(year) ? Number(year) : 2000, month ? Number(month) : 1, 0).getDate();
+}
+
+export function joinDate({ day, month, year }: DateParts) {
+  if (!day && !month && !year) return "";
+  return day && month && /^\d{4}$/.test(year) && Number(year) >= 1900 ? `${year}-${month}-${day}` : INCOMPLETE_DATE;
 }
 
 export function daysUntil(value: string | null | undefined, from: Date = new Date()) {

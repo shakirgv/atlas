@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { entryOverview, entryStatus, entryWarnings, isEntryReady, latestPassportExpiry, parseChecklist, requirementType, starterChecklist, suggestedApplyBy } from "@/lib/entry";
+import { entryOverview, entryStatus, entryWarnings, isEntryReady, latestPassport, latestPassportExpiry, passportProblem, parseChecklist, requirementType, starterChecklist, suggestedApplyBy } from "@/lib/entry";
 import { buildAlerts, entryAlerts } from "@/lib/alerts";
 import { entryPatchSchema } from "@/lib/validation";
 
@@ -48,11 +48,56 @@ describe("entry warnings", () => {
     expect(ids(entryWarnings({ ...covered, valid_until: "2027-04-13" }, stay))).toEqual(["validity"]);
   });
 
-  it("flags a passport expiring under 6 months after departure", () => {
+  it("flags a passport that lapses before or during the stay", () => {
     const base = { status: "approved" };
-    expect(ids(entryWarnings(base, { ...stay, passportExpiry: "2027-10-13" }))).toEqual(["passport"]);
-    expect(entryWarnings(base, { ...stay, passportExpiry: "2027-10-14" })).toEqual([]);
+    expect(entryWarnings(base, { ...stay, passportExpiry: "2027-02-28" })[0]).toMatchObject({ id: "passport", level: "danger", label: "Passport: Expires before this trip" });
+    expect(entryWarnings(base, { ...stay, passportExpiry: "2027-03-01" })[0]).toMatchObject({ id: "passport", label: "Passport: Expires during this trip" });
+    expect(entryWarnings(base, { ...stay, passportExpiry: "2027-04-13" })[0]).toMatchObject({ id: "passport", label: "Passport: Expires during this trip" });
+    expect(entryWarnings(base, { ...stay, passportExpiry: "2027-04-14" })).toEqual([]);
     expect(entryWarnings(base, { ...stay, passportExpiry: null })).toEqual([]);
+  });
+
+  it("assumes no extra validity window without a recorded rule", () => {
+    expect(entryWarnings({ status: "approved" }, { ...stay, passportExpiry: "2027-04-15", passportCountry: "AZ" })).toEqual([]);
+  });
+
+  it("applies a recorded rule for this destination and passport", () => {
+    const rule = { status: "approved", validity_rule_months: 6, validity_rule_from: "departure", validity_rule_passport: "AZ" };
+    const at = (passportExpiry: string) => entryWarnings(rule, { ...stay, passportExpiry, passportCountry: "AZ" });
+    expect(at("2027-10-13")[0]).toMatchObject({ id: "passport", level: "danger", label: "Passport: Under the recorded 6-month validity rule" });
+    expect(at("2027-10-14")).toEqual([]);
+    const fromArrival = { ...rule, validity_rule_from: "arrival" };
+    expect(entryWarnings(fromArrival, { ...stay, passportExpiry: "2027-08-31", passportCountry: "AZ" })).toHaveLength(1);
+    expect(entryWarnings(fromArrival, { ...stay, passportExpiry: "2027-09-01", passportCountry: "AZ" })).toEqual([]);
+  });
+
+  it("doesn't apply a rule recorded for another passport", () => {
+    const rule = { status: "approved", validity_rule_months: 6, validity_rule_from: "departure", validity_rule_passport: "TR" };
+    expect(entryWarnings(rule, { ...stay, passportExpiry: "2027-05-01", passportCountry: "AZ" })).toEqual([]);
+    expect(entryWarnings(rule, { ...stay, passportExpiry: "2027-05-01" })).toEqual([]);
+    expect(entryWarnings(rule, { ...stay, passportExpiry: "2027-05-01", passportCountry: "tr " })).toHaveLength(1);
+  });
+
+  it("says nothing about a passport after the stay, or without an arrival date", () => {
+    expect(passportProblem(null, { arrive: "2026-01-01", depart: "2026-02-01", today, passportExpiry: "2025-01-01" })).toBeNull();
+    expect(passportProblem(null, { arrive: null, depart: "2027-02-01", today, passportExpiry: "2025-01-01" })).toBeNull();
+  });
+
+  it("uses the arrival date for a stay with no departure yet", () => {
+    expect(passportProblem(null, { arrive: "2027-03-01", depart: null, today, passportExpiry: "2027-02-28" })?.label).toBe("Expires before this trip");
+    expect(passportProblem(null, { arrive: "2027-03-01", depart: null, today, passportExpiry: "2027-03-01" })).toBeNull();
+  });
+
+  it("picks the passport expiring last", () => {
+    const docs = [{ id: "old", type: "passport", expiry_date: "2027-01-01" }, { id: "new", type: "passport", expiry_date: "2035-01-01" }, { id: "visa", type: "visa", expiry_date: "2040-01-01" }, { id: "blank", type: "passport", expiry_date: null }];
+    expect(latestPassport(docs)?.id).toBe("new");
+    expect(latestPassport([docs[2]!])).toBeNull();
+  });
+
+  it("ignores visa dates left over on visa-free entry", () => {
+    const leftover = { status: "not_needed", valid_until: "2027-03-02", last_verified_on: today };
+    expect(ids(entryWarnings({ ...leftover, requirement_type: "e_visa" }, stay))).toContain("validity");
+    expect(ids(entryWarnings({ ...leftover, requirement_type: "visa_free" }, stay))).not.toContain("validity");
   });
 
   it("stays quiet once the stay is over and lists danger first", () => {
@@ -109,7 +154,7 @@ describe("overview and dashboard", () => {
   });
 
   it("does not repeat the passport warning, which the dashboard already shows per trip", () => {
-    const rows = entryOverview([countries[0]!], entries, { today, passportExpiry: "2027-03-01" });
+    const rows = entryOverview([countries[0]!], entries, { today, passportExpiry: "2027-01-15" });
     expect(rows[0]!.warnings.map((w) => w.id)).toEqual(["passport"]);
     expect(entryAlerts(rows)).toEqual([]);
   });

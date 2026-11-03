@@ -1,9 +1,12 @@
 "use client";
 import * as React from "react";
-import type { CityOption, CountryOption, Settings, TripOption } from "@/lib/types";
+import type { CityOption, CountryOption, ExpenseCategory, ExpenseKind, Settings, TripOption } from "@/lib/types";
 import type { VaultState } from "@/lib/vault-mask";
 
 export type QuickAddKind = "trip" | "country" | "city" | "place" | "expense" | "memory" | "document" | "booking";
+
+/** How the expense form starts when opened for one purpose, such as an estimate for one city. */
+export type ExpensePreset = { kind?: ExpenseKind; category?: ExpenseCategory; cityId?: string | null };
 
 export type QuickAddRequest = {
   kind: QuickAddKind;
@@ -11,6 +14,7 @@ export type QuickAddRequest = {
   tripId?: string;
   tripCountryId?: string;
   cityId?: string;
+  preset?: ExpensePreset;
 };
 
 export type Workspace = {

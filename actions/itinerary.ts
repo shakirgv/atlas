@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import type { ServerSupabase } from "@/lib/supabase/server";
 import { daySchema, stopSchema, type StopInput } from "@/lib/validation";
 import { datesInRange, shiftIso } from "@/lib/dates";
+import { planMissingDays } from "@/lib/itinerary-days";
 import { fail, must, mustMaybe, ok, refreshAll } from "@/actions/_util";
 import type { ActionResult, City, ItineraryDay, PlaceCategory, StopType } from "@/lib/types";
 
@@ -27,8 +28,8 @@ async function renumber(supabase: ServerSupabase, days: { id: string; day_number
 }
 
 /**
- * Create one day per date between arrive and depart (or `blankCount` blank days without dates).
- * Never deletes days that have content (title, notes or stops).
+ * Create the days a stay is missing (or `blankCount` blank days without dates).
+ * Days that already exist keep their date, title, notes and stops, and none is ever deleted. See `planMissingDays`.
  */
 export async function generateDays(tripCountryId: string, blankCount?: number): Promise<ActionResult<{ created: number }>> {
   try {
@@ -58,55 +59,25 @@ export async function generateDays(tripCountryId: string, blankCount?: number): 
 
     const dates = datesInRange(tc.arrive_date, tc.depart_date);
     if (dates.length > 120) throw new Error("That date range is too long (max 120 days).");
-    const byDate = new Map(days.filter((d) => d.date).map((d) => [d.date!, d]));
-    const used = new Set<string>();
-    const final: { id: string; day_number: number; date: string | null }[] = [];
-    const toInsert: { date: string; day_number: number }[] = [];
-
-    dates.forEach((date, i) => {
-      const existing = byDate.get(date);
-      if (existing) {
-        used.add(existing.id);
-        final.push({ id: existing.id, day_number: i + 1, date });
-      } else {
-        // Reuse an undated empty day if there is one, otherwise create.
-        const spare = days.find((d) => !d.date && !used.has(d.id) && !hasContent(d));
-        if (spare) {
-          used.add(spare.id);
-          final.push({ id: spare.id, day_number: i + 1, date });
-        } else {
-          toInsert.push({ date, day_number: i + 1 });
-        }
-      }
-    });
-
-    // Days outside the new range: keep the ones with content (appended), delete empty ones.
-    let extra = dates.length;
-    const toDelete: string[] = [];
-    for (const d of days) {
-      if (used.has(d.id)) continue;
-      if (hasContent(d)) final.push({ id: d.id, day_number: ++extra, date: d.date });
-      else toDelete.push(d.id);
-    }
-    if (toDelete.length) must(await supabase.from("itinerary_days").delete().in("id", toDelete));
-    if (final.length) await renumber(supabase, final);
-    if (toInsert.length) {
+    const plan = planMissingDays(dates, days, hasContent);
+    if (plan.renumber.length) await renumber(supabase, plan.renumber);
+    if (plan.insert.length) {
       must(
         await supabase.from("itinerary_days").insert(
-          toInsert.map((r) => ({ trip_country_id: tcid, day_number: r.day_number, date: r.date, city_id: cityForDate(cities, r.date) })),
+          plan.insert.map((r) => ({ trip_country_id: tcid, day_number: r.day_number, date: r.date, city_id: cityForDate(cities, r.date) })),
         ),
       );
     }
-    // Fill missing cities on existing days by date.
-    for (const f of final) {
-      const d = days.find((x) => x.id === f.id);
-      if (d && !d.city_id) {
-        const cid = cityForDate(cities, f.date);
-        if (cid) await supabase.from("itinerary_days").update({ city_id: cid }).eq("id", f.id);
-      }
+    // A city added since the days were generated reaches the empty ones. A day with a plan keeps what it has.
+    const dated = new Map(plan.renumber.map((r) => [r.id, r.date]));
+    for (const d of days) {
+      const date = dated.get(d.id) ?? d.date;
+      if (d.city_id || !date || hasContent(d)) continue;
+      const cid = cityForDate(cities, date);
+      if (cid) must(await supabase.from("itinerary_days").update({ city_id: cid }).eq("id", d.id));
     }
     refreshAll();
-    return ok({ created: toInsert.length });
+    return ok({ created: plan.created });
   } catch (e) {
     return fail(e);
   }

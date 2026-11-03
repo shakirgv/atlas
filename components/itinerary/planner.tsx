@@ -16,7 +16,7 @@ import { setUrlParam, useOpenSections } from "@/hooks/use-open-sections";
 import { EmptyState } from "@/components/common/empty-state";
 import { PageHeader } from "@/components/common/page-header";
 import { PageTransition } from "@/components/common/motion";
-import { GenerateDaysButton } from "@/components/countries/country-detail";
+import { GenerateDaysButton } from "@/components/itinerary/generate-days-button";
 import { MapView } from "@/components/map/map";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/input";
@@ -200,7 +200,7 @@ export function ItineraryPlanner({
       <PageHeader
         eyebrow="Plan"
         title="Itinerary"
-        description={country ? `${country.flag} ${country.name} · ${fmtRange(country.arrive_date, country.depart_date)} · ${pluralize(visibleDays.length, "day")}` : undefined}
+        description={country ? `${country.flag} ${country.name} · ${fmtRange(country.arrive_date, country.depart_date)} · ${pluralize(visibleDays.length, "itinerary day")}` : undefined}
         actions={
           <>
             <NativeSelect value={country?.id ?? ""} onChange={(e) => router.push(`/itinerary?country=${e.target.value}`)} aria-label="Country" className="w-56">
@@ -229,7 +229,7 @@ export function ItineraryPlanner({
                 </Link>
               </Button>
             )}
-            {country && <GenerateDaysButton countryId={country.id} hasDates={Boolean(country.arrive_date && country.depart_date)} label={days.length ? "Regenerate days" : "Generate days"} variant={days.length ? "secondary" : "primary"} />}
+            {country && <GenerateDaysButton countryId={country.id} hasDates={Boolean(country.arrive_date && country.depart_date)} label="Generate days" variant={days.length ? "secondary" : "primary"} />}
           </>
         }
       />

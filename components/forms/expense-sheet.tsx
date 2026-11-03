@@ -16,7 +16,7 @@ import { useRates } from "@/hooks/use-rates";
 import { Button } from "@/components/ui/button";
 import { Field, Input, NativeSelect } from "@/components/ui/input";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
-import { useDefaultTripId, useWorkspace } from "@/components/shell/workspace";
+import { useDefaultTripId, useWorkspace, type ExpensePreset } from "@/components/shell/workspace";
 import { ChoiceChips, MoreDetails, SubmitButton } from "./form-bits";
 import { addReceipts, pickReceiptFiles } from "@/components/budget/receipts";
 import { Camera, Paperclip, X } from "lucide-react";
@@ -32,6 +32,7 @@ export function ExpenseSheet({
   tripCountryId,
   cashFrom,
   receiptCount = 0,
+  preset,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -41,6 +42,7 @@ export function ExpenseSheet({
   cashFrom?: { id: string; currency: string } | null;
   /** Receipts the expense being edited already has. */
   receiptCount?: number;
+  preset?: ExpensePreset;
 }) {
   const ws = useWorkspace();
   const defaultTrip = useDefaultTripId();
@@ -61,23 +63,31 @@ export function ExpenseSheet({
     return base;
   };
 
-  const form = useForm<In, unknown, Out>({
-    resolver: zodResolver(expenseSchema),
-    defaultValues: {
-      trip_id: expense?.trip_id ?? defaultTrip ?? "",
+  const estimating = !expense && preset?.kind === "planned";
+  const startValues = (): In => {
+    const country = ws.countries.find((c) => c.id === initialCountry);
+    return {
+      // A country belongs to one trip, which may not be the one in view when every trip is showing.
+      trip_id: expense?.trip_id ?? country?.trip_id ?? defaultTrip ?? "",
       trip_country_id: initialCountry,
-      city_id: expense?.city_id ?? "",
-      date: expense?.date ?? todayIso(),
+      city_id: expense?.city_id ?? preset?.cityId ?? "",
+      // An estimate has no day it was paid on, so it starts on the first day of the stay.
+      date: expense?.date ?? (estimating ? country?.arrive_date : null) ?? todayIso(),
       title: expense?.title ?? "",
-      category: (expense?.category as Out["category"]) ?? "food",
-      kind: (expense?.kind as Out["kind"]) ?? "actual",
+      category: (expense?.category as Out["category"]) ?? preset?.category ?? "food",
+      kind: (expense?.kind as Out["kind"]) ?? preset?.kind ?? "actual",
       amount: expense?.amount ?? "",
       currency: initialCurrency(),
       fx_rate: expense?.fx_rate ?? 1,
       notes: expense?.notes ?? "",
       payment_method: (expense?.payment_method as Out["payment_method"]) ?? (cashFrom ? "cash" : "card"),
       wallet_id: expense?.wallet_id ?? cashFrom?.id ?? "",
-    },
+    };
+  };
+
+  const form = useForm<In, unknown, Out>({
+    resolver: zodResolver(expenseSchema),
+    defaultValues: startValues(),
   });
   const { register, handleSubmit, control, watch, setValue, formState, reset } = form;
   const amount = Number(String(watch("amount") ?? "").replace(",", ".")) || 0;
@@ -119,21 +129,7 @@ export function ExpenseSheet({
   // Reset the form each time the sheet opens.
   useEffect(() => {
     if (!open) return;
-    reset({
-      trip_id: expense?.trip_id ?? defaultTrip ?? "",
-      trip_country_id: initialCountry,
-      city_id: expense?.city_id ?? "",
-      date: expense?.date ?? todayIso(),
-      title: expense?.title ?? "",
-      category: (expense?.category as Out["category"]) ?? "food",
-      kind: (expense?.kind as Out["kind"]) ?? "actual",
-      amount: expense?.amount ?? "",
-      currency: initialCurrency(),
-      fx_rate: expense?.fx_rate ?? 1,
-      notes: expense?.notes ?? "",
-      payment_method: (expense?.payment_method as Out["payment_method"]) ?? (cashFrom ? "cash" : "card"),
-      wallet_id: expense?.wallet_id ?? cashFrom?.id ?? "",
-    });
+    reset(startValues());
     setCount(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, expense?.id]);
@@ -204,7 +200,7 @@ export function ExpenseSheet({
     <ResponsiveDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={expense ? "Edit expense" : "Add expense"}
+      title={expense ? (expense.kind === "planned" ? "Edit estimate" : "Edit expense") : estimating ? "Add estimate" : "Add expense"}
       description={count ? `${count} saved this session · press Enter to add another` : "Press Enter to save and add another."}
       footer={
         <>
@@ -212,7 +208,7 @@ export function ExpenseSheet({
             {count ? "Done" : "Cancel"}
           </Button>
           <SubmitButton form="expense-form" pending={pending}>
-            {expense ? "Save changes" : "Save expense"}
+            {expense ? "Save changes" : estimating ? "Save estimate" : "Save expense"}
           </SubmitButton>
         </>
       }
@@ -289,7 +285,7 @@ export function ExpenseSheet({
                       field.value === k && "bg-surface text-ink shadow-sm ring-1 ring-border",
                     )}
                   >
-                    {k === "actual" ? "Spent" : "Planned"}
+                    {k === "actual" ? "Spent" : "Estimated"}
                   </button>
                 ))}
               </div>
@@ -327,7 +323,7 @@ export function ExpenseSheet({
                 </NativeSelect>
               )}
               {kind === "planned" ? (
-                <p className="text-xs text-muted">Planned, so it stays in your wallet until you mark it as spent.</p>
+                <p className="text-xs text-muted">An estimate, so it stays in your wallet until you mark it as spent.</p>
               ) : !wallet ? (
                 <p className="text-xs text-muted">A {currency} wallet will be created for this.</p>
               ) : afterSpend !== null && afterSpend < 0 ? (
@@ -376,7 +372,7 @@ export function ExpenseSheet({
               </span>
             )}
           </div>
-          <MoreDetails defaultOpen={Boolean(expense?.trip_country_id) || ws.trips.length > 1}>
+          <MoreDetails defaultOpen={Boolean(expense?.trip_country_id) || Boolean(preset) || ws.trips.length > 1}>
             {ws.trips.length > 1 && (
               <Field label="Trip" htmlFor="exp-trip" error={formState.errors.trip_id?.message}>
                 <NativeSelect id="exp-trip" {...register("trip_id")} onChange={(e) => { setValue("trip_id", e.target.value); setValue("trip_country_id", ""); setValue("city_id", ""); }}>

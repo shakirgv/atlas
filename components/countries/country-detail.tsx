@@ -1,9 +1,8 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowRight,
   BookOpenCheck,
   Building2,
   CalendarClock,
@@ -16,7 +15,6 @@ import {
   Languages,
   Landmark,
   LifeBuoy,
-  Loader2,
   MapPin,
   MoreHorizontal,
   NotebookPen,
@@ -24,18 +22,18 @@ import {
   Phone,
   Plus,
   ShieldCheck,
-  Sparkles,
   Trash2,
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { deleteTripCountry, saveCountryNotes } from "@/actions/countries";
-import { generateDays } from "@/actions/itinerary";
 import { getCountry } from "@/lib/countries";
-import { daysBetween, fmtDate, fmtRange, fmtTime } from "@/lib/dates";
+import { daysBetween, durationLabel, fmtRange, todayIso } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import type { CityVM, CountryVM, MemoryVM, PlaceVM } from "@/lib/data";
 import type { DocumentRow, Expense, ItineraryDay, ItineraryItem } from "@/lib/types";
+import { passportProblem } from "@/lib/entry";
+import type { PlaceLinks } from "@/lib/place-duplicates";
 import { DOCUMENT_TYPE_META } from "@/lib/icons";
 import { pluralize } from "@/lib/utils";
 import { CitySortGrid } from "@/components/countries/city-sort-grid";
@@ -47,17 +45,13 @@ import { PageTransition } from "@/components/common/motion";
 import { NotesEditor } from "@/components/common/notes-editor";
 import { SectionTitle } from "@/components/common/page-header";
 import { GeoStatusChip } from "@/components/common/status-chip";
-import { ExpenseRow } from "@/components/budget/expense-row";
 import { ExpiryChip } from "@/components/documents/expiry-chip";
 import { MemoryMini } from "@/components/memories/memory-mini";
-import { PlaceRow } from "@/components/places/place-row";
 import { MapView } from "@/components/map/map";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/misc";
-import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWorkspace } from "@/components/shell/workspace";
 import { CountryEditDialog } from "./country-edit-dialog";
@@ -70,6 +64,11 @@ import { CityVerdicts } from "@/components/climate/city-verdicts";
 import type { InfoOverride } from "@/lib/country-info";
 import { EssentialsTab } from "./essentials-tab";
 import { EntryTab, type EntryDocument } from "@/components/entry/entry-tab";
+import { EntryWarningChip } from "@/components/entry/entry-chips";
+import { listReturnHref } from "@/hooks/use-list-return";
+import { BudgetTab } from "./budget-tab";
+import { ItineraryTab } from "./itinerary-tab";
+import { PlacesTab } from "./places-tab";
 import type { CountryReview, EntryRequirement } from "@/lib/types";
 import { hasLeft } from "@/lib/closing-notes";
 import { DateShiftDialog } from "@/components/route/date-shift-dialog";
@@ -88,50 +87,6 @@ const TABS = [
   { value: "notes", label: "Notes", icon: NotebookPen },
 ];
 
-export function GenerateDaysButton({ countryId, hasDates, variant = "primary", label = "Generate days" }: { countryId: string; hasDates: boolean; variant?: "primary" | "secondary"; label?: string }) {
-  const [pending, start] = useTransition();
-  const [count, setCount] = useState("3");
-  const [open, setOpen] = useState(false);
-  const run = (blank?: number) =>
-    start(async () => {
-      const res = await generateDays(countryId, blank);
-      if (!res.ok) return void toast.error(res.error);
-      setOpen(false);
-      toast.success(res.data.created ? `Created ${pluralize(res.data.created, "day")}` : "Days are up to date");
-    });
-  if (hasDates) {
-    return (
-      <Button variant={variant} disabled={pending} onClick={() => run()}>
-        {pending ? <Loader2 className="animate-spin" /> : <Sparkles />} {label}
-      </Button>
-    );
-  }
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant={variant}>
-          <Sparkles /> {label}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-64">
-        <form
-          className="flex flex-col gap-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            run(Math.max(1, Math.min(60, Number(count) || 3)));
-          }}
-        >
-          <p className="text-sm">No dates yet. How many blank days?</p>
-          <Input type="number" min={1} max={60} value={count} onChange={(e) => setCount(e.target.value)} aria-label="Number of days" autoFocus />
-          <Button type="submit" size="sm" disabled={pending}>
-            {pending && <Loader2 className="animate-spin" />} Create days
-          </Button>
-        </form>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
 export function CountryDetail({
   legs,
   climateStops,
@@ -146,6 +101,8 @@ export function CountryDetail({
   expenses,
   memories,
   documents,
+  passportId,
+  placeLinks,
   baseCurrency,
   initialTab,
   openEdit,
@@ -164,6 +121,9 @@ export function CountryDetail({
   expenses: Expense[];
   memories: MemoryVM[];
   documents: DocumentRow[];
+  /** The passport that counts for this stay. Its row carries what its expiry means for these dates. */
+  passportId: string | null;
+  placeLinks: Record<string, PlaceLinks>;
   baseCurrency: string;
   initialTab: string;
   openEdit: boolean;
@@ -180,16 +140,33 @@ export function CountryDetail({
   const info = getCountry(country.code);
   const money = (n: number) => formatMoney(n, baseCurrency);
   const spent = expenses.filter((e) => e.kind === "actual").reduce((s, e) => s + Number(e.amount_base), 0);
-  const planned = expenses.filter((e) => e.kind === "planned").reduce((s, e) => s + Number(e.amount_base), 0);
   const cap = Number(country.budget ?? 0);
   const citiesWithDays = cities.filter((c) => days.some((d) => d.city_id === c.id)).length;
   const nights = daysBetween(country.arrive_date, country.depart_date);
   const markers = cities.filter((c) => c.lat != null && c.lng != null).map((c, i) => ({ id: c.id, lat: c.lat!, lng: c.lng!, label: c.name, number: i + 1 }));
 
   const legIn = legs.find((l) => l.fromTripCountryId !== country.id) ?? null;
+  const passportIssue = passportProblem(entry.requirement, { arrive: country.arrive_date, depart: country.depart_date, today: todayIso(), passportExpiry: entry.passportExpiry, passportCountry: entry.passportCountry });
+  const tabsRoot = useRef<HTMLDivElement>(null);
+  const tabsList = useRef<HTMLDivElement>(null);
+
+  // On a phone the tabs scroll sideways: keep the open one in view, including when the page opens on it.
+  useEffect(() => {
+    const list = tabsList.current;
+    const active = list?.querySelector<HTMLElement>('[data-state="active"]');
+    if (list && active) list.scrollTo({ left: active.offsetLeft - (list.clientWidth - active.offsetWidth) / 2 });
+  }, [tab]);
 
   const changeTab = (v: string) => {
     setTab(v);
+    // Past the top of the tabs, a shorter tab would otherwise drop the page somewhere unrelated. Start the new one at its top.
+    const root = tabsRoot.current;
+    const list = tabsList.current;
+    if (root && list) {
+      const stuckAt = parseFloat(getComputedStyle(list).top) || 0;
+      const top = root.getBoundingClientRect().top;
+      if (top < stuckAt) window.scrollBy({ top: top - stuckAt });
+    }
     const url = new URL(window.location.href);
     url.searchParams.set("tab", v);
     url.searchParams.delete("edit");
@@ -216,7 +193,31 @@ export function CountryDetail({
   ];
 
   return (
-    <PageTransition className="flex flex-col gap-6">
+    <PageTransition className="flex flex-col gap-4 sm:gap-6">
+      <nav aria-label="Breadcrumb" className="-mb-1 sm:-mb-2">
+        <ol className="flex min-w-0 items-center gap-1.5 text-sm">
+          <li className="shrink-0">
+            <Link
+              href="/countries"
+              onClick={(e) => {
+                const href = listReturnHref();
+                if (!href || e.metaKey || e.ctrlKey || e.shiftKey) return;
+                e.preventDefault();
+                router.push(href);
+              }}
+              className="inline-flex min-h-9 items-center font-medium text-muted hover:text-ink hover:underline"
+            >
+              Countries
+            </Link>
+          </li>
+          <li aria-hidden className="shrink-0 text-muted">
+            →
+          </li>
+          <li aria-current="page" className="min-w-0 truncate font-medium">
+            {country.name}
+          </li>
+        </ol>
+      </nav>
       <Hero
         coverUrl={country.cover_url}
         seed={country.code}
@@ -262,7 +263,7 @@ export function CountryDetail({
         </div>
         <h1 className="mt-3 text-[40px] font-semibold leading-none sm:text-[56px]">{country.name}</h1>
         <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-white/85">
-          <span>{fmtRange(country.arrive_date, country.depart_date)}{nights ? ` · ${nights} days` : ""}</span>
+          <span>{fmtRange(country.arrive_date, country.depart_date)} · {durationLabel(country.arrive_date, country.depart_date, days.length)}</span>
           {info?.capital[0] && <span>Capital {info.capital[0]}</span>}
           {info?.currencies[0] && <span>{info.currencies[0].code}</span>}
           {info?.languages.length ? <span>{info.languages.slice(0, 2).join(", ")}</span> : null}
@@ -274,8 +275,9 @@ export function CountryDetail({
         </div>
       </Hero>
 
-      <Tabs value={tab} onValueChange={changeTab}>
-        <TabsList aria-label="Country sections">
+      <Tabs ref={tabsRoot} value={tab} onValueChange={changeTab}>
+        {/* Just under the top bar, which is 56px tall and 64px from md up. */}
+        <TabsList ref={tabsList} aria-label="Country sections" className="sticky top-14 z-20 bg-bg md:top-16">
           {TABS.map((t) => (
             <TabsTrigger key={t.value} value={t.value}>
               <t.icon /> {t.label}
@@ -365,95 +367,15 @@ export function CountryDetail({
         </TabsContent>
 
         <TabsContent value="itinerary">
-          <SectionTitle
-            action={
-              <div className="flex gap-2">
-                <GenerateDaysButton countryId={country.id} hasDates={Boolean(country.arrive_date && country.depart_date)} variant="secondary" />
-                {days.length > 0 && (
-                  <Button size="md" asChild>
-                    <Link href={`/itinerary?country=${country.id}`}>
-                      Open planner <ArrowRight />
-                    </Link>
-                  </Button>
-                )}
-              </div>
-            }
-          >
-            {pluralize(days.length, "day")}
-          </SectionTitle>
-          {days.length ? (
-            <ol className="card divide-y divide-border">
-              {days.map((d) => {
-                const stops = items.filter((i) => i.day_id === d.id);
-                const city = cities.find((c) => c.id === d.city_id);
-                return (
-                  <li key={d.id}>
-                    <Link href={`/itinerary?country=${country.id}&day=${d.id}`} className="flex items-center gap-4 p-4 hover:bg-ink/[0.03]">
-                      <span className="flex w-12 shrink-0 flex-col items-center">
-                        <span className="text-[11px] uppercase tracking-wider text-muted">Day</span>
-                        <span className="num font-display text-2xl font-semibold leading-none">{d.day_number}</span>
-                      </span>
-                      <span className="flex min-w-0 flex-1 flex-col">
-                        <span className="truncate font-medium">{d.title ?? (city ? city.name : "Untitled day")}</span>
-                        <span className="truncate text-xs text-muted">
-                          {d.date ? fmtDate(d.date, "EEE, dd MMM") : "No date"} · {pluralize(stops.length, "stop")}
-                          {stops[0] ? ` · ${[fmtTime(stops[0].start_time), stops[0].title].filter(Boolean).join(" ")}` : ""}
-                        </span>
-                      </span>
-                      <ArrowRight className="size-4 text-muted" />
-                    </Link>
-                  </li>
-                );
-              })}
-            </ol>
-          ) : (
-            <EmptyState icon={CalendarDays} title="No days yet" description={country.arrive_date ? "Generate one day per date, then fill them with stops." : "Set the country dates first, or create blank days."} action={<GenerateDaysButton countryId={country.id} hasDates={Boolean(country.arrive_date && country.depart_date)} />} />
-          )}
+          <ItineraryTab country={country} cities={cities} days={days} items={items} places={places} />
         </TabsContent>
 
         <TabsContent value="places">
-          <SectionTitle action={cities.length ? <Button size="sm" onClick={() => ws.openQuickAdd({ kind: "place", cityId: cities[0]?.id })}><Plus /> Add place</Button> : null}>
-            {pluralize(places.length, "place")}
-          </SectionTitle>
-          {places.length ? (
-            <div className="card divide-y divide-border p-2">
-              {places.map((p) => (
-                <PlaceRow key={p.id} place={p} />
-              ))}
-            </div>
-          ) : (
-            <EmptyState icon={MapPin} title="No places yet" description={cities.length ? "Sights, food spots, cafés — save them here." : "Add a city first, then save places in it."} action={<Button onClick={() => ws.openQuickAdd(cities.length ? { kind: "place", cityId: cities[0]?.id } : { kind: "city", tripCountryId: country.id })}><Plus /> {cities.length ? "Add place" : "Add cities"}</Button>} />
-          )}
+          <PlacesTab countryId={country.id} cities={cities} places={places} links={placeLinks} />
         </TabsContent>
 
         <TabsContent value="budget">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="card p-4">
-              <p className="text-sm text-muted">Spent</p>
-              <p className="num font-display text-2xl font-semibold">{money(spent)}</p>
-            </div>
-            <div className="card p-4">
-              <p className="text-sm text-muted">Planned</p>
-              <p className="num font-display text-2xl font-semibold">{money(planned)}</p>
-            </div>
-            <div className="card p-4">
-              <p className="text-sm text-muted">Cap</p>
-              <p className="num font-display text-2xl font-semibold">{cap ? money(cap) : "—"}</p>
-              {cap > 0 && <Progress className="mt-2" value={(spent / cap) * 100} color={spent > cap ? "var(--danger)" : "var(--visited)"} />}
-            </div>
-          </div>
-          <div className="mt-6">
-            <SectionTitle action={<Button size="sm" onClick={() => ws.openQuickAdd({ kind: "expense", tripCountryId: country.id })}><Plus /> Add expense</Button>}>Expenses</SectionTitle>
-            {expenses.length ? (
-              <ul className="card divide-y divide-border px-4">
-                {expenses.map((e) => (
-                  <ExpenseRow key={e.id} e={e} base={baseCurrency} />
-                ))}
-              </ul>
-            ) : (
-              <EmptyState compact icon={Wallet} title="No expenses yet" description="Log what you plan to spend or already spent here." />
-            )}
-          </div>
+          <BudgetTab country={country} cities={cities} expenses={expenses} baseCurrency={baseCurrency} />
         </TabsContent>
 
         <TabsContent value="memories">
@@ -475,6 +397,7 @@ export function CountryDetail({
             <ul className="card divide-y divide-border">
               {documents.map((d) => {
                 const meta = DOCUMENT_TYPE_META[d.type as keyof typeof DOCUMENT_TYPE_META] ?? DOCUMENT_TYPE_META.other;
+                const issue = d.id === passportId ? passportIssue : null;
                 return (
                   <li key={d.id}>
                     <Link href={`/documents?open=${d.id}`} className="flex items-center gap-3 p-4 hover:bg-ink/[0.03]">
@@ -485,7 +408,10 @@ export function CountryDetail({
                         <span className="truncate font-medium">{d.title}</span>
                         <span className="text-xs text-muted">{meta.label}{d.reference_no ? ` · ${d.reference_no}` : ""}</span>
                       </span>
-                      <ExpiryChip expiry={d.expiry_date} />
+                      <span className="flex shrink-0 flex-col items-end gap-1">
+                        {issue && <EntryWarningChip warning={{ id: "passport", ...issue }} />}
+                        <ExpiryChip expiry={d.expiry_date} />
+                      </span>
                     </Link>
                   </li>
                 );

@@ -15,3 +15,9 @@ export function normalizeName(value: string) {
     .trim();
   return folded.replace(/^the /, "").replace(/\bsaint\b/g, "st").replace(/\bsainte\b/g, "ste");
 }
+
+/** Search by name, with or without accents. Both, because folding turns "Saint" into "St", which would hide Saint Lucia while "sain" is being typed. */
+export function matchesName(name: string, query: string) {
+  const plain = query.trim().toLowerCase();
+  return !plain || name.toLowerCase().includes(plain) || normalizeName(name).includes(normalizeName(query));
+}

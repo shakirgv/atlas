@@ -35,7 +35,7 @@ export function entryStatus(v: string | null | undefined): EntryStatus {
 export type ChecklistItem = { id: string; label: string; done: boolean };
 
 const STARTER: Record<string, string> = {
-  passport: "Passport valid for 6+ months",
+  passport: "Passport valid for this trip",
   photo: "Passport photo",
   accommodation: "Proof of accommodation",
   ticket: "Onward or return ticket",
@@ -74,19 +74,48 @@ export function suggestedApplyBy(type: RequirementType, arrive: string | null | 
 export type EntryWarning = { id: "stay" | "apply_by" | "not_checked" | "recheck" | "validity" | "passport" | "rejected"; level: "danger" | "warning" | "info"; label: string };
 
 /** The fields the warning rules read. A country without a saved row behaves like the defaults. */
-export type EntryFacts = Partial<Pick<EntryRequirement, "status" | "requirement_type" | "allowed_stay_days" | "apply_by" | "valid_from" | "valid_until" | "last_verified_on" | "checklist">>;
+export type EntryFacts = Partial<Pick<EntryRequirement, "status" | "requirement_type" | "allowed_stay_days" | "apply_by" | "valid_from" | "valid_until" | "last_verified_on" | "checklist" | "validity_rule_months" | "validity_rule_from" | "validity_rule_passport">>;
 
 const RANK = { danger: 0, warning: 1, info: 2 } as const;
 const days = (from: string, to: string) => differenceInCalendarDays(toDate(to)!, toDate(from)!);
 
 /** The passport that counts is the one expiring last; a renewed passport replaces the old one. */
-export function latestPassportExpiry(documents: { type: string; expiry_date: string | null }[]) {
-  const dates = documents.filter((d) => d.type === "passport" && d.expiry_date).map((d) => d.expiry_date!);
-  return dates.length ? dates.sort().at(-1)! : null;
+export function latestPassport<T extends { type: string; expiry_date: string | null }>(documents: T[]): T | null {
+  return documents.filter((d) => d.type === "passport" && d.expiry_date).sort((a, b) => a.expiry_date!.localeCompare(b.expiry_date!)).at(-1) ?? null;
 }
 
-export function entryWarnings(req: EntryFacts | null | undefined, ctx: { arrive: string | null; depart: string | null; today: string; passportExpiry?: string | null }): EntryWarning[] {
-  const { arrive, depart, today, passportExpiry } = ctx;
+export function latestPassportExpiry(documents: { type: string; expiry_date: string | null }[]) {
+  return latestPassport(documents)?.expiry_date ?? null;
+}
+
+/** A recorded validity rule binds only the passport it was checked for. Another passport may face different rules. */
+export function validityRuleApplies(req: EntryFacts | null | undefined, passportCountry: string | null | undefined) {
+  const recorded = req?.validity_rule_passport?.trim().toUpperCase();
+  return Boolean(req?.validity_rule_months && recorded && recorded === passportCountry?.trim().toUpperCase());
+}
+
+export type PassportProblem = { level: "danger"; label: string };
+
+/**
+ * What the passport's expiry date means for this stay. Dates alone settle whether it lapses before or during the stay.
+ * Any window beyond that is a rule of the destination, so it is only checked once one has been recorded for this passport.
+ */
+export function passportProblem(req: EntryFacts | null | undefined, ctx: { arrive: string | null; depart: string | null; today: string; passportExpiry?: string | null; passportCountry?: string | null }): PassportProblem | null {
+  const { arrive, depart, today, passportExpiry, passportCountry } = ctx;
+  const end = depart ?? arrive;
+  if (!passportExpiry || !arrive || !end || end < today) return null;
+  if (passportExpiry < arrive) return { level: "danger", label: "Expires before this trip" };
+  if (passportExpiry < end) return { level: "danger", label: "Expires during this trip" };
+  if (validityRuleApplies(req, passportCountry)) {
+    const months = req!.validity_rule_months!;
+    const from = req!.validity_rule_from === "arrival" ? arrive : end;
+    if (passportExpiry < isoDate(addMonths(toDate(from)!, months))) return { level: "danger", label: `Under the recorded ${months}-month validity rule` };
+  }
+  return null;
+}
+
+export function entryWarnings(req: EntryFacts | null | undefined, ctx: { arrive: string | null; depart: string | null; today: string; passportExpiry?: string | null; passportCountry?: string | null }): EntryWarning[] {
+  const { arrive, depart, today } = ctx;
   const end = depart ?? arrive;
   // A finished stay has nothing left to warn about.
   if (end && end < today) return [];
@@ -115,14 +144,13 @@ export function entryWarnings(req: EntryFacts | null | undefined, ctx: { arrive:
     out.push({ id: "recheck", level: "info", label: "Re-check requirements" });
   }
 
-  if (arrive && end && ((req?.valid_from && req.valid_from > arrive) || (req?.valid_until && req.valid_until < end))) {
+  // Visa-free entry has no visa window. Dates left from before the type changed are folded away, so they don't count.
+  if (requirementType(req?.requirement_type) !== "visa_free" && arrive && end && ((req?.valid_from && req.valid_from > arrive) || (req?.valid_until && req.valid_until < end))) {
     out.push({ id: "validity", level: "danger", label: "Visa does not cover your dates" });
   }
 
-  if (passportExpiry && end) {
-    const needed = isoDate(addMonths(toDate(end)!, 6));
-    if (passportExpiry < needed) out.push({ id: "passport", level: "danger", label: `Passport expires ${fmtDate(passportExpiry, "dd MMM yyyy")}, under 6 months after departure` });
-  }
+  const passport = passportProblem(req, ctx);
+  if (passport) out.push({ id: "passport", level: passport.level, label: `Passport: ${passport.label}` });
 
   return out.sort((a, b) => RANK[a.level] - RANK[b.level]);
 }
@@ -153,7 +181,7 @@ type CountryLite = { id: string; code: string; name: string; flag: string; trip_
 type RowFacts = EntryFacts & { trip_country_id: string };
 
 /** One row per trip country, most urgent first, then by arrival date. */
-export function entryOverview(countries: CountryLite[], entries: RowFacts[], ctx: { today: string; passportExpiry: string | null }): EntryRow[] {
+export function entryOverview(countries: CountryLite[], entries: RowFacts[], ctx: { today: string; passportExpiry: string | null; passportCountry?: string | null }): EntryRow[] {
   const rows = countries.map((c) => {
     const req = entries.find((e) => e.trip_country_id === c.id) ?? null;
     const warnings = entryWarnings(req, { arrive: c.arrive_date, depart: c.depart_date, ...ctx });

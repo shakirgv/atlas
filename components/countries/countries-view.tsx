@@ -1,14 +1,16 @@
 "use client";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import { DndContext, KeyboardSensor, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { CalendarClock, Flag, GripVertical, Images, ListOrdered, Plus, Search } from "lucide-react";
+import { CalendarClock, CalendarX2, Flag, GripVertical, Images, LayoutGrid, List, ListOrdered, ListX, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { reorderCountries } from "@/actions/countries";
 import type { CountryVM } from "@/lib/data";
 import type { DisplayStatus } from "@/lib/types";
+import { filterCountries, isMissingDates, isMissingItinerary, listFiltersToQuery, parseListFilters, routeNumbers, type ItineraryStats, type ListFilters, type ListSort } from "@/lib/country-list";
 import { GEO_STATUS_META } from "@/lib/status";
 import { cn } from "@/lib/utils";
 import { CountryCard } from "@/components/cards/cards";
@@ -17,7 +19,9 @@ import { PageHeader } from "@/components/common/page-header";
 import { PageTransition } from "@/components/common/motion";
 import { Button } from "@/components/ui/button";
 import { Input, NativeSelect } from "@/components/ui/input";
-import { FilterChip } from "@/components/ui/misc";
+import { FilterChip, Segmented } from "@/components/ui/misc";
+import { rememberListSpot, replaceListQuery, useRestoreListScroll } from "@/hooks/use-list-return";
+import { CountriesList } from "./countries-list";
 import { useWorkspace } from "@/components/shell/workspace";
 import { ManageCoversDialog } from "@/components/cover/manage-covers-dialog";
 import { DateShiftDialog } from "@/components/route/date-shift-dialog";
@@ -25,7 +29,6 @@ import { DateShiftDialog } from "@/components/route/date-shift-dialog";
 // Holds the country names in every spelling, so it loads when it is opened.
 const RoutePasteDialog = dynamic(() => import("./route-paste-dialog").then((m) => m.RoutePasteDialog), { ssr: false });
 
-type Sort = "route" | "date" | "name";
 const STATUSES: (DisplayStatus | "all")[] = ["all", "ongoing", "planned", "visited", "wishlist"];
 
 function SortableCard({ c, cityCount, dayCount, showTrip, draggable }: { c: CountryVM; cityCount: number; dayCount: number; showTrip: boolean; draggable: boolean }) {
@@ -51,22 +54,22 @@ function SortableCard({ c, cityCount, dayCount, showTrip, draggable }: { c: Coun
 export function CountriesView({
   countries,
   cityCounts,
-  dayCounts,
+  stats,
   trips,
   singleTrip,
 }: {
   countries: CountryVM[];
   cityCounts: Record<string, number>;
-  dayCounts: Record<string, number>;
+  stats: Record<string, ItineraryStats>;
   trips: { id: string; title: string }[];
   singleTrip: boolean;
 }) {
   const ws = useWorkspace();
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<DisplayStatus | "all">("all");
-  const [continent, setContinent] = useState("all");
-  const [tripFilter, setTripFilter] = useState("all");
-  const [sort, setSort] = useState<Sort>("route");
+  const params = useSearchParams();
+  const continents = useMemo(() => Array.from(new Set(countries.map((c) => c.region).filter(Boolean))).sort(), [countries]);
+  const [filters, setFilters] = useState<ListFilters>(() => parseListFilters(params, { continents, tripIds: trips.map((t) => t.id) }));
+  const { query, status, continent, trip: tripFilter, sort, view, missingDates, missingItinerary } = filters;
+  const set = (patch: Partial<ListFilters>) => setFilters((f) => ({ ...f, ...patch }));
   const [order, setOrder] = useState(countries);
   const [tool, setTool] = useState<"reorder" | "shift" | "covers" | null>(null);
   const [, start] = useTransition();
@@ -75,21 +78,23 @@ export function CountriesView({
     return () => clearTimeout(t);
   }, [countries]);
 
-  const continents = useMemo(() => Array.from(new Set(countries.map((c) => c.region).filter(Boolean))).sort(), [countries]);
-  const filtered = useMemo(() => {
-    let list = order.filter(
-      (c) =>
-        (status === "all" || c.display === status) &&
-        (continent === "all" || c.region === continent) &&
-        (tripFilter === "all" || c.trip_id === tripFilter) &&
-        (!query || c.name.toLowerCase().includes(query.toLowerCase())),
-    );
-    if (sort === "name") list = [...list].sort((a, b) => a.name.localeCompare(b.name));
-    if (sort === "date") list = [...list].sort((a, b) => (a.arrive_date ?? "9999").localeCompare(b.arrive_date ?? "9999"));
-    return list;
-  }, [order, status, continent, tripFilter, query, sort]);
+  const filtered = useMemo(() => filterCountries(order, filters, stats), [order, filters, stats]);
+  const numbers = useMemo(() => routeNumbers(order), [order]);
 
-  const draggable = singleTrip && sort === "route" && status === "all" && continent === "all" && !query;
+  // In the address, so coming back to the page finds it there. Held back while typing: browsers limit how often it can change.
+  const listQuery = listFiltersToQuery(filters);
+  useEffect(() => {
+    const t = setTimeout(() => replaceListQuery(listQuery), 250);
+    return () => clearTimeout(t);
+  }, [listQuery]);
+  useRestoreListScroll();
+  const onListClick = (e: React.MouseEvent) => {
+    if (!(e.target as HTMLElement).closest('a[href^="/countries/"]')) return;
+    replaceListQuery(listQuery);
+    rememberListSpot();
+  };
+
+  const draggable = view === "grid" && singleTrip && sort === "route" && status === "all" && continent === "all" && !query && !missingDates && !missingItinerary;
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 6 } }),
@@ -114,8 +119,10 @@ export function CountriesView({
   const counts = useMemo(() => {
     const m: Record<string, number> = { all: countries.length };
     countries.forEach((c) => (m[c.display] = (m[c.display] ?? 0) + 1));
+    m.missingDates = countries.filter(isMissingDates).length;
+    m.missingItinerary = countries.filter((c) => isMissingItinerary(stats[c.id])).length;
     return m;
-  }, [countries]);
+  }, [countries, stats]);
 
   return (
     <PageTransition>
@@ -164,17 +171,17 @@ export function CountriesView({
             <div className="flex flex-col gap-2 sm:flex-row">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-                <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search countries" className="pl-9" aria-label="Search countries" />
+                <Input value={query} onChange={(e) => set({ query: e.target.value })} placeholder="Search countries" className="pl-9" aria-label="Search countries" />
               </div>
               <div className="grid grid-cols-2 gap-2 sm:flex">
-                <NativeSelect value={continent} onChange={(e) => setContinent(e.target.value)} aria-label="Continent" className="sm:w-40">
+                <NativeSelect value={continent} onChange={(e) => set({ continent: e.target.value })} aria-label="Continent" className="sm:w-40">
                   <option value="all">All continents</option>
                   {continents.map((c) => (
                     <option key={c}>{c}</option>
                   ))}
                 </NativeSelect>
                 {!singleTrip && trips.length > 1 && (
-                  <NativeSelect value={tripFilter} onChange={(e) => setTripFilter(e.target.value)} aria-label="Trip" className="sm:w-44">
+                  <NativeSelect value={tripFilter} onChange={(e) => set({ trip: e.target.value })} aria-label="Trip" className="sm:w-44">
                     <option value="all">All trips</option>
                     {trips.map((t) => (
                       <option key={t.id} value={t.id}>
@@ -183,36 +190,58 @@ export function CountriesView({
                     ))}
                   </NativeSelect>
                 )}
-                <NativeSelect value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="Sort" className="sm:w-40">
+                <NativeSelect value={sort} onChange={(e) => set({ sort: e.target.value as ListSort })} aria-label="Sort" className="sm:w-40">
                   <option value="route">Route order</option>
                   <option value="date">Arrival date</option>
                   <option value="name">Name</option>
                 </NativeSelect>
+                <Segmented
+                  value={view}
+                  onChange={(v) => set({ view: v })}
+                  className="justify-self-start"
+                  options={[
+                    { value: "grid", label: "Covers", icon: <LayoutGrid /> },
+                    { value: "list", label: "List", icon: <List /> },
+                  ]}
+                />
               </div>
             </div>
             <div className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
               {STATUSES.map((s) => (
-                <FilterChip key={s} active={status === s} onClick={() => setStatus(s)}>
+                <FilterChip key={s} active={status === s} onClick={() => set({ status: s })}>
                   {s !== "all" && <span className="size-2 rounded-full" style={{ background: GEO_STATUS_META[s].color }} />}
                   {s === "all" ? "All" : GEO_STATUS_META[s].label}
                   <span className="num text-xs opacity-60">{counts[s] ?? 0}</span>
                 </FilterChip>
               ))}
+              <span aria-hidden className="my-1 w-px shrink-0 bg-border" />
+              <FilterChip active={missingDates} onClick={() => set({ missingDates: !missingDates })}>
+                <CalendarX2 /> Missing dates
+                <span className="num text-xs opacity-60">{counts.missingDates}</span>
+              </FilterChip>
+              <FilterChip active={missingItinerary} onClick={() => set({ missingItinerary: !missingItinerary })}>
+                <ListX /> Missing itinerary
+                <span className="num text-xs opacity-60">{counts.missingItinerary}</span>
+              </FilterChip>
             </div>
           </div>
-          {filtered.length ? (
+          <div onClickCapture={onListClick}>
+          {!filtered.length ? (
+            <EmptyState compact icon={Search} title="No matches" description="Try another filter or search term." />
+          ) : view === "list" ? (
+            <CountriesList countries={filtered} numbers={numbers} cityCounts={cityCounts} stats={stats} showTrip={!singleTrip} />
+          ) : (
             <DndContext id="route-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
               <SortableContext items={filtered.map((c) => c.id)} strategy={rectSortingStrategy}>
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {filtered.map((c) => (
-                    <SortableCard key={c.id} c={c} cityCount={cityCounts[c.id] ?? 0} dayCount={dayCounts[c.id] ?? 0} showTrip={!singleTrip} draggable={draggable} />
+                    <SortableCard key={c.id} c={c} cityCount={cityCounts[c.id] ?? 0} dayCount={stats[c.id]?.days ?? 0} showTrip={!singleTrip} draggable={draggable} />
                   ))}
                 </div>
               </SortableContext>
             </DndContext>
-          ) : (
-            <EmptyState compact icon={Search} title="No matches" description="Try another filter or search term." />
           )}
+          </div>
           {draggable && filtered.length > 1 && <p className="mt-4 text-center text-xs text-muted">Drag the handle on a card to change the route order.</p>}
         </>
       )}

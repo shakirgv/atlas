@@ -1,7 +1,7 @@
 import { differenceInCalendarDays } from "date-fns";
 import { toDate, todayIso } from "@/lib/dates";
 import type { CountryVM } from "@/lib/data";
-import { normalizeName } from "@/lib/normalize-name";
+import { matchesName } from "@/lib/normalize-name";
 import { EXPENSE_CATEGORIES, type Expense, type ExpenseCategory, type Trip } from "@/lib/types";
 
 export type BudgetSummary = {
@@ -33,10 +33,32 @@ export function cappedCountries(byCountry: CountryBudget[]) {
 
 /** Every country whose name matches, capped or not, so "no cap yet" is an answer too. */
 export function searchCountryBudgets(byCountry: CountryBudget[], query: string) {
-  // Both, because normalizeName turns "Saint" into "St", which would hide Saint Lucia while "sain" is being typed.
-  const plain = query.trim().toLowerCase();
-  const folded = normalizeName(query);
-  return byCountry.filter((c) => c.name.toLowerCase().includes(plain) || normalizeName(c.name).includes(folded));
+  return byCountry.filter((c) => matchesName(c.name, query));
+}
+
+export type EstimateCategory = { category: ExpenseCategory; total: number; items: Expense[] };
+export type EstimateGroup = { cityId: string | null; name: string; total: number; categories: EstimateCategory[] };
+
+/**
+ * A country's estimates by city, then category. Every city gets a group so it can take a first estimate.
+ * The last group holds costs that belong to no city, such as international flights, or to a city since removed.
+ */
+export function estimateGroups(expenses: Expense[], cities: { id: string; name: string }[]): EstimateGroup[] {
+  const planned = expenses.filter((e) => e.kind === "planned");
+  const known = new Set(cities.map((c) => c.id));
+  const group = (cityId: string | null, name: string, rows: Expense[]): EstimateGroup => ({
+    cityId,
+    name,
+    total: rows.reduce((s, e) => s + Number(e.amount_base), 0),
+    categories: EXPENSE_CATEGORIES.flatMap((category) => {
+      const items = rows.filter((e) => e.category === category);
+      return items.length ? [{ category, total: items.reduce((s, e) => s + Number(e.amount_base), 0), items }] : [];
+    }),
+  });
+  return [
+    ...cities.map((c) => group(c.id, c.name, planned.filter((e) => e.city_id === c.id))),
+    group(null, "Country-level costs", planned.filter((e) => !e.city_id || !known.has(e.city_id))),
+  ];
 }
 
 /** All money is already in the base currency (amount_base). */

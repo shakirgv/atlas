@@ -24,7 +24,7 @@ export default async function DocumentsPage({ searchParams }: PageProps<"/docume
       countries={g.countries.map((c) => ({ id: c.id, name: c.name, flag: c.flag }))}
       openId={typeof sp.open === "string" ? sp.open : null}
       initialTab={sp.tab === "entry" ? "entry" : "documents"}
-      entryRows={entryOverview(g.countries, g.entries, { today: todayIso(), passportExpiry: latestPassportExpiry(g.documents) })}
+      entryRows={entryOverview(g.countries, g.entries, { today: todayIso(), passportExpiry: latestPassportExpiry(g.documents), passportCountry: scope.settings?.passport_country })}
       showTrip={scope.isAll}
     />
   );

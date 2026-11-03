@@ -51,7 +51,7 @@ export function PlaceThumb({ place, className }: { place: Pick<PlaceVM, "id" | "
   );
 }
 
-export function PlaceRow({ place, href }: { place: PlaceVM; href?: string }) {
+export function PlaceRow({ place, href, flagged }: { place: PlaceVM; href?: string; flagged?: boolean }) {
   const meta = PLACE_CATEGORY_META[place.category as PlaceCategory] ?? PLACE_CATEGORY_META.other;
   return (
     <Link href={href ?? `/places?open=${place.id}`} className="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-ink/[0.04] dark:hover:bg-white/[0.04]">
@@ -67,6 +67,7 @@ export function PlaceRow({ place, href }: { place: PlaceVM; href?: string }) {
           ) : null}
         </span>
       </span>
+      {flagged && <span className="shrink-0 rounded-full bg-planned-soft px-2 py-0.5 text-[11px] font-medium text-ink">Possible duplicate</span>}
       <PlaceStatusChip status={place.status as PlaceStatus} size="sm" className="max-sm:hidden" />
       <MarkVisitedButton place={place} />
     </Link>

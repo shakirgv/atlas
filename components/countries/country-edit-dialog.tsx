@@ -9,6 +9,8 @@ import { tripCountrySchema, type z } from "@/lib/validation";
 import type { TripCountry } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
+import { DatePartsField } from "@/components/forms/date-parts-field";
+import { INCOMPLETE_DATE, stayLabel } from "@/lib/dates";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { ChoiceChips, SubmitButton } from "@/components/forms/form-bits";
 import { TransportField } from "@/components/route/transport-field";
@@ -36,7 +38,9 @@ export function CountryEditDialog({ open, onOpenChange, country, name, baseCurre
       transport_note: country.transport_note ?? "",
     },
   });
-  const { register, handleSubmit, control, formState } = form;
+  const { register, handleSubmit, control, formState, watch } = form;
+  const [arrive, depart] = [watch("arrive_date"), watch("depart_date")];
+  const stay = arrive !== INCOMPLETE_DATE && depart !== INCOMPLETE_DATE && (depart ?? "") >= (arrive ?? "") ? stayLabel(arrive, depart) : "";
   const onSubmit = handleSubmit((v) =>
     start(async () => {
       const res = await updateTripCountry(country.id, v);
@@ -64,12 +68,12 @@ export function CountryEditDialog({ open, onOpenChange, country, name, baseCurre
       }
     >
       <form id="country-form" onSubmit={onSubmit} className="flex flex-col gap-4 pb-2">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-3">
           <Field label="Arrive" htmlFor="c-arrive" error={formState.errors.arrive_date?.message}>
-            <Input id="c-arrive" type="date" autoFocus {...register("arrive_date")} />
+            <Controller control={control} name="arrive_date" render={({ field }) => <DatePartsField id="c-arrive" label="Arrive" autoFocus value={field.value} onChange={field.onChange} invalid={Boolean(formState.errors.arrive_date)} />} />
           </Field>
-          <Field label="Depart" htmlFor="c-depart" error={formState.errors.depart_date?.message}>
-            <Input id="c-depart" type="date" {...register("depart_date")} />
+          <Field label="Depart" htmlFor="c-depart" error={formState.errors.depart_date?.message} hint={stay || undefined}>
+            <Controller control={control} name="depart_date" render={({ field }) => <DatePartsField id="c-depart" label="Depart" value={field.value} onChange={field.onChange} invalid={Boolean(formState.errors.depart_date)} />} />
           </Field>
         </div>
         <Field label="Status">

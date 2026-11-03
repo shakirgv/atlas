@@ -15,13 +15,13 @@ import {
   STOP_TYPES,
   TRANSPORT_MODES,
   TRIP_STATUSES,
+  VALIDITY_RULE_FROM,
 } from "@/lib/types";
 
 const dateStr = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid date")
-  .or(z.literal(""))
   .nullish()
+  .refine((v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v), "Enter the full date")
   .transform((v) => (v ? v : null));
 
 const timeStr = z
@@ -336,6 +336,8 @@ export const entryPatchSchema = z
     last_verified_on: dateStr,
     checklist: z.array(z.object({ id: z.string().min(1).max(64), label: z.string().trim().min(1).max(200), done: z.boolean() })).max(50),
     document_id: optUuid,
+    validity_rule_months: optNumber.refine((v) => v === null || (Number.isInteger(v) && v >= 1 && v <= 24), "Use a whole number of months, up to 24"),
+    validity_rule_from: z.enum(VALIDITY_RULE_FROM).nullish(),
   })
   .partial()
   .strict();

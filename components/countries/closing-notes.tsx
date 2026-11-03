@@ -2,10 +2,11 @@
 import { useEffect, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BookOpenCheck, Check, CircleCheck, CircleDashed, CircleX, Pencil, Plus, X } from "lucide-react";
+import { BookOpenCheck, CircleCheck, CircleDashed, CircleX, Pencil, Plus, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { dismissCountryReview, saveCountryReview } from "@/actions/country-reviews";
-import { placesLeft, reviewHasContent } from "@/lib/closing-notes";
+import { nextVisitGroups, placesLeft, reviewHasContent } from "@/lib/closing-notes";
+import { matchesName } from "@/lib/normalize-name";
 import { daysBetween } from "@/lib/dates";
 import type { CountryReview, ReturnAgain } from "@/lib/types";
 import { pluralize } from "@/lib/utils";
@@ -14,6 +15,7 @@ import { SectionTitle } from "@/components/common/page-header";
 import { ChoiceChips, SubmitButton } from "@/components/forms/form-bits";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/misc";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 
 type In = z.input<typeof countryReviewSchema>;
@@ -21,6 +23,7 @@ type Out = z.output<typeof countryReviewSchema>;
 
 /** Only what the form needs to know about the country. */
 export type ClosingCountry = { id: string; name: string; flag: string; arrive_date: string | null; depart_date: string | null };
+export type ClosingPlace = { name: string; status: string; city_name?: string | null };
 
 const RETURN_OPTIONS = [
   { value: "yes" as const, label: "Yes", icon: CircleCheck, color: "var(--visited)" },
@@ -29,41 +32,31 @@ const RETURN_OPTIONS = [
 ];
 const RETURN_LABEL: Record<ReturnAgain, string> = { yes: "Yes, I'd come back", maybe: "Maybe", no: "Once was enough" };
 
-function NextVisit({ value, onChange, offered }: { value: string[]; onChange: (v: string[]) => void; offered: string[] }) {
-  const [draft, setDraft] = useState("");
+/** Long lists stay manageable: search narrows them, ticks show what's in, and a name nobody saved can be added from the same box. */
+function NextVisit({ value, onChange, places }: { value: string[]; onChange: (v: string[]) => void; places: ClosingPlace[] }) {
+  const [query, setQuery] = useState("");
+  const typed = query.trim();
+  const groups = nextVisitGroups(places, value);
+  const shown = groups.map((g) => ({ ...g, places: g.places.filter((name) => matchesName(name, typed)) })).filter((g) => g.places.length > 0);
+  const known = groups.some((g) => g.places.some((name) => name.toLowerCase() === typed.toLowerCase()));
+  const toggle = (name: string, on: boolean) => onChange(on ? [...value, name] : value.filter((v) => v !== name));
   const add = () => {
-    const name = draft.trim();
-    if (name && !value.some((v) => v.toLowerCase() === name.toLowerCase())) onChange([...value, name]);
-    setDraft("");
+    if (!typed) return;
+    const existing = groups.flatMap((g) => g.places).find((name) => name.toLowerCase() === typed.toLowerCase());
+    if (!existing) onChange([...value, typed]);
+    else if (!value.includes(existing)) onChange([...value, existing]);
+    setQuery("");
   };
-  const rows = Array.from(new Set([...offered, ...value]));
   return (
     <div className="flex flex-col gap-2">
-      {rows.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {rows.map((name) => {
-            const on = value.includes(name);
-            return (
-              <button
-                key={name}
-                type="button"
-                aria-pressed={on}
-                onClick={() => onChange(on ? value.filter((v) => v !== name) : [...value, name])}
-                className={`inline-flex h-8 max-w-full items-center gap-1 rounded-full border px-2.5 text-[13px] transition-colors max-md:h-10 ${on ? "border-ink bg-ink text-bg" : "border-border bg-surface text-ink/80 hover:border-ink/30"}`}
-              >
-                {on ? <Check className="size-3.5 shrink-0" /> : <Plus className="size-3.5 shrink-0" />}
-                <span className="truncate">{name}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-      <div className="flex gap-2">
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
         <Input
-          value={draft}
-          aria-label="Add a place for next time"
-          placeholder="Add a place"
-          onChange={(e) => setDraft(e.target.value)}
+          value={query}
+          aria-label="Search places, or add one for next time"
+          placeholder="Search or add a place"
+          className="pl-9"
+          onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -71,10 +64,38 @@ function NextVisit({ value, onChange, offered }: { value: string[]; onChange: (v
             }
           }}
         />
-        <Button variant="secondary" onClick={add} disabled={!draft.trim()}>
-          Add
-        </Button>
       </div>
+      {typed && !known && (
+        <Button variant="secondary" size="sm" className="self-start" onClick={add}>
+          <Plus /> <span className="max-w-56 truncate">Add {typed}</span>
+        </Button>
+      )}
+      {shown.length > 0 && (
+        <div className="max-h-56 overflow-y-auto rounded-xl border border-border" data-testid="next-visit-list">
+          {shown.map((g) => (
+            <div key={g.name} role="group" aria-label={g.name}>
+              <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-border bg-surface-2 px-3 py-1.5 text-xs font-medium text-muted">
+                <span className="truncate">{g.name}</span>
+                <span className="num shrink-0">
+                  {g.places.filter((name) => value.includes(name)).length} of {g.places.length}
+                </span>
+              </div>
+              <ul>
+                {g.places.map((name) => (
+                  <li key={name}>
+                    <label className="flex min-h-10 cursor-pointer items-center gap-2.5 px-3 py-1.5 text-sm hover:bg-ink/[0.03]">
+                      <Checkbox checked={value.includes(name)} onCheckedChange={(on) => toggle(name, on === true)} />
+                      <span className="min-w-0 break-words">{name}</span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+      {!shown.length && !typed && <p className="text-xs text-muted">Nothing saved here is left to see. Type a place above to add one.</p>}
+      {value.length > 0 && <p className="num text-xs text-muted">{pluralize(value.length, "place")} selected</p>}
     </div>
   );
 }
@@ -90,7 +111,7 @@ export function ClosingNotesDialog({
 }: {
   country: ClosingCountry;
   review: CountryReview | null;
-  places: { name: string; status: string }[];
+  places: ClosingPlace[];
   hotels: string[];
   onOpenChange: (open: boolean) => void;
   /** Asked unprompted: closing the form can also mean "stop asking". */
@@ -180,8 +201,8 @@ export function ClosingNotesDialog({
             <Controller control={control} name="return_again" render={({ field }) => <ChoiceChips name="Would you come back?" value={(field.value ?? "") as ReturnAgain} onChange={(v) => field.onChange(field.value === v ? "" : v)} options={RETURN_OPTIONS} />} />
           </Field>
         </div>
-        <Field label="Places left for next time" hint={offered.length ? "Places you saved here and didn't get to. Tap one to leave it out." : undefined}>
-          <Controller control={control} name="next_visit" render={({ field }) => <NextVisit value={field.value ?? []} onChange={field.onChange} offered={offered} />} />
+        <Field label="Places left for next time" hint={offered.length ? "Places you saved here and didn't get to. Untick any you won't need." : undefined}>
+          <Controller control={control} name="next_visit" render={({ field }) => <NextVisit value={field.value ?? []} onChange={field.onChange} places={places} />} />
         </Field>
       </form>
     </ResponsiveDialog>
@@ -244,7 +265,7 @@ export function ClosingNotesCard({ review, stayed, available, onEdit }: { review
 const askedKey = (id: string) => `atlas:closing-asked:${id}`;
 
 /** On the dashboard after leaving a country. The form opens by itself once per country on this device, then this stays until answered. */
-export function ClosingPrompt({ country, places, hotels }: { country: ClosingCountry; places: { name: string; status: string }[]; hotels: string[] }) {
+export function ClosingPrompt({ country, places, hotels }: { country: ClosingCountry; places: ClosingPlace[]; hotels: string[] }) {
   const [open, setOpen] = useState(false);
   const [, startDismiss] = useTransition();
   const [gone, setGone] = useState(false);

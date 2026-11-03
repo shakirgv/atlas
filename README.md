@@ -17,7 +17,7 @@ Built with **Next.js 16** (App Router, React 19, TypeScript strict), **Tailwind 
      NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
      ```
    - The `service_role` key is optional and only for share links; see [Share links](#share-links). Never prefix it with `NEXT_PUBLIC_`.
-2. **Run the files in `supabase/migrations/` in order in the Supabase SQL editor: `001`, `002`, `003`, `004`, `005`.**
+2. **Run the files in `supabase/migrations/` in order in the Supabase SQL editor: `001`, `002`, `003`, `004`, `005`, `006`.**
    - Dashboard → **SQL Editor** → **New query** → paste the *whole* file `supabase/migrations/001_init.sql` → **Run**.
    - Then a new query for each of the others, in order:
      - `002_extras.sql`: bookings, packing lists, packing templates.
@@ -157,7 +157,7 @@ app/api/export|import      data portability
 actions/                   server actions per module (each calls supabase.auth.getUser())
 components/                ui/, shell/, forms/, map/, charts/, photos/, and one folder per module
 lib/                       supabase clients, countries, dates, money, fx, status, data loaders, config (APP_NAME)
-supabase/migrations/       001_init.sql (Phase 1), 002_extras.sql (Phase 2), 003_improvements.sql and 004_extra_lock.sql (feature pack 2), 005_route_tools.sql (route tools)
+supabase/migrations/       001_init.sql (Phase 1), 002_extras.sql (Phase 2), 003_improvements.sql and 004_extra_lock.sql (feature pack 2), 005_route_tools.sql (route tools), 006_passport_validity_rule.sql (passport validity rule per destination)
 app/s/[token]              public share pages, photo and preview-image routes (no login)
 app/dev/preview            development-only fixture gallery
 tests/                     Vitest tests for pure logic (`npm test`)
