@@ -71,7 +71,7 @@ npm run dev
 
 Other scripts: `npm run build`, `npm run start`, `npm run lint`, `npm test`, `npx tsc --noEmit`.
 
-In development, `/dev/preview` shows every new feature's states on fixtures with no database (plus `/dev/preview/dashboard`, `/dev/preview/card`, `/dev/preview/share` and `/dev/preview/tools`). These routes answer 404 in production.
+In development, `/dev/preview` shows every new feature's states on fixtures with no database (plus `/dev/preview/dashboard`, `/dev/preview/card`, `/dev/preview/share`, `/dev/preview/tools` and `/dev/preview/lists`). These routes answer 404 in production.
 
 ### Optional: fully local Supabase (Docker)
 
@@ -109,9 +109,9 @@ CLI alternative: `npx vercel` (link the project), `npx vercel env add NEXT_PUBLI
 - **World map** — custom SVG (d3-geo `geoNaturalEarth1`, d3-zoom), status fills, hover tooltip, click to open or "Add to trip", numbered route, city dots when zoomed in, layer toggles, route panel (bottom sheet on mobile).
 - **Trips** — cover cards, trip page with progress, *Next steps* checklist, route timeline date bar + drag-to-reorder list, stats, budget and memories shortcuts.
 - **Countries** — bulk add (searchable list of ~250 countries with flags), filters (status, continent, trip), search, sort, drag reorder; country page with Overview, Cities, Itinerary, Places, Budget, Memories, Documents and Notes tabs.
-- **Cities** — search-as-you-type (Photon, Nominatim fallback) multi-select, auto pin + auto cover; city page with places list/map, days here, memories, notes.
+- **Cities** — countries listed as headers that open to show their cities; search-as-you-type (Photon, Nominatim fallback) multi-select, auto pin + auto cover; city page with places list/map, days here, memories, notes.
 - **Places** — card / table / map views, filters, mark visited, right-side detail drawer (bottom sheet on mobile) with photos, rating, status, map, itinerary links.
-- **Itinerary** — generate days from dates (never deletes days with content), quick add ("10:00 Senso-ji temple" parses time and type, auto-links a matching place), drag stops within and between days, duplicate / move / delete days, create place from a stop, day map with numbered markers and polyline.
+- **Itinerary** — days listed closed and opened on click, filter by country and city, generate days from dates (never deletes days with content), quick add ("10:00 Senso-ji temple" parses time and type, auto-links a matching place), drag stops within and between days, duplicate / move / delete days, create place from a stop, day map with numbered markers and polyline.
 - **Budget** — fast add sheet (Enter saves and stays open, live "≈ $12.40"), automatic FX rates with manual override, summary cards, donut / grouped bars / cumulative line charts, country caps, sortable/filterable table with inline edit, CSV export.
 - **Memories** — composer with markdown, mood, tags and drag-and-drop multi-photo upload; timeline (by month), masonry gallery with lightbox, map.
 - **Documents** — private uploads (PDF, JPG, PNG, HEIC, DOCX up to 25 MB), grouped by type, preview modal and download via 5-minute signed URLs, expiry chips, passport 6-month rule.

@@ -1,10 +1,12 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Images, LayoutGrid, Map as MapIcon, Plus, Search } from "lucide-react";
+import { Building2, ChevronDown, Images, LayoutGrid, Map as MapIcon, Plus, Search } from "lucide-react";
 import type { CityVM } from "@/lib/data";
 import type { DisplayStatus } from "@/lib/types";
 import { GEO_STATUS_META } from "@/lib/status";
+import { cn } from "@/lib/utils";
+import { useOpenSections } from "@/hooks/use-open-sections";
 import { CityCard } from "@/components/cards/cards";
 import { EmptyState } from "@/components/common/empty-state";
 import { PageHeader } from "@/components/common/page-header";
@@ -34,6 +36,9 @@ export function CitiesView({
   const [status, setStatus] = useState<DisplayStatus | "all">("all");
   const [view, setView] = useState<"grid" | "map">("grid");
   const [coversOpen, setCoversOpen] = useState(false);
+  const { open, toggle } = useOpenSections();
+  // Searching or picking one country already asks to see those cities, so their headers stay open.
+  const revealed = Boolean(query) || country !== "all";
   const filtered = useMemo(
     () =>
       cities.filter(
@@ -109,20 +114,29 @@ export function CitiesView({
               emptyLabel="None of these cities has coordinates yet"
             />
           ) : grouped.length ? (
-            <div className="flex flex-col gap-10">
-              {grouped.map((g) => (
-                <section key={g.id} aria-label={g.name}>
-                  <h2 className="mb-3 flex items-center gap-2 text-xl font-semibold">
-                    <span className="text-2xl">{g.flag}</span> {g.name}
-                    <span className="num text-sm font-normal text-muted">{g.cities.length}</span>
-                  </h2>
-                  <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    {g.cities.map((c) => (
-                      <CityCard key={c.id} c={c} placeCount={placeCounts[c.id] ?? 0} dayCount={dayCounts[c.id] ?? 0} />
-                    ))}
-                  </div>
-                </section>
-              ))}
+            <div className="flex flex-col gap-3">
+              {grouped.map((g) => {
+                const isOpen = revealed || open.has(g.id);
+                return (
+                  <section key={g.id} aria-label={g.name}>
+                    <h2>
+                      <button type="button" onClick={() => toggle(g.id)} disabled={revealed} aria-expanded={isOpen} className="card flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left text-xl font-semibold transition-colors enabled:hover:bg-ink/[0.03]">
+                        <span className="text-2xl">{g.flag}</span>
+                        <span className="min-w-0 flex-1 truncate">{g.name}</span>
+                        <span className="num text-sm font-normal text-muted">{g.cities.length}</span>
+                        {!revealed && <ChevronDown className={cn("size-5 shrink-0 text-muted transition-transform", isOpen && "rotate-180")} />}
+                      </button>
+                    </h2>
+                    {isOpen && (
+                      <div className="grid gap-5 pb-5 pt-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {g.cities.map((c) => (
+                          <CityCard key={c.id} c={c} placeCount={placeCounts[c.id] ?? 0} dayCount={dayCounts[c.id] ?? 0} />
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                );
+              })}
             </div>
           ) : (
             <EmptyState compact icon={Search} title="No matches" description="Try a different filter." />

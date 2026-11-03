@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, TouchSensor, closestCorners, useSensor, useSensors, type DragEndEvent, type DragOverEvent, type DragStartEvent } from "@dnd-kit/core";
+import { useRouter, useSearchParams } from "next/navigation";
+import { DndContext, DragOverlay, KeyboardSensor, MeasuringStrategy, PointerSensor, TouchSensor, closestCorners, useSensor, useSensors, type DragEndEvent, type DragOverEvent, type DragStartEvent } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { CalendarDays, Flag, GripVertical, MapPinned, Plus, Printer } from "lucide-react";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import type { Booking, ItineraryDay, ItineraryItem, PlaceCategory } from "@/lib/
 import { PLACE_CATEGORY_META } from "@/lib/icons";
 import { fmtDate, fmtRange, todayIso } from "@/lib/dates";
 import { pluralize } from "@/lib/utils";
+import { setUrlParam, useOpenSections } from "@/hooks/use-open-sections";
 import { EmptyState } from "@/components/common/empty-state";
 import { PageHeader } from "@/components/common/page-header";
 import { PageTransition } from "@/components/common/motion";
@@ -23,6 +24,9 @@ import { useWorkspace } from "@/components/shell/workspace";
 import { DayCard } from "./day-card";
 
 type CountryLite = { id: string; name: string; flag: string; trip_title: string; hasDays: boolean };
+
+// A stop leaving an open day moves every day below it, so drop targets are measured throughout the drag.
+const MEASURING = { droppable: { strategy: MeasuringStrategy.Always } };
 
 function group(days: ItineraryDay[], items: ItineraryItem[]) {
   const out: Record<string, ItineraryItem[]> = {};
@@ -60,8 +64,13 @@ export function ItineraryPlanner({
   const [byDay, setByDay] = useState(() => group(days, items));
   const [activeId, setActiveId] = useState<string | null>(null);
   const [originDay, setOriginDay] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const [cityFilter, setCityFilter] = useState(() => searchParams.get("city") ?? "all");
+  const activeCity = cities.some((c) => c.id === cityFilter) ? cityFilter : "all";
+  const visibleDays = activeCity === "all" ? days : days.filter((d) => d.city_id === activeCity);
+  const { open: openDays, toggle, show: showDay } = useOpenSections(initialDayId);
   const today = todayIso();
-  const defaultDay = initialDayId ?? days.find((d) => d.date === today)?.id ?? days.find((d) => d.date && d.date >= today)?.id ?? days[0]?.id ?? null;
+  const defaultDay = initialDayId ?? visibleDays.find((d) => d.date === today)?.id ?? visibleDays.find((d) => d.date && d.date >= today)?.id ?? visibleDays[0]?.id ?? null;
   const [selected, setSelected] = useState<string | null>(defaultDay);
   const [highlight, setHighlight] = useState<string | null>(null);
   const [, start] = useTransition();
@@ -111,6 +120,7 @@ export function ItineraryPlanner({
     setActiveId(null);
     const day = findDay(String(active.id));
     if (!day) return;
+    if (day !== originDay) showDay(day);
     let next = byDay;
     if (over && !String(over.id).startsWith("day:")) {
       const list = byDay[day]!;
@@ -155,9 +165,23 @@ export function ItineraryPlanner({
   const selectedCity = cities.find((c) => c.id === selectedDay?.city_id);
 
   const onMarkerClick = (id: string) => {
-    document.getElementById(`stop-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (selected) showDay(selected);
+    // A closed day hasn't drawn its stops yet.
+    setTimeout(() => document.getElementById(`stop-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
     setHighlight(id);
     setTimeout(() => setHighlight(null), 1800);
+  };
+
+  const toggleDay = (id: string) => {
+    if (!openDays.has(id)) setSelected(id);
+    toggle(id);
+  };
+
+  const changeCity = (id: string) => {
+    setCityFilter(id);
+    setUrlParam("city", id === "all" ? null : id);
+    const shown = id === "all" ? days : days.filter((d) => d.city_id === id);
+    if (!shown.some((d) => d.id === selected)) setSelected(shown[0]?.id ?? null);
   };
 
   if (!countries.length) {
@@ -176,7 +200,7 @@ export function ItineraryPlanner({
       <PageHeader
         eyebrow="Plan"
         title="Itinerary"
-        description={country ? `${country.flag} ${country.name} · ${fmtRange(country.arrive_date, country.depart_date)} · ${pluralize(days.length, "day")}` : undefined}
+        description={country ? `${country.flag} ${country.name} · ${fmtRange(country.arrive_date, country.depart_date)} · ${pluralize(visibleDays.length, "day")}` : undefined}
         actions={
           <>
             <NativeSelect value={country?.id ?? ""} onChange={(e) => router.push(`/itinerary?country=${e.target.value}`)} aria-label="Country" className="w-56">
@@ -188,6 +212,16 @@ export function ItineraryPlanner({
                 </option>
               ))}
             </NativeSelect>
+            {days.length > 0 && cities.length > 0 && (
+              <NativeSelect value={activeCity} onChange={(e) => changeCity(e.target.value)} aria-label="City" className="w-44">
+                <option value="all">All cities</option>
+                {cities.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            )}
             {country && days.length > 0 && (
               <Button variant="secondary" size="icon" asChild>
                 <Link href={`/itinerary/print?country=${country.id}`} aria-label="Printable itinerary">
@@ -217,28 +251,42 @@ export function ItineraryPlanner({
         />
       ) : (
         <div className="grid gap-6 lg:grid-cols-12">
-          <DndContext id="itinerary-dnd" sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
-            <ol className="relative flex flex-col gap-5 before:absolute before:bottom-6 before:left-5 before:top-6 before:w-0.5 before:rounded-full before:bg-border sm:before:left-[22px] min-w-0 lg:col-span-7">
-              {days.map((d) => (
-                <li key={d.id}>
-                  <DayCard
-                    day={d}
-                    items={byDay[d.id] ?? []}
-                    cities={cities}
-                    places={places}
-                    bookings={bookingsFor(d)}
-                    allDays={days}
-                    bigTimeShift={shiftDayIds.includes(d.id)}
-                    selected={selected === d.id}
-                    highlightedStop={highlight}
-                    onSelect={() => setSelected(d.id)}
-                    onLocalChange={(itemId, patch) =>
-                      setByDay((prev) => ({ ...prev, [d.id]: (prev[d.id] ?? []).map((i) => (i.id === itemId ? { ...i, ...patch } : i)) }))
-                    }
-                  />
-                </li>
-              ))}
-            </ol>
+          <DndContext id="itinerary-dnd" sensors={sensors} measuring={MEASURING} collisionDetection={closestCorners} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
+            {visibleDays.length ? (
+              <ol className="relative flex flex-col gap-3 self-start before:absolute before:bottom-6 before:left-5 before:top-6 before:w-0.5 before:rounded-full before:bg-border sm:before:left-[22px] min-w-0 lg:col-span-7">
+                {visibleDays.map((d) => (
+                  <li key={d.id}>
+                    <DayCard
+                      day={d}
+                      items={byDay[d.id] ?? []}
+                      cities={cities}
+                      places={places}
+                      bookings={bookingsFor(d)}
+                      allDays={days}
+                      bigTimeShift={shiftDayIds.includes(d.id)}
+                      selected={selected === d.id}
+                      open={openDays.has(d.id)}
+                      highlightedStop={highlight}
+                      onSelect={() => setSelected(d.id)}
+                      onToggle={() => toggleDay(d.id)}
+                      onLocalChange={(itemId, patch) =>
+                        setByDay((prev) => ({ ...prev, [d.id]: (prev[d.id] ?? []).map((i) => (i.id === itemId ? { ...i, ...patch } : i)) }))
+                      }
+                    />
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <div className="min-w-0 lg:col-span-7">
+                <EmptyState
+                  compact
+                  icon={CalendarDays}
+                  title={`No days in ${cities.find((c) => c.id === activeCity)?.name} yet`}
+                  description="Open a day and choose this city to see it here."
+                  action={<Button variant="secondary" onClick={() => changeCity("all")}>Show all days</Button>}
+                />
+              </div>
+            )}
             <DragOverlay>
               {activeItem ? (
                 <div className="flex items-center gap-2 rounded-xl bg-surface px-3 py-2.5 text-sm font-medium shadow-lift ring-1 ring-accent/40">
