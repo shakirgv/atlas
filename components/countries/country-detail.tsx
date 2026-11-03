@@ -36,7 +36,7 @@ import type { CityVM, CountryVM, MemoryVM, PlaceVM } from "@/lib/data";
 import type { DocumentRow, Expense, ItineraryDay, ItineraryItem } from "@/lib/types";
 import { DOCUMENT_TYPE_META } from "@/lib/icons";
 import { pluralize } from "@/lib/utils";
-import { CityCard } from "@/components/cards/cards";
+import { CitySortGrid } from "@/components/countries/city-sort-grid";
 import { CoverActions } from "@/components/cover/cover-actions";
 import { EmptyState } from "@/components/common/empty-state";
 import { Hero, HeroButton } from "@/components/common/hero";
@@ -341,11 +341,8 @@ export function CountryDetail({
             {pluralize(cities.length, "city", "cities")}
           </SectionTitle>
           {cities.length ? (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {cities.map((c) => (
-                <CityCard key={c.id} c={c} placeCount={places.filter((p) => p.city_id === c.id).length} dayCount={days.filter((d) => d.city_id === c.id).length} />
-              ))}
-            </div>
+            <CitySortGrid cities={cities} places={places} days={days} />
+
           ) : (
             <EmptyState icon={Building2} title="No cities yet" description="Search as you type — each city is pinned and gets a photo." action={<Button onClick={() => ws.openQuickAdd({ kind: "city", tripCountryId: country.id })}><Plus /> Add cities</Button>} />
           )}
