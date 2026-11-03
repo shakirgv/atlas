@@ -41,6 +41,7 @@ import { pluralize } from "@/lib/utils";
 import { CitySortGrid } from "@/components/countries/city-sort-grid";
 import { CoverActions } from "@/components/cover/cover-actions";
 import { EmptyState } from "@/components/common/empty-state";
+import { FlagChip } from "@/components/common/flag";
 import { Hero, HeroButton } from "@/components/common/hero";
 import { PageTransition } from "@/components/common/motion";
 import { NotesEditor } from "@/components/common/notes-editor";
@@ -255,7 +256,7 @@ export function CountryDetail({
         }
       >
         <div className="flex flex-wrap items-center gap-3">
-          <span className="grid size-12 place-items-center rounded-xl bg-white/90 text-3xl shadow-sm">{country.flag}</span>
+          <FlagChip code={country.code} size="lg" onPhoto />
           <GeoStatusChip status={country.display} onPhoto />
           <JetLagChip jetlag={legIn?.jetlag} onPhoto from={legIn?.fromName} />
         </div>

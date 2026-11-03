@@ -1,4 +1,5 @@
 import { Building2, CalendarDays, MapPin, Plane } from "lucide-react";
+import { FlagChip } from "@/components/common/flag";
 import { PhotoCard } from "@/components/common/photo-card";
 import { GeoStatusChip, TripStatusChip } from "@/components/common/status-chip";
 import { fmtRange } from "@/lib/dates";
@@ -77,7 +78,8 @@ export function CountryCard({ c, cityCount, dayCount, showTrip }: { c: CountryVM
   );
 }
 
-export function CityCard({ c, placeCount, dayCount }: { c: CityVM; placeCount: number; dayCount: number }) {
+/** `order` is the city's place in a sortable list: it shows beside the flag, and the status moves left to clear the drag handle the list lays over the card. */
+export function CityCard({ c, placeCount, dayCount, order }: { c: CityVM; placeCount: number; dayCount: number; order?: number }) {
   return (
     <PhotoCard
       href={`/cities/${c.id}`}
@@ -92,7 +94,15 @@ export function CityCard({ c, placeCount, dayCount }: { c: CityVM; placeCount: n
       seed={c.id}
       countryCode={c.country_code}
       fallbackIcon={Building2}
-      status={<GeoStatusChip status={c.display} onPhoto />}
+      topLeft={
+        order != null ? (
+          <span className="flex items-center gap-1.5">
+            <span className="num grid size-6 place-items-center rounded-full bg-ink text-[11px] font-semibold text-bg">{order}</span>
+            <FlagChip code={c.country_code} onPhoto />
+          </span>
+        ) : undefined
+      }
+      status={<GeoStatusChip status={c.display} onPhoto className={order != null ? "mr-10" : undefined} />}
       footer={
         <div className="flex items-center gap-4 text-muted">
           <span className="flex items-center gap-1.5">

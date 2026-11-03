@@ -42,7 +42,7 @@ export function PhotoCard({
     >
       <Cover src={coverUrl} alt={title} seed={seed} flag={fallbackFlag} icon={fallbackIcon} className="aspect-[4/3]">
         <div className="photo-gradient absolute inset-0" />
-        <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-2">
+        <div className="absolute inset-x-3 top-3 flex items-center justify-between gap-2">
           {topLeft ?? (countryCode ? <FlagChip code={countryCode} onPhoto /> : <span />)}
           {status}
         </div>

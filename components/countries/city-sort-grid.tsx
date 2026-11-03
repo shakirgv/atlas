@@ -14,14 +14,11 @@ function Item({ c, index, showNumber, placeCount, dayCount }: { c: CityVM; index
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: c.id });
   return (
     <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={cn("relative", isDragging && "z-10 opacity-90")}>
-      <CityCard c={c} placeCount={placeCount} dayCount={dayCount} />
-      {showNumber && (
-        <span className="num pointer-events-none absolute left-3 top-3 grid size-6 place-items-center rounded-full bg-ink text-[11px] font-semibold text-bg">{index + 1}</span>
-      )}
+      <CityCard c={c} placeCount={placeCount} dayCount={dayCount} order={showNumber ? index + 1 : undefined} />
       {showNumber && (
         <button
           type="button"
-          className="absolute right-3 top-3 grid size-9 cursor-grab touch-none place-items-center rounded-lg bg-surface/90 text-muted shadow-sm ring-1 ring-border hover:text-ink active:cursor-grabbing"
+          className="absolute right-3 top-3 grid size-8 cursor-grab touch-none place-items-center rounded-full bg-black/40 text-white opacity-80 backdrop-blur-md hover:opacity-100 active:cursor-grabbing"
           aria-label={`Reorder ${c.name}`}
           {...attributes}
           {...listeners}
