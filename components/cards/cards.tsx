@@ -30,9 +30,9 @@ export function TripCard({
       fallbackIcon={Plane}
       topLeft={
         flags.length ? (
-          <span className="inline-flex h-8 items-center gap-0.5 rounded-full bg-white/85 px-2 text-base shadow-sm backdrop-blur">
-            {flags.slice(0, 5).join("")}
-            {flags.length > 5 && <span className="ml-1 text-xs font-medium text-ink">+{flags.length - 5}</span>}
+          <span className="inline-flex h-8 items-center gap-0.5 rounded-full bg-black/45 px-2 text-base backdrop-blur-md">
+            <span className="drop-shadow-[0_0_1px_rgb(255_255_255/0.7)]">{flags.slice(0, 5).join("")}</span>
+            {flags.length > 5 && <span className="ml-1 text-xs font-medium text-white">+{flags.length - 5}</span>}
           </span>
         ) : undefined
       }

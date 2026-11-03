@@ -9,7 +9,7 @@ export function FlagChip({ code, className, size = "md", onPhoto }: { code: stri
       aria-label={`${countryName(code)} flag`}
       className={cn(
         "inline-grid shrink-0 place-items-center rounded-[8px]",
-        onPhoto ? "bg-white/85 shadow-sm backdrop-blur" : "bg-surface-2 ring-1 ring-border",
+        onPhoto ? "bg-black/45 backdrop-blur-md" : "bg-surface-2 ring-1 ring-border",
         size === "sm" && "size-6 text-sm rounded-md",
         size === "md" && "size-8 text-lg",
         size === "lg" && "size-12 text-xl rounded-xl",
@@ -18,7 +18,8 @@ export function FlagChip({ code, className, size = "md", onPhoto }: { code: stri
         className,
       )}
     >
-      {countryFlag(code)}
+      {/* The outline keeps a flag's black bands visible on the dark chip. */}
+      <span className={cn(onPhoto && "drop-shadow-[0_0_1px_rgb(255_255_255/0.7)]")}>{countryFlag(code)}</span>
     </span>
   );
 }
