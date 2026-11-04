@@ -11,6 +11,20 @@ export function setUrlParam(name: string, value: string | null) {
   window.history.replaceState(null, "", url);
 }
 
+/** A page's chosen view, in the address like its open sections. The first view is the default and leaves the address clean. */
+export function useViewParam<T extends string>(views: readonly T[]) {
+  const params = useSearchParams();
+  const [view, setView] = useState<T>(() => views.find((v) => v === params.get("view")) ?? views[0]!);
+  const change = useCallback(
+    (next: T) => {
+      setView(next);
+      setUrlParam("view", next === views[0] ? null : next);
+    },
+    [views],
+  );
+  return [view, change] as const;
+}
+
 /** Which sections of a list are open. A fresh visit starts closed; coming back from a detail page reopens what was open. */
 export function useOpenSections(alsoOpen?: string | null) {
   const params = useSearchParams();

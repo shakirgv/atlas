@@ -9,6 +9,7 @@ import type { City } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
+import { DatePartsField } from "@/components/forms/date-parts-field";
 import { ChoiceChips, MoreDetails, SubmitButton } from "@/components/forms/form-bits";
 import { GEO_STATUS_OPTIONS } from "@/components/countries/country-edit-dialog";
 import { TransportField } from "@/components/route/transport-field";
@@ -16,7 +17,7 @@ import { TransportField } from "@/components/route/transport-field";
 type In = z.input<typeof citySchema>;
 type Out = z.output<typeof citySchema>;
 
-export function CityEditDialog({ open, onOpenChange, city }: { open: boolean; onOpenChange: (o: boolean) => void; city: City }) {
+export function CityEditDialog({ open, onOpenChange, city, previousStop, isFirstStop }: { open: boolean; onOpenChange: (o: boolean) => void; city: City; previousStop: string | null; isFirstStop: boolean }) {
   const [pending, start] = useTransition();
   const form = useForm<In, unknown, Out>({
     resolver: zodResolver(citySchema),
@@ -51,12 +52,12 @@ export function CityEditDialog({ open, onOpenChange, city }: { open: boolean; on
         <Field label="Name" htmlFor="city-name" error={formState.errors.name?.message}>
           <Input id="city-name" {...register("name")} />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-3">
           <Field label="Arrive" htmlFor="city-arrive" error={formState.errors.arrive_date?.message}>
-            <Input id="city-arrive" type="date" {...register("arrive_date")} />
+            <Controller control={control} name="arrive_date" render={({ field }) => <DatePartsField id="city-arrive" label="Arrive" shortMonths value={field.value} onChange={field.onChange} invalid={Boolean(formState.errors.arrive_date)} />} />
           </Field>
           <Field label="Depart" htmlFor="city-depart" error={formState.errors.depart_date?.message}>
-            <Input id="city-depart" type="date" {...register("depart_date")} />
+            <Controller control={control} name="depart_date" render={({ field }) => <DatePartsField id="city-depart" label="Depart" shortMonths value={field.value} onChange={field.onChange} invalid={Boolean(formState.errors.depart_date)} />} />
           </Field>
         </div>
         <Field label="Status">
@@ -65,7 +66,7 @@ export function CityEditDialog({ open, onOpenChange, city }: { open: boolean; on
         <Controller
           control={control}
           name="transport_mode"
-          render={({ field }) => <TransportField value={field.value} onChange={(v) => field.onChange(v ?? "")} noteProps={register("transport_note")} />}
+          render={({ field }) => <TransportField value={field.value} onChange={(v) => field.onChange(v ?? "")} noteProps={register("transport_note")} previousStop={previousStop} isFirst={isFirstStop} />}
         />
         <MoreDetails label="Coordinates & time zone">
           <div className="grid grid-cols-2 gap-3">

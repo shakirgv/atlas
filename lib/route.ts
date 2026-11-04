@@ -123,6 +123,11 @@ export function buildLegs(stops: Stop[], home: HomeStop | null): Leg[] {
   return legs;
 }
 
+/** The stop before this one on the route. The first stop has none. */
+export function previousStop(stops: Stop[], id: string): Stop | null {
+  return stops[stops.findIndex((s) => s.id === id) - 1] ?? null;
+}
+
 /** Leg arriving at the given trip country (its first stop), if any. */
 export function legIntoCountry(legs: Leg[], tripCountryId: string) {
   return legs.find((l) => l.to.tripCountryId === tripCountryId && (l.from.kind === "home" || (l.from as Stop).tripCountryId !== tripCountryId)) ?? null;

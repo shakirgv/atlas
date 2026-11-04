@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getScope } from "@/lib/scope";
 import { coverAttribution, loadGraph } from "@/lib/data";
+import { placeLinks } from "@/lib/place-duplicates";
+import { buildStops, previousStop } from "@/lib/route";
 import { loadPhotoPins } from "@/lib/server/photo-pins";
 import { CityDetail } from "@/components/cities/city-detail";
 
@@ -19,6 +21,7 @@ export default async function CityPage({ params }: PageProps<"/cities/[id]">) {
   const days = g.days.filter((d) => d.city_id === id);
   const dayIds = new Set(days.map((d) => d.id));
   const country = g.countries.find((c) => c.id === city.trip_country_id);
+  const stops = buildStops(g.countries, g.cities);
   const [{ pins }, attribution] = await Promise.all([loadPhotoPins(supabase, g), coverAttribution(supabase, city.cover_path)]);
   return (
     <CityDetail
@@ -30,6 +33,10 @@ export default async function CityPage({ params }: PageProps<"/cities/[id]">) {
       days={days}
       items={g.items.filter((i) => dayIds.has(i.day_id))}
       memories={g.memories.filter((m) => m.city_id === id)}
+      // Across the whole trip: a stop on a day in another city still hangs off this city's place.
+      placeLinks={placeLinks(g.items, g.memories)}
+      previousStop={previousStop(stops, id)?.name ?? null}
+      isFirstStop={stops[0]?.id === id}
     />
   );
 }

@@ -1,12 +1,12 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, ChevronDown, Images, LayoutGrid, Map as MapIcon, Plus, Search } from "lucide-react";
+import { Building2, ChevronDown, Images, LayoutGrid, List, Map as MapIcon, Plus, Search } from "lucide-react";
 import type { CityVM } from "@/lib/data";
 import type { DisplayStatus } from "@/lib/types";
 import { GEO_STATUS_META } from "@/lib/status";
 import { cn } from "@/lib/utils";
-import { useOpenSections } from "@/hooks/use-open-sections";
+import { useOpenSections, useViewParam } from "@/hooks/use-open-sections";
 import { CityCard } from "@/components/cards/cards";
 import { EmptyState } from "@/components/common/empty-state";
 import { PageHeader } from "@/components/common/page-header";
@@ -17,6 +17,9 @@ import { Input, NativeSelect } from "@/components/ui/input";
 import { FilterChip, Segmented } from "@/components/ui/misc";
 import { useWorkspace } from "@/components/shell/workspace";
 import { ManageCoversDialog } from "@/components/cover/manage-covers-dialog";
+import { CitiesList } from "./cities-list";
+
+const VIEWS = ["grid", "list", "map"] as const;
 
 export function CitiesView({
   cities,
@@ -34,7 +37,7 @@ export function CitiesView({
   const [query, setQuery] = useState("");
   const [country, setCountry] = useState("all");
   const [status, setStatus] = useState<DisplayStatus | "all">("all");
-  const [view, setView] = useState<"grid" | "map">("grid");
+  const [view, setView] = useViewParam(VIEWS);
   const [coversOpen, setCoversOpen] = useState(false);
   const { open, toggle } = useOpenSections();
   // Searching or picking one country already asks to see those cities, so their headers stay open.
@@ -95,7 +98,7 @@ export function CitiesView({
                   </option>
                 ))}
               </NativeSelect>
-              <Segmented value={view} onChange={setView} options={[{ value: "grid", label: "Grid", icon: <LayoutGrid /> }, { value: "map", label: "Map", icon: <MapIcon /> }]} />
+              <Segmented value={view} onChange={setView} options={[{ value: "grid", label: "Grid", icon: <LayoutGrid /> }, { value: "list", label: "List", icon: <List /> }, { value: "map", label: "Map", icon: <MapIcon /> }]} />
             </div>
           </div>
           <div className="scrollbar-none -mx-4 mb-6 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
@@ -127,13 +130,18 @@ export function CitiesView({
                         {!revealed && <ChevronDown className={cn("size-5 shrink-0 text-muted transition-transform", isOpen && "rotate-180")} />}
                       </button>
                     </h2>
-                    {isOpen && (
-                      <div className="grid gap-5 pb-5 pt-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {g.cities.map((c) => (
-                          <CityCard key={c.id} c={c} placeCount={placeCounts[c.id] ?? 0} dayCount={dayCounts[c.id] ?? 0} />
-                        ))}
-                      </div>
-                    )}
+                    {isOpen &&
+                      (view === "list" ? (
+                        <div className="pb-2 pt-3">
+                          <CitiesList cities={g.cities} placeCounts={placeCounts} dayCounts={dayCounts} />
+                        </div>
+                      ) : (
+                        <div className="grid gap-5 pb-5 pt-4 sm:grid-cols-2 lg:grid-cols-3">
+                          {g.cities.map((c) => (
+                            <CityCard key={c.id} c={c} placeCount={placeCounts[c.id] ?? 0} dayCount={dayCounts[c.id] ?? 0} />
+                          ))}
+                        </div>
+                      ))}
                   </section>
                 );
               })}

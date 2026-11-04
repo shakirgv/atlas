@@ -1,8 +1,8 @@
 "use client";
 import "leaflet/dist/leaflet.css";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import L from "leaflet";
-import { MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import { MAP_TILE_ATTRIBUTION, MAP_TILE_URL } from "@/lib/config";
 
 export type MapMarker = {
@@ -18,6 +18,8 @@ export type MapMarker = {
   /** Optional photo thumbnail marker (memories map). */
   image?: string | null;
   active?: boolean;
+  /** Opens above the marker when it is clicked. */
+  popup?: ReactNode;
 };
 
 export type LeafletMapProps = {
@@ -94,10 +96,12 @@ export default function LeafletMap({ markers, polyline, onMarkerClick, onMapClic
         <Polyline positions={markers.map((m) => [m.lat, m.lng] as [number, number])} pathOptions={{ color: "#E8532F", weight: 3, opacity: 0.85, dashArray: "6 8" }} />
       )}
       {markers.map((m) => (
-        <Marker key={m.id} position={[m.lat, m.lng]} icon={iconFor(m)} eventHandlers={{ click: () => onMarkerClick?.(m.id) }} keyboard>
+        // A photo pin can share its spot with a place, so the smaller marker stays on top and both can be clicked.
+        <Marker key={m.id} position={[m.lat, m.lng]} icon={iconFor(m)} zIndexOffset={m.image ? 0 : 1000} eventHandlers={{ click: () => onMarkerClick?.(m.id), popupopen: (e) => e.target.closeTooltip() }} keyboard>
           <Tooltip direction="top" offset={[0, -14]}>
             {m.label}
           </Tooltip>
+          {m.popup && <Popup offset={[0, -8]}>{m.popup}</Popup>}
         </Marker>
       ))}
       <FitBounds markers={markers} fitKey={fitKey} />

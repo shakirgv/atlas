@@ -8,7 +8,7 @@ import { Input, NativeSelect } from "@/components/ui/input";
  * A date as day, month name and year. The browser's own date field shows whatever numeric order the device
  * is set to, where 04/01 can be read two ways. A part-filled date stays in the form as INCOMPLETE_DATE, so saving refuses it.
  */
-export function DatePartsField({ id, label, value, onChange, invalid, autoFocus }: { id: string; label: string; value: string | null | undefined; onChange: (value: string) => void; invalid?: boolean; autoFocus?: boolean }) {
+export function DatePartsField({ id, label, value, onChange, invalid, autoFocus, shortMonths }: { id: string; label: string; value: string | null | undefined; onChange: (value: string) => void; invalid?: boolean; autoFocus?: boolean; shortMonths?: boolean }) {
   const [draft, setDraft] = useState<DateParts>({ day: "", month: "", year: "" });
   const parts = value === INCOMPLETE_DATE ? draft : splitDate(value);
   const update = (patch: Partial<DateParts>) => {
@@ -33,7 +33,7 @@ export function DatePartsField({ id, label, value, onChange, invalid, autoFocus 
         <option value="">Month</option>
         {MONTH_NAMES.map((name, i) => (
           <option key={name} value={String(i + 1).padStart(2, "0")}>
-            {name}
+            {shortMonths ? name.slice(0, 3) : name}
           </option>
         ))}
       </NativeSelect>

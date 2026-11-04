@@ -9,15 +9,17 @@ export function TransportField({
   onChange,
   noteProps,
   isFirst,
+  previousStop,
 }: {
   value: string | null | undefined;
   onChange: (v: string | null) => void;
   noteProps: React.ComponentProps<"input">;
   isFirst?: boolean;
+  previousStop?: string | null;
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <Field label="How do I get here?" hint={isFirst ? "For the first stop this means from home." : "From the previous stop."}>
+      <Field label="How do I get here?" hint={isFirst ? "For the first stop this means from home." : previousStop ? `From ${previousStop}, the previous stop.` : "From the previous stop."}>
         <div role="radiogroup" aria-label="Transport mode" className="grid grid-cols-4 gap-1.5 sm:grid-cols-8">
           {TRANSPORT_OPTIONS.map((o) => {
             const active = value === o.value;

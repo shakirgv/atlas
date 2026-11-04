@@ -7,11 +7,11 @@ import { toast } from "sonner";
 import { deleteCity, saveCityNotes } from "@/actions/cities";
 import { daysBetween, fmtDate, fmtRange, fmtTime } from "@/lib/dates";
 import type { CityVM, MemoryVM, PlaceVM } from "@/lib/data";
-import type { ItineraryDay, ItineraryItem, PlaceCategory } from "@/lib/types";
-import { PLACE_CATEGORY_META } from "@/lib/icons";
-import { pluralize } from "@/lib/utils";
+import type { PlaceLinks } from "@/lib/place-duplicates";
+import type { ItineraryDay, ItineraryItem } from "@/lib/types";
+import { cn, pluralize } from "@/lib/utils";
+import { useViewParam } from "@/hooks/use-open-sections";
 import { CityClimateCard } from "@/components/climate/climate-card";
-import { PhotoLightbox } from "@/components/photos/photo-grid";
 import type { PhotoPin } from "@/lib/photo-pins";
 import { CoverActions } from "@/components/cover/cover-actions";
 import { EmptyState } from "@/components/common/empty-state";
@@ -21,14 +21,16 @@ import { NotesEditor } from "@/components/common/notes-editor";
 import { SectionTitle } from "@/components/common/page-header";
 import { GeoStatusChip } from "@/components/common/status-chip";
 import { MemoryMini } from "@/components/memories/memory-mini";
-import { PlaceRow } from "@/components/places/place-row";
-import { MapView } from "@/components/map/map";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Segmented } from "@/components/ui/misc";
 import { useWorkspace } from "@/components/shell/workspace";
 import { CityEditDialog } from "./city-edit-dialog";
+import { CityMap } from "./city-map";
+import { CityPlaces } from "./city-places";
+
+const VIEWS = ["list", "map"] as const;
 
 export function CityDetail({
   city,
@@ -39,6 +41,9 @@ export function CityDetail({
   days,
   items,
   memories,
+  placeLinks,
+  previousStop,
+  isFirstStop,
 }: {
   city: CityVM;
   pins: PhotoPin[];
@@ -48,22 +53,20 @@ export function CityDetail({
   days: ItineraryDay[];
   items: ItineraryItem[];
   memories: MemoryVM[];
+  placeLinks: Record<string, PlaceLinks>;
+  previousStop: string | null;
+  isFirstStop: boolean;
 }) {
   const ws = useWorkspace();
   const router = useRouter();
   const confirm = useConfirm();
-  const [view, setView] = useState<"list" | "map">("list");
+  const [view, setView] = useViewParam(VIEWS);
   const [editOpen, setEditOpen] = useState(false);
-  const [photoIndex, setPhotoIndex] = useState(-1);
   const [, start] = useTransition();
-  const pinPhotos = pins.map((p) => p.photo);
   const nights = daysBetween(city.arrive_date, city.depart_date);
-  const markers = places
-    .filter((p) => p.lat != null && p.lng != null)
-    .map((p) => {
-      const meta = PLACE_CATEGORY_META[p.category as PlaceCategory] ?? PLACE_CATEGORY_META.other;
-      return { id: p.id, lat: p.lat!, lng: p.lng!, label: p.name, color: meta.color, glyph: p.status === "visited" ? "✓" : "" };
-    });
+  const onMap = view === "map";
+  // A city with photos but no places still has a map to show.
+  const showMap = onMap && (places.length > 0 || pins.length > 0);
 
   const onDelete = async () => {
     if (!(await confirm({ title: `Delete ${city.name}?`, description: "Its places are deleted too. Days keep their stops but lose the city.", confirmLabel: "Delete city" }))) return;
@@ -74,6 +77,25 @@ export function CityDetail({
       router.push(`/countries/${city.trip_country_id}?tab=cities`);
     });
   };
+
+  const memoriesSection = (
+    <section aria-labelledby="mem-title">
+      <SectionTitle>
+        <span id="mem-title" className="flex items-center gap-2">
+          <Camera className="size-5 text-accent" /> Memories
+        </span>
+      </SectionTitle>
+      {memories.length ? (
+        <div className="grid gap-3">
+          {memories.slice(0, 4).map((m) => (
+            <MemoryMini key={m.id} m={m} />
+          ))}
+        </div>
+      ) : (
+        <EmptyState compact icon={Camera} title="No memories here yet" action={<Button size="sm" variant="secondary" onClick={() => ws.openQuickAdd("memory")}>Write one</Button>} />
+      )}
+    </section>
+  );
 
   return (
     <PageTransition className="flex flex-col gap-6">
@@ -115,10 +137,16 @@ export function CityDetail({
           {fmtRange(city.arrive_date, city.depart_date)}
           {nights ? ` · ${nights} days` : ""} · {pluralize(places.length, "place")}
         </p>
+        <div className="mt-4">
+          <Button size="sm" variant="secondary" onClick={() => setEditOpen(true)} className="border-white/20 bg-white/15 text-white backdrop-blur hover:bg-white/25">
+            <Pencil /> Edit details
+          </Button>
+        </div>
       </Hero>
 
       <div className="grid gap-6 lg:grid-cols-12">
-        <section className="min-w-0 lg:col-span-8" aria-labelledby="places-title">
+        {/* The side column can run much longer than the map, so the map follows along. Just under the 64px top bar. */}
+        <section className={cn("min-w-0 lg:col-span-8", onMap && "lg:sticky lg:top-20 lg:self-start")} aria-labelledby="places-title">
           <SectionTitle
             action={
               <div className="flex items-center gap-2">
@@ -131,31 +159,15 @@ export function CityDetail({
           >
             <span id="places-title">Places</span>
           </SectionTitle>
-          {!places.length ? (
+          {showMap ? (
+            <CityMap places={places} pins={pins} />
+          ) : !places.length ? (
             <EmptyState icon={MapPin} title={`Nothing saved in ${city.name} yet`} description="Search for sights, cafés and food spots — or drop a pin." action={<Button onClick={() => ws.openQuickAdd({ kind: "place", cityId: city.id })}><Plus /> Add a place</Button>} />
-          ) : view === "map" ? (
-            <MapView className="h-[460px] rounded-[16px] border border-border" markers={markers} onMarkerClick={(id) => router.push(`/places?open=${id}`)} emptyLabel="These places have no coordinates yet" />
           ) : (
-            <div className="card divide-y divide-border p-2">
-              {places.map((p) => (
-                <PlaceRow key={p.id} place={p} />
-              ))}
-            </div>
+            <CityPlaces places={places} links={placeLinks} />
           )}
         </section>
         <aside className="flex min-w-0 flex-col gap-6 lg:col-span-4">
-          {pins.length > 0 && (
-            <section className="card overflow-hidden" aria-label="Photo pins">
-              <MapView
-                className="h-52"
-                markers={pins.map((p) => ({ id: p.photo.id, lat: p.lat, lng: p.lng, label: p.label, image: p.photo.thumb_url }))}
-                onMarkerClick={(id) => setPhotoIndex(pinPhotos.findIndex((p) => p.id === id))}
-              />
-              <p className="flex items-center gap-1.5 px-4 py-2.5 text-xs text-muted">
-                <Camera className="size-3.5 text-accent" /> {pluralize(pins.length, "photo")} in {city.name}
-              </p>
-            </section>
-          )}
           {city.lat != null && city.lng != null && <CityClimateCard lat={city.lat} lng={city.lng} arrive={stay.arrive} depart={stay.depart} />}
           <section className="card p-5" aria-labelledby="days-title">
             <SectionTitle>
@@ -194,32 +206,20 @@ export function CityDetail({
               </p>
             )}
           </section>
-          <section aria-labelledby="mem-title">
-            <SectionTitle>
-              <span id="mem-title" className="flex items-center gap-2">
-                <Camera className="size-5 text-accent" /> Memories
-              </span>
-            </SectionTitle>
-            {memories.length ? (
-              <div className="grid gap-3">
-                {memories.slice(0, 4).map((m) => (
-                  <MemoryMini key={m.id} m={m} />
-                ))}
-              </div>
-            ) : (
-              <EmptyState compact icon={Camera} title="No memories here yet" action={<Button size="sm" variant="secondary" onClick={() => ws.openQuickAdd("memory")}>Write one</Button>} />
-            )}
-          </section>
+          {!onMap && memoriesSection}
         </aside>
       </div>
-      <section aria-labelledby="notes-title">
-        <SectionTitle>
-          <span id="notes-title">Notes</span>
-        </SectionTitle>
-        <NotesEditor initial={city.notes} onSave={(v) => saveCityNotes(city.id, v)} placeholder={`Neighbourhoods, transport tips, what to try in ${city.name}…`} />
-      </section>
-      {pinPhotos.length > 0 && <PhotoLightbox photos={pinPhotos} index={photoIndex} onClose={() => setPhotoIndex(-1)} />}
-      {editOpen && <CityEditDialog open onOpenChange={setEditOpen} city={city} />}
+      {/* Notes hold the same spot in both views, so switching view doesn't lose what is being typed. */}
+      <div className={cn("grid gap-6", onMap && "lg:grid-cols-12")}>
+        <section className={cn("min-w-0", onMap && "lg:col-span-8")} aria-labelledby="notes-title">
+          <SectionTitle>
+            <span id="notes-title">Notes</span>
+          </SectionTitle>
+          <NotesEditor initial={city.notes} onSave={(v) => saveCityNotes(city.id, v)} placeholder={`Neighbourhoods, transport tips, what to try in ${city.name}…`} />
+        </section>
+        {onMap && <div className="min-w-0 lg:col-span-4">{memoriesSection}</div>}
+      </div>
+      {editOpen && <CityEditDialog open onOpenChange={setEditOpen} city={city} previousStop={previousStop} isFirstStop={isFirstStop} />}
     </PageTransition>
   );
 }
