@@ -37,7 +37,7 @@ export function DialogContent({
 }
 
 export function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("flex flex-col gap-1 px-6 pb-2 pt-6 pr-12", className)} {...props} />;
+  return <div className={cn("flex shrink-0 flex-col gap-1 px-6 pb-2 pt-6 pr-12", className)} {...props} />;
 }
 
 export function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
@@ -47,7 +47,7 @@ export function DialogBody({ className, ...props }: React.ComponentProps<"div">)
 export function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("flex flex-col-reverse gap-2 border-t border-border bg-surface-2 px-6 py-4 sm:flex-row sm:justify-end", className)}
+      className={cn("flex shrink-0 flex-col-reverse gap-2 border-t border-border bg-surface-2 px-6 py-4 sm:flex-row sm:justify-end", className)}
       {...props}
     />
   );

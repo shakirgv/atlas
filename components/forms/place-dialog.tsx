@@ -1,12 +1,14 @@
 "use client";
-import { useMemo, useState, useTransition } from "react";
+import { useDeferredValue, useEffect, useMemo, useState, useTransition } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, MapPin, Search, Star } from "lucide-react";
+import { CopyCheck, Loader2, MapPin, NotebookPen, Search, Star } from "lucide-react";
 import { toast } from "sonner";
-import { createPlace, updatePlace } from "@/actions/places";
+import { createPlace, loadCityPlaces, updatePlace } from "@/actions/places";
 import { placeSchema, type z } from "@/lib/validation";
-import { PLACE_CATEGORIES, PLACE_STATUSES, type Place } from "@/lib/types";
+import { similarPlaces } from "@/lib/place-duplicates";
+import { PLACE_CATEGORIES, PLACE_STATUSES, type Place, type PlaceStatus } from "@/lib/types";
 import { PLACE_CATEGORY_META } from "@/lib/icons";
 import { PLACE_STATUS_META } from "@/lib/status";
 import { CURRENCIES } from "@/lib/money";
@@ -19,10 +21,29 @@ import { Field, Input, NativeSelect, Textarea } from "@/components/ui/input";
 import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 import { MapView } from "@/components/map/map";
 import { useWorkspace } from "@/components/shell/workspace";
-import { ChoiceChips, MoreDetails, SubmitButton } from "./form-bits";
+import { ChoiceChips, FormSection, SubmitButton } from "./form-bits";
 
 type In = z.input<typeof placeSchema>;
 type Out = z.output<typeof placeSchema>;
+type Saved = { id: string; name: string; city_id: string; lat: number | null; lng: number | null; status: string; address: string | null };
+
+const filled = (v: unknown) => v !== null && v !== undefined && String(v).trim() !== "";
+
+/** Places already saved in a city, loaded once per city while adding, so a similar name can point at the one that exists. */
+function useCityPlaces(cityId: string, enabled: boolean) {
+  const [byCity, setByCity] = useState<Record<string, Saved[]>>({});
+  useEffect(() => {
+    if (!enabled || !cityId || byCity[cityId]) return;
+    let alive = true;
+    void loadCityPlaces(cityId).then((res) => {
+      if (alive && res.ok) setByCity((m) => ({ ...m, [cityId]: res.data }));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [cityId, enabled, byCity]);
+  return byCity[cityId] ?? [];
+}
 
 export function PlaceDialog({
   open,
@@ -38,6 +59,8 @@ export function PlaceDialog({
   onSaved?: (id: string) => void;
 }) {
   const ws = useWorkspace();
+  const router = useRouter();
+  const pathname = usePathname();
   const [pending, start] = useTransition();
   const [query, setQuery] = useState("");
   const autoCover = useAutoCover();
@@ -65,15 +88,36 @@ export function PlaceDialog({
   const selectedCityId = watch("city_id");
   const lat = watch("lat");
   const lng = watch("lng");
+  const name = watch("name");
+  const address = watch("address");
+  const hours = watch("opening_hours");
+  const cost = watch("cost_estimate");
+  const url = watch("url");
+  const notes = watch("notes");
+  const rating = watch("rating");
   const city = ws.cities.find((c) => c.id === selectedCityId);
   const near = city?.lat != null && city?.lng != null ? { lat: city.lat, lng: city.lng } : null;
   const { results, loading } = useGeocode(query, { near, country: city?.country_code ?? null, enabled: open && !place });
+  const pinned = typeof lat === "number" && typeof lng === "number";
+
+  // Adding only: a similar name already saved in this city is offered instead of a second copy.
+  const saved = useCityPlaces(selectedCityId, open && !place);
+  const typed = useDeferredValue(name ?? "");
+  const similar = useMemo(
+    () => (place ? [] : similarPlaces({ name: typed, city_id: selectedCityId, lat: pinned ? lat : null, lng: pinned ? lng : null }, saved).slice(0, 3)),
+    [place, typed, selectedCityId, saved, pinned, lat, lng],
+  );
+
+  const openExisting = (id: string) => {
+    onOpenChange(false);
+    // On the Places page its filters stay as they are; anywhere else the place opens on a plain Places page.
+    const params = new URLSearchParams(pathname === "/places" ? window.location.search : "");
+    params.set("open", id);
+    router.push(`/places?${params}`, { scroll: false });
+  };
 
   const markers = useMemo(
-    () =>
-      typeof lat === "number" && typeof lng === "number"
-        ? [{ id: "pin", lat, lng, label: watch("name") || "New place", color: "var(--accent)", glyph: "●" }]
-        : [],
+    () => (pinned ? [{ id: "pin", lat: lat as number, lng: lng as number, label: name || "New place", color: "var(--accent)", glyph: "●" }] : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [lat, lng],
   );
@@ -92,6 +136,12 @@ export function PlaceDialog({
     }),
   );
 
+  const locationSummary = [filled(address) ? String(address) : "No address", pinned ? "Pinned" : "No pin"].join(" · ");
+  const visitSummary =
+    [rating ? `★ ${rating}` : null, filled(hours) ? "Hours" : null, filled(cost) ? "Cost" : null, filled(url) ? "Link" : null, filled(notes) ? "Notes" : null].filter(Boolean).join(" · ") ||
+    "Rating, opening hours, cost, link and notes";
+  const errors = formState.errors;
+
   return (
     <ResponsiveDialog
       open={open}
@@ -105,7 +155,7 @@ export function PlaceDialog({
             Cancel
           </Button>
           <SubmitButton form="place-form" pending={pending} disabled={!ws.cities.length}>
-            {place ? "Save changes" : "Add place"}
+            {place ? "Save changes" : similar.length ? "Add anyway" : "Add place"}
           </SubmitButton>
         </>
       }
@@ -113,7 +163,7 @@ export function PlaceDialog({
       {!ws.cities.length ? (
         <p className="rounded-xl bg-surface-2 p-4 text-sm text-muted">Places belong to a city. Add a city first, then come back.</p>
       ) : (
-        <form id="place-form" onSubmit={onSubmit} className="flex flex-col gap-4 pb-2">
+        <form id="place-form" onSubmit={onSubmit} className="flex flex-col gap-4 pb-2" data-testid="place-form">
           {!place && (
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
@@ -146,10 +196,35 @@ export function PlaceDialog({
               )}
             </div>
           )}
-          <Field label="Name" htmlFor="place-name" error={formState.errors.name?.message}>
+          <Field label="Name" htmlFor="place-name" error={errors.name?.message}>
             <Input id="place-name" placeholder="Senso-ji temple" {...register("name")} />
           </Field>
-          <Field label="City" htmlFor="place-city" error={formState.errors.city_id?.message}>
+          {similar.length > 0 && (
+            <div className="flex flex-col gap-2 rounded-xl border border-planned/40 bg-planned-soft p-3" role="status" data-testid="similar-places">
+              <p className="flex items-center gap-2 text-sm font-medium">
+                <CopyCheck className="size-4 shrink-0 text-ink" /> Possible duplicate in {city?.name ?? "this city"}
+              </p>
+              <ul className="flex flex-col gap-1.5">
+                {similar.map((p) => (
+                  <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-surface/70 px-2.5 py-2">
+                    <span className="min-w-0 text-sm">
+                      <span className="font-medium">{p.name}</span>
+                      <span className="text-muted">
+                        {" · "}
+                        {PLACE_STATUS_META[p.status as PlaceStatus]?.label ?? p.status}
+                        {p.address ? ` · ${p.address}` : ""}
+                      </span>
+                    </span>
+                    <Button type="button" size="sm" variant="secondary" onClick={() => openExisting(p.id)}>
+                      Use existing place
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-muted">Or keep going to save it as a separate place.</p>
+            </div>
+          )}
+          <Field label="City" htmlFor="place-city" error={errors.city_id?.message}>
             <NativeSelect id="place-city" {...register("city_id")}>
               {ws.cities.map((c) => {
                 const country = ws.countries.find((x) => x.id === c.trip_country_id);
@@ -175,22 +250,55 @@ export function PlaceDialog({
               )}
             />
           </Field>
-          {(typeof lat === "number" || place) && (
-            <p className="flex items-center gap-1.5 text-xs text-muted">
-              <MapPin className="size-3.5 text-accent" />
-              {typeof lat === "number" && typeof lng === "number" ? `Pinned at ${lat.toFixed(4)}, ${lng.toFixed(4)}` : "No pin yet — drop one under More details."}
-            </p>
-          )}
-          <MoreDetails defaultOpen={Boolean(place)}>
-            <Field label="Status">
-              <Controller
-                control={control}
-                name="status"
-                render={({ field }) => (
-                  <ChoiceChips name="Status" value={field.value} onChange={field.onChange} options={PLACE_STATUSES.map((s) => ({ value: s, label: PLACE_STATUS_META[s].label }))} />
-                )}
-              />
+          <Field label="Status">
+            <Controller
+              control={control}
+              name="status"
+              render={({ field }) => <ChoiceChips name="Status" value={field.value} onChange={field.onChange} options={PLACE_STATUSES.map((s) => ({ value: s, label: PLACE_STATUS_META[s].label }))} />}
+            />
+          </Field>
+
+          <FormSection title="Location" summary={locationSummary} icon={MapPin} defaultOpen={Boolean(place)} forceOpen={Boolean(errors.address || errors.lat || errors.lng)}>
+            <Field label="Address" htmlFor="place-address" error={errors.address?.message}>
+              <Input id="place-address" {...register("address")} />
             </Field>
+            <div className="flex flex-col gap-1.5">
+              <span className="flex items-center justify-between gap-2 text-[13px] font-medium">
+                Pin
+                {pinned ? (
+                  <span className="num flex items-center gap-2 text-xs font-normal text-muted">
+                    {(lat as number).toFixed(4)}, {(lng as number).toFixed(4)}
+                    <button
+                      type="button"
+                      className="text-accent hover:underline"
+                      onClick={() => {
+                        setValue("lat", null);
+                        setValue("lng", null);
+                      }}
+                    >
+                      Remove pin
+                    </button>
+                  </span>
+                ) : (
+                  <span className="text-xs font-normal text-muted">No pin yet</span>
+                )}
+              </span>
+              <MapView
+                allowEmpty
+                className="h-52 rounded-xl"
+                markers={markers}
+                center={markers[0] ? [markers[0].lat, markers[0].lng] : near ? [near.lat, near.lng] : undefined}
+                zoom={13}
+                onMapClick={(la, ln) => {
+                  setValue("lat", Number(la.toFixed(6)));
+                  setValue("lng", Number(ln.toFixed(6)));
+                }}
+              />
+              <span className="text-xs text-muted">Tap the map to set the exact spot.</span>
+            </div>
+          </FormSection>
+
+          <FormSection title="Visit details" summary={visitSummary} icon={NotebookPen} defaultOpen={Boolean(place)} forceOpen={Boolean(errors.url || errors.cost_estimate || errors.rating || errors.opening_hours || errors.notes)}>
             <Field label="Rating">
               <Controller
                 control={control}
@@ -214,8 +322,11 @@ export function PlaceDialog({
                 )}
               />
             </Field>
+            <Field label="Opening hours" htmlFor="place-hours" error={errors.opening_hours?.message}>
+              <Input id="place-hours" placeholder="09:00–17:00, closed Mon" {...register("opening_hours")} />
+            </Field>
             <div className="grid grid-cols-[1fr_120px] gap-3">
-              <Field label="Cost estimate" htmlFor="place-cost" error={formState.errors.cost_estimate?.message}>
+              <Field label="Cost estimate" htmlFor="place-cost" error={errors.cost_estimate?.message}>
                 <Input id="place-cost" inputMode="decimal" placeholder="25" {...register("cost_estimate")} />
               </Field>
               <Field label="Currency" htmlFor="place-cur">
@@ -229,34 +340,13 @@ export function PlaceDialog({
                 </NativeSelect>
               </Field>
             </div>
-            <Field label="Opening hours" htmlFor="place-hours">
-              <Input id="place-hours" placeholder="09:00–17:00, closed Mon" {...register("opening_hours")} />
-            </Field>
-            <Field label="Address" htmlFor="place-address">
-              <Input id="place-address" {...register("address")} />
-            </Field>
-            <Field label="Link" htmlFor="place-url" error={formState.errors.url?.message}>
+            <Field label="Link" htmlFor="place-url" error={errors.url?.message}>
               <Input id="place-url" type="url" placeholder="https://" {...register("url")} />
             </Field>
-            <Field label="Notes" htmlFor="place-notes">
+            <Field label="Notes" htmlFor="place-notes" error={errors.notes?.message}>
               <Textarea id="place-notes" {...register("notes")} />
             </Field>
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[13px] font-medium">Drop a pin</span>
-              <MapView
-                allowEmpty
-                className="h-56 rounded-xl"
-                markers={markers}
-                center={markers[0] ? [markers[0].lat, markers[0].lng] : near ? [near.lat, near.lng] : undefined}
-                zoom={13}
-                onMapClick={(la, ln) => {
-                  setValue("lat", Number(la.toFixed(6)));
-                  setValue("lng", Number(ln.toFixed(6)));
-                }}
-              />
-              <span className="text-xs text-muted">Tap the map to set the exact spot.</span>
-            </div>
-          </MoreDetails>
+          </FormSection>
         </form>
       )}
     </ResponsiveDialog>

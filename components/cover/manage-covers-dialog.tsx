@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CircleCheck, Eye, ImageOff, ImagePlus, Loader2, RefreshCw, RotateCcw, Search, TriangleAlert, Upload, X } from "lucide-react";
 import { toast } from "sonner";
-import { loadCoverRows, type CoverRow } from "@/actions/covers";
+import { loadCoverRows, type CoverRow, type CoverRows } from "@/actions/covers";
 import { refreshAfterBatch, savePhotos } from "@/actions/photos";
 import { MAX_UPLOAD_BYTES } from "@/lib/config";
 import { IMAGE_ACCEPT, toJpegIfHeic, uploadPhotos } from "@/lib/upload";
@@ -28,7 +28,7 @@ type Draft = {
 
 /** The three steps that touch the outside world, replaceable so the preview gallery runs without a database. */
 export type CoverBackend = {
-  load: (tripIds: string[]) => Promise<{ countries: CoverRow[]; cities: CoverRow[] }>;
+  load: (tripIds: string[]) => Promise<Omit<CoverRows, "places"> & { places?: CoverRow[] }>;
   upload: (row: CoverRow, file: File) => Promise<PhotoMeta>;
   save: (row: CoverRow, meta: PhotoMeta) => Promise<void>;
   refresh: () => Promise<void>;
@@ -81,17 +81,24 @@ function Thumb({ src, alt }: { src: string | null; alt: string }) {
   );
 }
 
+const KINDS: { value: Kind; label: string; noun: string; plural: string }[] = [
+  { value: "country", label: "Countries", noun: "Country", plural: "countries" },
+  { value: "city", label: "Cities", noun: "City", plural: "cities" },
+  { value: "place", label: "Places", noun: "Place", plural: "places" },
+];
+
 const ROW_GRID = "md:grid-cols-[minmax(0,1.1fr)_5rem_minmax(0,1.05fr)_minmax(0,1.35fr)]";
 
-/** Manage covers: pick new photos row by row, see them, and only then save them all at once. */
+/** Manage covers: pick new photos row by row, see them, and only then save them all at once. Countries, cities and places alike. */
 export function ManageCoversDialog({ tab: initialTab, onOpenChange, tripIds, backend }: { tab: Kind; onOpenChange: (open: boolean) => void; tripIds: string[]; backend?: CoverBackend }) {
   const real = useRealBackend();
   const api = backend ?? real;
-  const [rows, setRows] = useState<{ country: CoverRow[]; city: CoverRow[] } | null>(null);
+  const [rows, setRows] = useState<Record<Kind, CoverRow[]> | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [tab, setTab] = useState<Kind>(initialTab);
   const [query, setQuery] = useState("");
   const [countryFilter, setCountryFilter] = useState("all");
+  const [cityFilter, setCityFilter] = useState("all");
   const [show, setShow] = useState<"all" | "missing" | "selected">("all");
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [saving, setSaving] = useState(false);
@@ -107,7 +114,7 @@ export function ManageCoversDialog({ tab: initialTab, onOpenChange, tripIds, bac
     let alive = true;
     api
       .load(tripKey ? tripKey.split(",") : [])
-      .then((r) => alive && setRows({ country: r.countries, city: r.cities }))
+      .then((r) => alive && setRows({ country: r.countries, city: r.cities, place: r.places ?? [] }))
       .catch((e: Error) => alive && setLoadError(e.message));
     return () => {
       alive = false;
@@ -183,7 +190,7 @@ export function ManageCoversDialog({ tab: initialTab, onOpenChange, tripIds, bac
       setRows((r) => {
         if (!r) return r;
         const update = (list: CoverRow[]) => list.map((x) => (keyOf(x) === key ? { ...x, url: draft.preview ?? x.url, thumb: draft.preview ?? x.thumb } : x));
-        return { country: update(r.country), city: update(r.city) };
+        return { country: update(r.country), city: update(r.city), place: update(r.place) };
       });
       return true;
     } catch (e) {
@@ -192,7 +199,7 @@ export function ManageCoversDialog({ tab: initialTab, onOpenChange, tripIds, bac
     }
   };
 
-  const allRows = useMemo(() => [...(rows?.country ?? []), ...(rows?.city ?? [])], [rows]);
+  const allRows = useMemo(() => [...(rows?.country ?? []), ...(rows?.city ?? []), ...(rows?.place ?? [])], [rows]);
 
   const run = async (items: { row: CoverRow; draft: Draft }[]) => {
     if (!items.length || saving) return;
@@ -235,16 +242,21 @@ export function ManageCoversDialog({ tab: initialTab, onOpenChange, tripIds, bac
   };
 
   const countries = rows?.country ?? [];
+  // The City filter offers the chosen country's cities only, and lets go of a city from another country.
+  const cityOptions = useMemo(() => (rows?.city ?? []).filter((c) => countryFilter === "all" || c.countryId === countryFilter), [rows, countryFilter]);
+  const activeCity = cityOptions.some((c) => c.id === cityFilter) ? cityFilter : "all";
+  const kindMeta = KINDS.find((k) => k.value === tab)!;
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return (tab === "country" ? (rows?.country ?? []) : (rows?.city ?? [])).filter((r) => {
+    return (rows?.[tab] ?? []).filter((r) => {
       if (q && !r.name.toLowerCase().includes(q) && !r.group.toLowerCase().includes(q)) return false;
-      if (tab === "city" && countryFilter !== "all" && r.countryId !== countryFilter) return false;
+      if (tab !== "country" && countryFilter !== "all" && r.countryId !== countryFilter) return false;
+      if (tab === "place" && activeCity !== "all" && r.cityId !== activeCity) return false;
       if (show === "missing" && r.url) return false;
       if (show === "selected" && !drafts[keyOf(r)]) return false;
       return true;
     });
-  }, [rows, tab, query, countryFilter, show, drafts]);
+  }, [rows, tab, query, countryFilter, activeCity, show, drafts]);
 
   const countOpen = (kind: Kind) => Object.entries(drafts).filter(([k, d]) => k.startsWith(`${kind}:`) && isOpen(d)).length;
 
@@ -310,25 +322,35 @@ export function ManageCoversDialog({ tab: initialTab, onOpenChange, tripIds, bac
       <div className="flex min-h-0 flex-1 flex-col gap-3" data-testid="manage-covers">
         <Tabs value={tab} onValueChange={(v) => setTab(v as Kind)}>
           <TabsList aria-label="Covers of">
-            <TabsTrigger value="country">
-              Countries{countOpen("country") ? <span className="num rounded-full bg-accent-soft px-1.5 text-xs">{countOpen("country")}</span> : null}
-            </TabsTrigger>
-            <TabsTrigger value="city">
-              Cities{countOpen("city") ? <span className="num rounded-full bg-accent-soft px-1.5 text-xs">{countOpen("city")}</span> : null}
-            </TabsTrigger>
+            {KINDS.map((k) => (
+              <TabsTrigger key={k.value} value={k.value}>
+                {k.label}
+                {countOpen(k.value) ? <span className="num rounded-full bg-accent-soft px-1.5 text-xs">{countOpen(k.value)}</span> : null}
+              </TabsTrigger>
+            ))}
           </TabsList>
         </Tabs>
         <div className="flex flex-col gap-2 md:flex-row md:items-center">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={tab === "country" ? "Search countries" : "Search cities"} className="pl-9" aria-label="Search by name" />
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={`Search ${kindMeta.plural}`} className="pl-9" aria-label="Search by name" />
           </div>
-          {tab === "city" && (
-            <NativeSelect value={countryFilter} onChange={(e) => setCountryFilter(e.target.value)} aria-label="Filter by country" className="md:w-52">
+          {tab !== "country" && (
+            <NativeSelect value={countryFilter} onChange={(e) => setCountryFilter(e.target.value)} aria-label="Filter by country" className="md:w-48">
               <option value="all">All countries</option>
               {countries.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.flag} {c.name}
+                </option>
+              ))}
+            </NativeSelect>
+          )}
+          {tab === "place" && (
+            <NativeSelect value={activeCity} onChange={(e) => setCityFilter(e.target.value)} aria-label="Filter by city" className="md:w-44">
+              <option value="all">All cities</option>
+              {cityOptions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
                 </option>
               ))}
             </NativeSelect>
@@ -344,7 +366,7 @@ export function ManageCoversDialog({ tab: initialTab, onOpenChange, tripIds, bac
         </div>
 
         <div className={cn("hidden gap-3 border-b border-border px-1 pb-1.5 text-xs font-medium text-muted md:grid", ROW_GRID)} aria-hidden>
-          <span>{tab === "country" ? "Country" : "City"}</span>
+          <span>{kindMeta.noun}</span>
           <span>Current</span>
           <span>Actions</span>
           <span>Status</span>
@@ -360,7 +382,7 @@ export function ManageCoversDialog({ tab: initialTab, onOpenChange, tripIds, bac
               ))}
             </div>
           ) : !visible.length ? (
-            <p className="py-10 text-center text-sm text-muted">{(tab === "country" ? rows.country : rows.city).length ? "Nothing matches these filters." : tab === "country" ? "No countries on this route yet." : "No cities yet."}</p>
+            <p className="py-10 text-center text-sm text-muted">{rows[tab].length ? "Nothing matches these filters." : tab === "country" ? "No countries on this route yet." : `No ${kindMeta.plural} yet.`}</p>
           ) : (
             <ul className="flex flex-col divide-y divide-border">
               {visible.map((row) => {

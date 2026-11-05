@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { placeSchema, type PlaceInput } from "@/lib/validation";
 import { mergedPlacePatch } from "@/lib/place-duplicates";
+import { stopTypeForPlace } from "@/lib/place-list";
 import { cleanupEntityPhotos } from "@/lib/storage";
 import { fail, must, ok, refreshAll } from "@/actions/_util";
 import type { ActionResult, PlaceStatus } from "@/lib/types";
@@ -83,6 +84,55 @@ export async function mergePlaces(keepId: string, duplicateIds: string[]): Promi
     must(await supabase.from("places").delete().in("id", ids));
     refreshAll();
     return ok({ stops: stops.length, memories: memories.length, photos: photos.length });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** The places already saved in a city, so adding one can point at an existing place with a similar name. */
+export async function loadCityPlaces(cityId: string): Promise<ActionResult<{ id: string; name: string; city_id: string; lat: number | null; lng: number | null; status: string; address: string | null }[]>> {
+  try {
+    const { supabase } = await requireUser();
+    const rows = must(await supabase.from("places").select("id, name, city_id, lat, lng, status, address").eq("city_id", z.uuid().parse(cityId)).order("created_at"));
+    return ok(rows);
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/**
+ * Puts a saved place into a day of its own country's itinerary as a linked stop, after the day's other stops.
+ * A place only wanted until now is planned once it has a day.
+ */
+export async function schedulePlace(placeId: string, dayId: string, startTime?: string | null): Promise<ActionResult<{ id: string }>> {
+  try {
+    const { supabase } = await requireUser();
+    const pid = z.uuid().parse(placeId);
+    const did = z.uuid().parse(dayId);
+    const time = z
+      .string()
+      .regex(/^\d{2}:\d{2}$/, "Use HH:MM")
+      .nullish()
+      .or(z.literal(""))
+      .transform((v) => v || null)
+      .parse(startTime);
+    const place = must(await supabase.from("places").select("id, name, category, status, city_id").eq("id", pid).single());
+    const [day, city] = await Promise.all([
+      supabase.from("itinerary_days").select("id, trip_country_id").eq("id", did).single().then(must),
+      supabase.from("cities").select("trip_country_id").eq("id", place.city_id).single().then(must),
+    ]);
+    if (day.trip_country_id !== city.trip_country_id) throw new Error("That day belongs to another country's itinerary.");
+    const last = must(await supabase.from("itinerary_items").select("order_index").eq("day_id", did).order("order_index", { ascending: false }).limit(1));
+    const row = must(
+      await supabase
+        .from("itinerary_items")
+        .insert({ day_id: did, title: place.name, type: stopTypeForPlace(place.category), start_time: time, place_id: pid, order_index: (last[0]?.order_index ?? -1) + 1 })
+        .select("id")
+        .single(),
+    );
+    if (place.status === "want") must(await supabase.from("places").update({ status: "planned" }).eq("id", pid));
+    refreshAll();
+    return ok({ id: row.id });
   } catch (e) {
     return fail(e);
   }

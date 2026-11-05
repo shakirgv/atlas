@@ -59,6 +59,16 @@ export function findDuplicatePlaces<T extends Candidate>(places: T[]): T[][] {
   return [...groups.values()].filter((g) => g.length > 1);
 }
 
+/**
+ * Saved places in the same city that look like the one being added, by the same rule as Possible duplicates.
+ * Asked while typing, so the existing one can be used instead of saving a second.
+ */
+export function similarPlaces<T extends Candidate>(draft: { name: string; city_id: string; lat?: number | null; lng?: number | null }, places: T[], exceptId?: string | null): T[] {
+  if (!draft.name.trim() || !draft.city_id) return [];
+  const candidate: Candidate = { id: "__draft__", city_id: draft.city_id, name: draft.name, lat: draft.lat ?? null, lng: draft.lng ?? null };
+  return places.filter((p) => p.id !== exceptId && p.city_id === draft.city_id && looksAlike(candidate, p));
+}
+
 export type PlaceLinks = { stops: number; memories: number };
 
 /** Stops and memories pointing at each place, for showing what a merge would move. */

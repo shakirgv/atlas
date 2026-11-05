@@ -70,7 +70,12 @@ const SHIFT: ShiftData = {
 /** An SVG in place of a photo, so the gallery needs no storage. */
 const art = (label: string, hue: number) => `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="960" height="640"><rect width="960" height="640" fill="hsl(${hue} 55% 45%)"/><text x="480" y="340" font-size="64" fill="white" text-anchor="middle" font-family="sans-serif">${label}</text></svg>`)}`;
 
-const COVER_ROWS: { countries: CoverRow[]; cities: CoverRow[] } = {
+const COVER_ROWS: { countries: CoverRow[]; cities: CoverRow[]; places: CoverRow[] } = {
+  places: [
+    { id: ID(201), kind: "place", name: "Old City walls", flag: flagOf("AZ"), group: "Baku, Azerbaijan", countryId: ID(2), cityId: ID(101), url: art("Old City", 260), thumb: art("Old City", 260) },
+    { id: ID(202), kind: "place", name: "Flame Towers", flag: flagOf("AZ"), group: "Baku, Azerbaijan", countryId: ID(2), cityId: ID(101), url: null, thumb: null },
+    { id: ID(203), kind: "place", name: "Narikala", flag: flagOf("GE"), group: "Tbilisi, Georgia", countryId: ID(3), cityId: ID(102), url: null, thumb: null },
+  ],
   countries: ROUTE_CODES.map((code, i) => ({ id: ID(i + 1), kind: "country" as const, name: nameOf(code), flag: flagOf(code), group: "", countryId: ID(i + 1), url: i === 2 ? null : art(nameOf(code), i * 40), thumb: i === 2 ? null : art(nameOf(code), i * 40) })),
   cities: [
     { id: ID(101), kind: "city", name: "Baku", flag: flagOf("AZ"), group: "Azerbaijan", countryId: ID(2), url: art("Baku", 200), thumb: art("Baku", 200) },

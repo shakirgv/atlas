@@ -32,6 +32,47 @@ export function MoreDetails({ children, defaultOpen = false, label = "More detai
   );
 }
 
+/**
+ * A titled group of fields that folds away, with a line saying what it holds while it's folded.
+ * `forceOpen` keeps it open while something inside has an error, so the error can't hide.
+ */
+export function FormSection({
+  title,
+  summary,
+  icon: Icon,
+  defaultOpen = false,
+  forceOpen = false,
+  children,
+}: {
+  title: string;
+  summary?: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  defaultOpen?: boolean;
+  forceOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = React.useState(defaultOpen);
+  const shown = open || forceOpen;
+  const id = React.useId();
+  return (
+    <section className="rounded-xl border border-border" aria-label={title}>
+      <button type="button" onClick={() => setOpen(!shown)} aria-expanded={shown} aria-controls={id} className="flex min-h-12 w-full items-center gap-2.5 px-3.5 py-2 text-left">
+        {Icon ? <Icon className="size-4 shrink-0 text-accent" /> : null}
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="text-sm font-semibold">{title}</span>
+          {summary ? <span className="truncate text-xs text-muted">{summary}</span> : null}
+        </span>
+        <ChevronDown className={cn("size-4 shrink-0 text-muted transition-transform", shown && "rotate-180")} />
+      </button>
+      {shown ? (
+        <div id={id} className="flex flex-col gap-4 border-t border-border p-3.5">
+          {children}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 /** Chip-style single choice (status, category, kind). */
 export function ChoiceChips<T extends string>({
   value,
