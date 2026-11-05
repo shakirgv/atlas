@@ -379,7 +379,7 @@ export function CountryDetail({
         </TabsContent>
 
         <TabsContent value="memories">
-          <SectionTitle action={<Button size="sm" onClick={() => ws.openQuickAdd("memory")}><Plus /> New memory</Button>}>{pluralize(memories.length, "memory", "memories")}</SectionTitle>
+          <SectionTitle action={<Button size="sm" onClick={() => ws.openQuickAdd({ kind: "memory", tripCountryId: country.id })}><Plus /> New memory</Button>}>{pluralize(memories.length, "memory", "memories")}</SectionTitle>
           {memories.length ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {memories.map((m) => (

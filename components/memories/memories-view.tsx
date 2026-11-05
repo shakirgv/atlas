@@ -1,166 +1,103 @@
 "use client";
-import { useEffect, useMemo, useState, useTransition } from "react";
-import Link from "next/link";
-import { Camera, Images, Map as MapIcon, MapPin, MoreHorizontal, Pencil, Rows3, Share2, Trash2 } from "lucide-react";
-import { toast } from "sonner";
-import { deleteMemory } from "@/actions/memories";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Camera, ChevronDown, Images, Map as MapIcon, Rows3, SearchX } from "lucide-react";
 import type { MemoryVM } from "@/lib/data";
-import type { PhotoView } from "@/lib/types";
 import { fmtDate, fmtMonth, monthKey } from "@/lib/dates";
+import { filterMemories, filterOptions, NO_FILTERS, writeFilters, type MemoryFilters } from "@/lib/memory-filters";
+import type { LinkDay, LinkPlace } from "@/lib/memory-links";
 import { cn, pluralize } from "@/lib/utils";
 import { EmptyState } from "@/components/common/empty-state";
-import { Markdown } from "@/components/common/markdown";
 import { PageHeader } from "@/components/common/page-header";
 import { PageTransition } from "@/components/common/motion";
-import { MemoryComposerCard, type PlaceLite } from "@/components/forms/memory-composer";
-import { PhotoGrid, PhotoLightbox } from "@/components/photos/photo-grid";
-import { PhotoMap, type MemoryPin } from "@/components/photos/photo-map";
-import type { PhotoPin, UnlocatedPhoto } from "@/lib/photo-pins";
-import { ShareDialog } from "@/components/share/share-dialog";
-import { useWorkspace } from "@/components/shell/workspace";
-import { useConfirm } from "@/components/ui/confirm";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { NativeSelect } from "@/components/ui/input";
+import { MemoryComposerCard, MemoryEditDialog } from "@/components/forms/memory-composer";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MemoryEditDialog } from "./memory-edit-dialog";
+import { MemoryCard } from "./memory-card";
+import { MemoryFilterBar } from "./memory-filter-bar";
+import { MemoryMap } from "./memory-map";
+import { MemoryPhotoViewer, type ViewerItem } from "./memory-photo-viewer";
 
 type CityLite = { id: string; name: string; trip_country_id: string; lat: number | null; lng: number | null };
-type CountryLite = { id: string; name: string; flag: string };
-
-function MemoryCard({ m, country, city, place, highlighted, onEdit }: { m: MemoryVM; country?: CountryLite; city?: CityLite; place?: PlaceLite; highlighted: boolean; onEdit: () => void }) {
-  const ws = useWorkspace();
-  const [sharing, setSharing] = useState(false);
-  const confirm = useConfirm();
-  const [, start] = useTransition();
-  return (
-    <article id={`memory-${m.id}`} className={cn("card scroll-mt-24 overflow-hidden transition-shadow", highlighted && "ring-2 ring-accent")}>
-      {m.photos.length > 0 && (
-        <div className="p-2 pb-0">
-          <PhotoGrid photos={m.photos} entityType="memory" entityId={m.id} columns={m.photos.length === 1 ? "grid-cols-1 [&>div:first-child]:aspect-[4/3]" : m.photos.length === 2 ? "grid-cols-2" : "grid-cols-3"} canUpload={false} />
-        </div>
-      )}
-      <div className="flex flex-col gap-2 p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs text-muted">
-              {fmtDate(m.date, "EEEE, dd MMM yyyy")}
-              {m.mood ? <span className="ml-1.5 text-base">{m.mood}</span> : null}
-            </p>
-            {m.title && <h3 className="mt-0.5 text-[22px] font-semibold leading-tight">{m.title}</h3>}
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="grid size-9 shrink-0 place-items-center rounded-lg text-muted hover:bg-ink/5" aria-label="Memory actions">
-              <MoreHorizontal className="size-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onSelect={onEdit}>
-                <Pencil /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setSharing(true)}>
-                <Share2 /> Share
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                destructive
-                onSelect={async () => {
-                  if (!(await confirm({ title: "Delete this memory?", description: m.photos.length ? `Its ${pluralize(m.photos.length, "photo")} will be deleted too.` : undefined, confirmLabel: "Delete memory" }))) return;
-                  start(async () => {
-                    const res = await deleteMemory(m.id);
-                    if (!res.ok) toast.error(res.error);
-                    else toast.success("Memory deleted");
-                  });
-                }}
-              >
-                <Trash2 /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        {m.body && <Markdown>{m.body}</Markdown>}
-        <div className="flex flex-wrap items-center gap-1.5 pt-1">
-          {(place || city || country) && (
-            <Link href={place ? `/places?open=${place.id}` : city ? `/cities/${city.id}` : `/countries/${country!.id}`} className="inline-flex h-7 items-center gap-1 rounded-full bg-accent-soft px-2.5 text-xs font-medium hover:underline">
-              <MapPin className="size-3.5 text-accent" />
-              {[place?.name, city?.name, country ? `${country.flag} ${country.name}` : null].filter(Boolean).join(" · ")}
-            </Link>
-          )}
-          {m.tags.map((t) => (
-            <span key={t} className="inline-flex h-7 items-center rounded-full bg-surface-2 px-2.5 text-xs font-medium text-muted ring-1 ring-border">
-              #{t}
-            </span>
-          ))}
-        </div>
-        <div className="pt-1">
-          <PhotoGrid photos={[]} entityType="memory" entityId={m.id} addVariant="pill" columns="hidden" />
-        </div>
-      </div>
-      {sharing && <ShareDialog kind="memory" targetId={m.id} title={m.title ?? "This memory"} enabled={ws.sharingEnabled} onOpenChange={setSharing} />}
-    </article>
-  );
-}
+type CountryLite = { id: string; code: string; name: string; flag: string };
+const TABS = ["timeline", "gallery", "map"];
 
 export function MemoriesView({
   memories,
-  pins,
-  unlocated,
-  trips,
   countries,
   cities,
   places,
+  days,
   focus,
   initialTab,
+  initialFilters,
 }: {
   memories: MemoryVM[];
-  pins: PhotoPin[];
-  unlocated: UnlocatedPhoto[];
-  trips: { id: string; title: string }[];
   countries: CountryLite[];
   cities: CityLite[];
-  places: PlaceLite[];
+  places: LinkPlace[];
+  days: LinkDay[];
   focus: string | null;
   initialTab: string;
+  initialFilters: MemoryFilters;
 }) {
-  const [tab, setTab] = useState(["timeline", "gallery", "map"].includes(initialTab) ? initialTab : "timeline");
-  const [editing, setEditing] = useState<MemoryVM | null>(null);
-  const [country, setCountry] = useState("all");
-  const [city, setCity] = useState("all");
-  const [lightbox, setLightbox] = useState<{ photos: PhotoView[]; index: number } | null>(null);
+  const [tab, setTab] = useState(TABS.includes(initialTab) ? initialTab : "timeline");
+  const [filters, setFilters] = useState<MemoryFilters>(initialFilters);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [highlight, setHighlight] = useState<string | null>(focus);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [viewer, setViewer] = useState<{ items: ViewerItem[]; index: number; openable: boolean } | null>(null);
 
+  const ctx = useMemo(() => ({ countries, cities, places }), [countries, cities, places]);
+  const options = useMemo(() => filterOptions(memories, ctx), [memories, ctx]);
+  const shown = useMemo(() => filterMemories(memories, filters, ctx), [memories, filters, ctx]);
+  const editing = editingId ? memories.find((m) => m.id === editingId) : undefined;
+
+  const byId = useMemo(
+    () => ({
+      country: new Map(countries.map((c) => [c.id, c])),
+      city: new Map(cities.map((c) => [c.id, c])),
+      place: new Map(places.map((p) => [p.id, p])),
+      day: new Map(days.map((d) => [d.id, d])),
+    }),
+    [countries, cities, places, days],
+  );
+  const linksOf = useCallback(
+    (m: MemoryVM) => {
+      const place = m.place_id ? byId.place.get(m.place_id) : undefined;
+      const city = byId.city.get(m.city_id ?? place?.city_id ?? "");
+      const country = byId.country.get(m.trip_country_id ?? city?.trip_country_id ?? "");
+      const day = m.itinerary_day_id ? byId.day.get(m.itinerary_day_id) : undefined;
+      return { place, city, country, day };
+    },
+    [byId],
+  );
+  const whereOf = useCallback(
+    (m: MemoryVM) => {
+      const { place, city, country } = linksOf(m);
+      return [place?.name, city?.name, country ? `${country.flag} ${country.name}` : null].filter(Boolean).join(" · ") || null;
+    },
+    [linksOf],
+  );
+
+  // Filters live in the URL, so a reload or a shared link keeps them.
   useEffect(() => {
-    if (!focus) return;
-    const t = setTimeout(() => document.getElementById(`memory-${focus}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
-    return () => clearTimeout(t);
-  }, [focus]);
+    window.history.replaceState(null, "", writeFilters(new URL(window.location.href), filters));
+  }, [filters]);
 
   const months = useMemo(() => {
     const groups = new Map<string, MemoryVM[]>();
-    for (const m of memories) {
+    for (const m of shown) {
       const k = monthKey(m.date);
       groups.set(k, [...(groups.get(k) ?? []), m]);
     }
     return Array.from(groups.entries());
-  }, [memories]);
+  }, [shown]);
 
-  const galleryPhotos = useMemo(
-    () =>
-      memories
-        .filter((m) => (country === "all" || m.trip_country_id === country) && (city === "all" || m.city_id === city))
-        .flatMap((m) => m.photos.map((p) => ({ ...p, caption: p.caption ?? m.title ?? null }))),
-    [memories, country, city],
-  );
+  const scrollTo = (id: string) => setTimeout(() => document.getElementById(`memory-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
 
-  // A memory with no photos is still pinned where it happened.
-  const memoryPins = useMemo(() => {
-    const out: MemoryPin[] = [];
-    for (const m of memories) {
-      if (m.photos.length) continue;
-      const pl = places.find((p) => p.id === m.place_id);
-      const ci = cities.find((c) => c.id === m.city_id);
-      const loc = pl?.lat != null && pl?.lng != null ? { lat: pl.lat, lng: pl.lng } : ci?.lat != null && ci?.lng != null ? { lat: ci.lat, lng: ci.lng } : null;
-      if (loc) out.push({ id: m.id, lat: loc.lat, lng: loc.lng, label: m.title ?? fmtDate(m.date), glyph: m.mood ?? "•" });
-    }
-    return out;
-  }, [memories, places, cities]);
+  useEffect(() => {
+    if (focus) scrollTo(focus);
+  }, [focus]);
 
   const onTab = (v: string) => {
     setTab(v);
@@ -169,98 +106,167 @@ export function MemoriesView({
     window.history.replaceState(null, "", url);
   };
 
+  /** From the gallery or the map: show the memory in the timeline, its month unfolded. */
+  const openMemory = (id: string) => {
+    const m = memories.find((x) => x.id === id);
+    if (!m) return;
+    if (!shown.some((x) => x.id === id)) setFilters(NO_FILTERS);
+    setCollapsed((s) => {
+      const next = new Set(s);
+      next.delete(monthKey(m.date));
+      return next;
+    });
+    setHighlight(id);
+    onTab("timeline");
+    scrollTo(id);
+  };
+
+  const toggleMonth = (key: string) =>
+    setCollapsed((s) => {
+      const next = new Set(s);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  const galleryItems = useMemo<ViewerItem[]>(() => shown.flatMap((m) => m.photos.map((photo) => ({ photo, memory: m, where: whereOf(m) }))), [shown, whereOf]);
+  const photoTotal = memories.reduce((s, m) => s + m.photos.length, 0);
+  const onTag = (t: string) => setFilters((f) => ({ ...f, tag: f.tag === t ? "" : t }));
+  const allCollapsed = months.length > 0 && months.every(([k]) => collapsed.has(k));
+
+  const noMatch = (
+    <EmptyState
+      compact
+      icon={SearchX}
+      title="No memories match"
+      description="Try other words, or clear a filter."
+      action={
+        <Button size="sm" variant="secondary" onClick={() => setFilters(NO_FILTERS)}>
+          Clear filters
+        </Button>
+      }
+    />
+  );
+
   return (
     <PageTransition className="flex flex-col gap-6">
-      <PageHeader eyebrow="Track" title="Memories" description={memories.length ? `${pluralize(memories.length, "memory", "memories")} · ${pluralize(memories.reduce((s, m) => s + m.photos.length, 0), "photo")}` : "Notes and photos from before, during and after the trip."} />
-      <MemoryComposerCard places={places} />
+      <PageHeader eyebrow="Track" title="Memories" description={memories.length ? `${pluralize(memories.length, "memory", "memories")} · ${pluralize(photoTotal, "photo")}` : "Notes and photos from before, during and after the trip."} />
+      <MemoryComposerCard />
       {!memories.length ? (
         <EmptyState icon={Camera} title="Your journal is empty" description="Write the first memory above — a sentence, a mood, a handful of photos. Dates and GPS come from your photos." />
       ) : (
         <Tabs value={tab} onValueChange={onTab}>
-          <TabsList aria-label="Memory views">
-            <TabsTrigger value="timeline">
-              <Rows3 /> Timeline
-            </TabsTrigger>
-            <TabsTrigger value="gallery">
-              <Images /> Gallery
-            </TabsTrigger>
-            <TabsTrigger value="map">
-              <MapIcon /> Map
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex flex-col gap-4">
+            <TabsList aria-label="Memory views">
+              <TabsTrigger value="timeline">
+                <Rows3 /> Timeline
+              </TabsTrigger>
+              <TabsTrigger value="gallery">
+                <Images /> Gallery
+              </TabsTrigger>
+              <TabsTrigger value="map">
+                <MapIcon /> Map
+              </TabsTrigger>
+            </TabsList>
+            <MemoryFilterBar filters={filters} onChange={setFilters} options={options} shown={shown.length} total={memories.length} />
+          </div>
+
           <TabsContent value="timeline">
-            <div className="flex flex-col gap-10">
-              {months.map(([key, list]) => (
-                <section key={key} aria-label={fmtMonth(key)}>
-                  <h2 className="sticky top-16 z-10 -mx-1 mb-4 bg-bg/85 px-1 py-2 text-[26px] font-semibold backdrop-blur md:top-[72px]">
-                    {fmtMonth(key)} <span className="num text-sm font-normal text-muted">{list.length}</span>
-                  </h2>
-                  <div className="columns-1 gap-5 md:columns-2 [&>*]:mb-5 [&>*]:break-inside-avoid">
-                    {list.map((m) => (
-                      <MemoryCard
-                        key={m.id}
-                        m={m}
-                        country={countries.find((c) => c.id === m.trip_country_id)}
-                        city={cities.find((c) => c.id === m.city_id)}
-                        place={places.find((p) => p.id === m.place_id)}
-                        highlighted={focus === m.id}
-                        onEdit={() => setEditing(m)}
-                      />
-                    ))}
+            {!shown.length ? (
+              noMatch
+            ) : (
+              <div className="mx-auto flex max-w-2xl flex-col gap-6">
+                {months.length > 1 && (
+                  <div className="-mb-3 flex justify-end">
+                    <button type="button" onClick={() => setCollapsed(allCollapsed ? new Set() : new Set(months.map(([k]) => k)))} className="text-sm font-medium text-accent hover:underline">
+                      {allCollapsed ? "Expand all months" : "Collapse all months"}
+                    </button>
                   </div>
-                </section>
-              ))}
-            </div>
-          </TabsContent>
-          <TabsContent value="gallery">
-            <div className="mb-4 flex flex-wrap gap-2">
-              <NativeSelect value={country} onChange={(e) => { setCountry(e.target.value); setCity("all"); }} aria-label="Country" className="w-48">
-                <option value="all">All countries</option>
-                {countries.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.flag} {c.name}
-                  </option>
-                ))}
-              </NativeSelect>
-              <NativeSelect value={city} onChange={(e) => setCity(e.target.value)} aria-label="City" className="w-44">
-                <option value="all">All cities</option>
-                {cities.filter((c) => country === "all" || c.trip_country_id === country).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </NativeSelect>
-            </div>
-            {galleryPhotos.length ? (
-              <div className="columns-2 gap-3 sm:columns-3 lg:columns-4 [&>*]:mb-3">
-                {galleryPhotos.map((p, i) => (
-                  <button key={p.id} type="button" onClick={() => setLightbox({ photos: galleryPhotos, index: i })} className="group block w-full overflow-hidden rounded-xl bg-surface-2" style={{ aspectRatio: p.width && p.height ? `${p.width}/${p.height}` : "4/3" }}>
-                    {p.thumb_url && <img src={p.thumb_url} alt={p.caption ?? ""} loading="lazy" className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />}
-                  </button>
-                ))}
+                )}
+                {months.map(([key, list]) => {
+                  const open = !collapsed.has(key);
+                  const photos = list.reduce((n, m) => n + m.photos.length, 0);
+                  return (
+                    <section key={key} aria-label={fmtMonth(key)}>
+                      <h2 className="sticky top-16 z-10 -mx-1 bg-bg/85 px-1 py-1.5 backdrop-blur md:top-[72px]">
+                        <button type="button" onClick={() => toggleMonth(key)} aria-expanded={open} className="flex w-full items-center gap-2 text-left">
+                          <ChevronDown className={cn("size-5 shrink-0 text-muted transition-transform", !open && "-rotate-90")} />
+                          <span className="text-[26px] font-semibold">{fmtMonth(key)}</span>
+                          <span className="num text-sm font-normal text-muted">
+                            {pluralize(list.length, "memory", "memories")}
+                            {photos ? ` · ${pluralize(photos, "photo")}` : ""}
+                          </span>
+                        </button>
+                      </h2>
+                      {open && (
+                        <div className="mt-3 flex flex-col gap-5">
+                          {list.map((m) => {
+                            const { country, city, place, day } = linksOf(m);
+                            return (
+                              <MemoryCard
+                                key={m.id}
+                                m={m}
+                                country={country}
+                                city={city}
+                                place={place}
+                                day={day}
+                                dayCity={day?.city_id ? byId.city.get(day.city_id)?.name : null}
+                                highlighted={highlight === m.id}
+                                activeTag={filters.tag}
+                                onEdit={() => setEditingId(m.id)}
+                                onTag={onTag}
+                                onPhotos={() => setViewer({ items: m.photos.map((photo) => ({ photo, memory: m, where: whereOf(m) })), index: 0, openable: false })}
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
               </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="gallery">
+            {!shown.length ? (
+              noMatch
+            ) : galleryItems.length ? (
+              <>
+                <p className="num mb-3 text-sm text-muted">
+                  {pluralize(galleryItems.length, "photo")} from {pluralize(new Set(galleryItems.map((i) => i.memory.id)).size, "memory", "memories")}
+                </p>
+                <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+                  {galleryItems.map((item, i) => (
+                    <li key={item.photo.id}>
+                      <button
+                        type="button"
+                        onClick={() => setViewer({ items: galleryItems, index: i, openable: true })}
+                        className="group relative block aspect-[3/4] w-full overflow-hidden rounded-xl bg-surface-2"
+                        aria-label={`Open photo from ${item.memory.title ?? fmtDate(item.memory.date)}`}
+                      >
+                        {item.photo.thumb_url && <img src={item.photo.thumb_url} alt={item.photo.caption ?? item.memory.title ?? ""} loading="lazy" className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />}
+                        <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2.5 pb-2 pt-8 text-left text-white">
+                          <span className="block truncate text-[13px] font-medium">{item.memory.title ?? fmtDate(item.memory.date)}</span>
+                          <span className="block truncate text-[11px] text-white/80">{[fmtDate(item.photo.taken_at ?? item.memory.date, "d MMM yyyy"), linksOf(item.memory).city?.name].filter(Boolean).join(" · ")}</span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
             ) : (
               <EmptyState compact icon={Images} title="No photos here yet" description="Add photos to a memory and they appear in this gallery." />
             )}
           </TabsContent>
+
           <TabsContent value="map">
-            <PhotoMap
-              pins={pins}
-              unlocated={unlocated}
-              memoryPins={memoryPins}
-              trips={trips}
-              countries={countries}
-              onMemory={(id) => {
-                setTab("timeline");
-                setTimeout(() => document.getElementById(`memory-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
-              }}
-            />
-            <p className="mt-2 text-xs text-muted">Pinned by photo GPS when available, otherwise by the linked place or city.</p>
+            <MemoryMap memories={shown} places={places} cities={cities} onOpen={openMemory} />
           </TabsContent>
         </Tabs>
       )}
-      {lightbox && <PhotoLightbox photos={lightbox.photos} index={lightbox.index} onClose={() => setLightbox(null)} />}
-      {editing && <MemoryEditDialog memory={editing} onOpenChange={(o) => !o && setEditing(null)} />}
+      {viewer && <MemoryPhotoViewer items={viewer.items} index={viewer.index} onClose={() => setViewer(null)} onOpenMemory={viewer.openable ? openMemory : undefined} />}
+      {editing && <MemoryEditDialog memory={editing} onOpenChange={(o) => !o && setEditingId(null)} />}
     </PageTransition>
   );
 }

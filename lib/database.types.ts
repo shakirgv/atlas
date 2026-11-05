@@ -325,14 +325,14 @@ isOneToOne: false
                   ]
                 },"memories": {
                   Row: {
-                    "body": string | null,"city_id": string | null,"created_at": string,"date": string,"id": string,"mood": string | null,"place_id": string | null,"tags": (string)[],"title": string | null,"trip_country_id": string | null,"trip_id": string,"user_id": string
+                    "body": string | null,"city_id": string | null,"created_at": string,"date": string,"id": string,"itinerary_day_id": string | null,"mood": string | null,"place_id": string | null,"tags": (string)[],"title": string | null,"trip_country_id": string | null,"trip_id": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "body"?: string | null,"city_id"?: string | null,"created_at"?: string,"date"?: string,"id"?: string,"mood"?: string | null,"place_id"?: string | null,"tags"?: (string)[],"title"?: string | null,"trip_country_id"?: string | null,"trip_id": string,"user_id"?: string
+                    "body"?: string | null,"city_id"?: string | null,"created_at"?: string,"date"?: string,"id"?: string,"itinerary_day_id"?: string | null,"mood"?: string | null,"place_id"?: string | null,"tags"?: (string)[],"title"?: string | null,"trip_country_id"?: string | null,"trip_id": string,"user_id"?: string
                   }
                   Update: {
-                    "body"?: string | null,"city_id"?: string | null,"created_at"?: string,"date"?: string,"id"?: string,"mood"?: string | null,"place_id"?: string | null,"tags"?: (string)[],"title"?: string | null,"trip_country_id"?: string | null,"trip_id"?: string,"user_id"?: string
+                    "body"?: string | null,"city_id"?: string | null,"created_at"?: string,"date"?: string,"id"?: string,"itinerary_day_id"?: string | null,"mood"?: string | null,"place_id"?: string | null,"tags"?: (string)[],"title"?: string | null,"trip_country_id"?: string | null,"trip_id"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -340,6 +340,12 @@ isOneToOne: false
       columns: ["city_id"]
 isOneToOne: false
       referencedRelation: "cities"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "memories_itinerary_day_id_fkey"
+      columns: ["itinerary_day_id"]
+isOneToOne: false
+      referencedRelation: "itinerary_days"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "memories_place_id_fkey"

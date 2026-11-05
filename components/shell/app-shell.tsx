@@ -91,7 +91,7 @@ export function AppShell({ workspace, sidebarCollapsed, children }: { workspace:
             {quick?.kind === "city" && <AddCitiesDialog open onOpenChange={close} tripCountryId={quick.tripCountryId} />}
             {quick?.kind === "place" && <PlaceDialog open onOpenChange={close} cityId={quick.cityId} />}
             {quick?.kind === "expense" && <ExpenseSheet open onOpenChange={close} tripCountryId={quick.tripCountryId} preset={quick.preset} />}
-            {quick?.kind === "memory" && <MemoryDialog open onOpenChange={close} />}
+            {quick?.kind === "memory" && <MemoryDialog open onOpenChange={close} preset={{ tripCountryId: quick.tripCountryId, cityId: quick.cityId }} />}
             {quick?.kind === "document" && <DocumentDialog open onOpenChange={close} />}
             {quick?.kind === "booking" && <BookingDialog open onOpenChange={close} />}
           </ConfirmProvider>

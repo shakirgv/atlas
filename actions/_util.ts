@@ -40,6 +40,8 @@ export const MIGRATION_005 = "This needs one more SQL step: run supabase/migrati
 
 export const MIGRATION_006 = "This needs one more SQL step: run supabase/migrations/006_passport_validity_rule.sql in the Supabase SQL editor, then try again.";
 
+export const MIGRATION_007 = "Linking a memory to an itinerary day needs one more SQL step: run supabase/migrations/007_memory_itinerary_day.sql in the Supabase SQL editor, then try again.";
+
 /** Revalidate the whole app layout (sidebar data, dashboard, lists). */
 export function refreshAll() {
   revalidatePath("/", "layout");

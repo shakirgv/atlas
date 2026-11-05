@@ -271,6 +271,8 @@ export const memorySchema = z.object({
   trip_country_id: optUuid,
   city_id: optUuid,
   place_id: optUuid,
+  /** Needs migration 007. */
+  itinerary_day_id: optUuid,
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date"),
   title: optText(160),
   body: optText(50000),

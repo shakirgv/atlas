@@ -8,6 +8,7 @@ import { deleteCity, saveCityNotes } from "@/actions/cities";
 import { daysBetween, fmtDate, fmtRange, fmtTime } from "@/lib/dates";
 import type { CityVM, MemoryVM, PlaceVM } from "@/lib/data";
 import type { PlaceLinks } from "@/lib/place-duplicates";
+import { cityKey } from "@/lib/memory-filters";
 import type { ItineraryDay, ItineraryItem } from "@/lib/types";
 import { cn, pluralize } from "@/lib/utils";
 import { useViewParam } from "@/hooks/use-open-sections";
@@ -80,7 +81,15 @@ export function CityDetail({
 
   const memoriesSection = (
     <section aria-labelledby="mem-title">
-      <SectionTitle>
+      <SectionTitle
+        action={
+          memories.length ? (
+            <Button size="sm" variant="secondary" onClick={() => ws.openQuickAdd({ kind: "memory", cityId: city.id })}>
+              <Plus /> New memory
+            </Button>
+          ) : null
+        }
+      >
         <span id="mem-title" className="flex items-center gap-2">
           <Camera className="size-5 text-accent" /> Memories
         </span>
@@ -90,9 +99,14 @@ export function CityDetail({
           {memories.slice(0, 4).map((m) => (
             <MemoryMini key={m.id} m={m} />
           ))}
+          {memories.length > 4 && (
+            <Link href={`/memories?city=${encodeURIComponent(cityKey(city.country_code, city.name))}`} className="flex items-center gap-1 text-sm font-medium text-accent hover:underline">
+              All {pluralize(memories.length, "memory", "memories")} <ArrowRight className="size-3.5" />
+            </Link>
+          )}
         </div>
       ) : (
-        <EmptyState compact icon={Camera} title="No memories here yet" action={<Button size="sm" variant="secondary" onClick={() => ws.openQuickAdd("memory")}>Write one</Button>} />
+        <EmptyState compact icon={Camera} title="No memories here yet" action={<Button size="sm" variant="secondary" onClick={() => ws.openQuickAdd({ kind: "memory", cityId: city.id })}>Write one</Button>} />
       )}
     </section>
   );

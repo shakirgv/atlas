@@ -8,7 +8,10 @@ import MarkerClusterGroup from "react-leaflet-cluster";
 import { MAP_TILE_ATTRIBUTION, MAP_TILE_URL } from "@/lib/config";
 import { escapeHtml } from "@/components/map/leaflet-map";
 
-export type PhotoMarker = { id: string; lat: number; lng: number; label: string; thumb?: string | null; glyph?: string };
+export type PhotoMarker = { id: string; lat: number; lng: number; label: string; thumb?: string | null; glyph?: string; journal?: boolean };
+
+// Lucide's book-open, drawn inline because a Leaflet divIcon takes an HTML string.
+const JOURNAL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>`;
 
 export type PhotoMapInnerProps = {
   markers: PhotoMarker[];
@@ -17,6 +20,8 @@ export type PhotoMapInnerProps = {
   onMapClick?: (lat: number, lng: number) => void;
   onReady?: (map: L.Map) => void;
   fitKey: string;
+  /** "select" (default) reports a tapped cluster's ids; "zoom" zooms into it, and fans out markers that share a spot. */
+  clusterClick?: "select" | "zoom";
 };
 
 /** Each marker remembers its id, so a cluster can report what it holds. */
@@ -26,7 +31,9 @@ function iconFor(m: PhotoMarker) {
   const size = 44;
   const inner = m.thumb
     ? `<img src="${escapeHtml(m.thumb)}" alt="" style="width:100%;height:100%;object-fit:cover"/>`
-    : `<span style="display:grid;place-items:center;width:100%;height:100%;color:white;font:600 14px/1 var(--font-sans)">${escapeHtml(m.glyph ?? "•")}</span>`;
+    : m.journal
+      ? `<span data-testid="journal-marker" style="display:grid;place-items:center;width:100%;height:100%;color:white">${JOURNAL_SVG}</span>`
+      : `<span style="display:grid;place-items:center;width:100%;height:100%;color:white;font:600 14px/1 var(--font-sans)">${escapeHtml(m.glyph ?? "•")}</span>`;
   return L.divIcon({
     className: "atlas-marker",
     iconSize: [size, size],
@@ -65,24 +72,29 @@ function MapBridge({ markers, fitKey, onMapClick, onReady }: Pick<PhotoMapInnerP
 }
 
 /** Leaflet with marker clusters. Load through next/dynamic with ssr:false. */
-export default function PhotoMapInner({ markers, onSelect, onMapClick, onReady, fitKey }: PhotoMapInnerProps) {
+export default function PhotoMapInner({ markers, onSelect, onMapClick, onReady, fitKey, clusterClick = "select" }: PhotoMapInnerProps) {
+  const zoom = clusterClick === "zoom";
   return (
     <MapContainer center={[20, 10]} zoom={2} scrollWheelZoom style={{ height: "100%", width: "100%" }} attributionControl>
       <TileLayer url={MAP_TILE_URL} attribution={MAP_TILE_ATTRIBUTION} maxZoom={19} className="atlas-tiles" />
       <MarkerClusterGroup
         chunkedLoading
         maxClusterRadius={56}
-        // A click shows the cluster's photos instead of zooming; the strip has a button to zoom in.
-        zoomToBoundsOnClick={false}
+        // In "select" mode a click shows the cluster's photos instead of zooming; the strip has a button to zoom in.
+        zoomToBoundsOnClick={zoom}
         showCoverageOnHover={false}
-        spiderfyOnMaxZoom={false}
+        spiderfyOnMaxZoom={zoom}
         iconCreateFunction={clusterIcon}
-        eventHandlers={{
-          clusterclick: (e: L.LeafletEvent) => {
-            const cluster = (e as unknown as { layer: { getAllChildMarkers: () => IdMarker[] } }).layer;
-            onSelect(cluster.getAllChildMarkers().flatMap((m) => (m.options.photoId ? [m.options.photoId] : [])));
-          },
-        }}
+        eventHandlers={
+          zoom
+            ? {}
+            : {
+                clusterclick: (e: L.LeafletEvent) => {
+                  const cluster = (e as unknown as { layer: { getAllChildMarkers: () => IdMarker[] } }).layer;
+                  onSelect(cluster.getAllChildMarkers().flatMap((m) => (m.options.photoId ? [m.options.photoId] : [])));
+                },
+              }
+        }
       >
         {markers.map((m) => (
           <Marker key={m.id} position={[m.lat, m.lng]} icon={iconFor(m)} {...({ photoId: m.id } as object)} eventHandlers={{ click: () => onSelect([m.id]) }} keyboard>
