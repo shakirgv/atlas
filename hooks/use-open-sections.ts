@@ -25,16 +25,19 @@ export function useViewParam<T extends string>(views: readonly T[]) {
   return [view, change] as const;
 }
 
-/** Which sections of a list are open. A fresh visit starts closed; coming back from a detail page reopens what was open. */
-export function useOpenSections(alsoOpen?: string | null) {
+/**
+ * Which sections of a list are open. A fresh visit starts closed; coming back from a detail page reopens what was open.
+ * `param` names the address key, for a page that already uses "open" for something else.
+ */
+export function useOpenSections(alsoOpen?: string | null, param = "open") {
   const params = useSearchParams();
   const [open, setOpen] = useState(() => {
-    const ids = new Set(params.get("open")?.split(","));
+    const ids = new Set(params.get(param)?.split(",").filter(Boolean));
     if (alsoOpen) ids.add(alsoOpen);
     return ids;
   });
 
-  useEffect(() => setUrlParam("open", open.size ? [...open].join(",") : null), [open]);
+  useEffect(() => setUrlParam(param, open.size ? [...open].join(",") : null), [open, param]);
 
   const toggle = useCallback(
     (id: string) =>
@@ -47,5 +50,8 @@ export function useOpenSections(alsoOpen?: string | null) {
   );
   const show = useCallback((id: string) => setOpen((prev) => (prev.has(id) ? prev : new Set(prev).add(id))), []);
 
-  return { open, toggle, show };
+  /** Opens exactly these, e.g. every section at once, or none. */
+  const setAll = useCallback((ids: string[]) => setOpen(new Set(ids)), []);
+
+  return { open, toggle, show, setAll };
 }

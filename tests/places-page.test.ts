@@ -4,6 +4,7 @@ import {
   DEFAULT_PLACE_FILTERS,
   directionsUrl,
   filterPlaceList,
+  groupPlacesByCountry,
   mergePlaceFilters,
   moreFilterCounts,
   parsePlaceFilters,
@@ -121,6 +122,31 @@ describe("filtering places", () => {
 
   it("counts each extra filter against what the other filters leave", () => {
     expect(moreFilterCounts(places, f({ country: "jp", missingPin: true }), ctx)).toEqual({ notInItinerary: 2, missingPin: 1, missingCover: 0 });
+  });
+});
+
+describe("places folded under their countries", () => {
+  const countries = [{ id: "it" }, { id: "jp" }, { id: "fr" }];
+  const named = [
+    { id: "tokyo", name: "Tokyo", trip_country_id: "jp" },
+    { id: "kyoto", name: "Kyoto", trip_country_id: "jp" },
+    { id: "osaka", name: "Osaka", trip_country_id: "jp" },
+    { id: "rome", name: "Rome", trip_country_id: "it" },
+  ];
+  const list = [place("a", { city_id: "kyoto" }), place("b"), place("c", { city_id: "kyoto" }), place("d", { city_id: "rome" })];
+
+  it("keeps route order and leaves out countries with nothing to show", () => {
+    expect(groupPlacesByCountry(list, countries, named).map((g) => [g.country.id, g.places.map((p) => p.id)])).toEqual([
+      ["it", ["d"]],
+      ["jp", ["a", "b", "c"]],
+    ]);
+  });
+
+  it("lists only the cities that hold places, in route order, with their counts", () => {
+    expect(groupPlacesByCountry(list, countries, named)[1]!.cities).toEqual([
+      { id: "tokyo", name: "Tokyo", count: 1 },
+      { id: "kyoto", name: "Kyoto", count: 2 },
+    ]);
   });
 });
 

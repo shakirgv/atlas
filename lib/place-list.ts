@@ -161,3 +161,23 @@ export function suggestedDay<T extends { city_id: string | null; date: string | 
   const upcoming = (list: T[]) => list.find((d) => d.date && d.date >= today);
   return upcoming(inCity) ?? inCity[0] ?? upcoming(days) ?? days[0] ?? null;
 }
+
+export type PlaceGroup<P, C> = {
+  country: C;
+  places: P[];
+  /** The country's cities that hold some of these places, in route order, with how many each holds. */
+  cities: { id: string; name: string; count: number }[];
+};
+
+/** Places under their countries, in route order. Countries with nothing left after the filters are left out. */
+export function groupPlacesByCountry<P extends { city_id: string }, C extends { id: string }>(places: P[], countries: C[], cities: { id: string; name: string; trip_country_id: string }[]): PlaceGroup<P, C>[] {
+  const cityById = new Map(cities.map((c) => [c.id, c]));
+  return countries.flatMap((country) => {
+    const own = places.filter((p) => cityById.get(p.city_id)?.trip_country_id === country.id);
+    if (!own.length) return [];
+    const counts = new Map<string, number>();
+    for (const p of own) counts.set(p.city_id, (counts.get(p.city_id) ?? 0) + 1);
+    const inCountry = cities.filter((c) => counts.has(c.id)).map((c) => ({ id: c.id, name: c.name, count: counts.get(c.id)! }));
+    return [{ country, places: own, cities: inCountry }];
+  });
+}

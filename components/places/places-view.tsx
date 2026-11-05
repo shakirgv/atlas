@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarX2, ImageOff, Images, LayoutGrid, ListFilter, Map as MapIcon, MapPin, MapPinOff, Plus, Search, Star, Table2, X } from "lucide-react";
+import { CalendarX2, ChevronDown, ImageOff, Images, LayoutGrid, ListFilter, Map as MapIcon, MapPin, MapPinOff, Plus, Search, Star, Table2, X } from "lucide-react";
 import type { PlaceVM } from "@/lib/data";
 import { PLACE_STATUSES, type PhotoView, type PlaceCategory, type PlaceStatus } from "@/lib/types";
 import { PLACE_CATEGORY_META } from "@/lib/icons";
@@ -12,6 +12,7 @@ import {
   citiesInCountry,
   DEFAULT_PLACE_FILTERS,
   filterPlaceList,
+  groupPlacesByCountry,
   hasPin,
   mergePlaceFilters,
   moreFilterCounts,
@@ -20,7 +21,8 @@ import {
   type PlaceListFilters,
 } from "@/lib/place-list";
 import { placeCategories } from "@/lib/city-pages";
-import { pluralize } from "@/lib/utils";
+import { cn, pluralize } from "@/lib/utils";
+import { useOpenSections } from "@/hooks/use-open-sections";
 import { Cover } from "@/components/common/cover";
 import { EmptyState } from "@/components/common/empty-state";
 import { PageHeader } from "@/components/common/page-header";
@@ -118,7 +120,99 @@ export function PlacesView({
   const anyFilter = mergePlaceFilters("", { ...filters, view: "grid" }) !== "";
   const pinnedCount = filtered.filter(hasPin).length;
   const unpinned = filtered.length - pinnedCount;
+  // Long lists fold under their countries. Searching or picking a country or city already says what to show, so those open.
+  const groups = useMemo(() => groupPlacesByCountry(filtered, countries, cities), [filtered, countries, cities]);
+  const { open: openCountries, toggle: toggleCountry, setAll: setAllOpen } = useOpenSections(null, "countries");
+  const [cityPick, setCityPick] = useState<Record<string, string>>({});
+  const revealed = Boolean(query.trim()) || country !== "all" || city !== "all" || groups.length === 1;
+  const allOpen = groups.every((g) => openCountries.has(g.country.id));
   const coverTripIds = ws.isAll ? ws.trips.map((t) => t.id) : ws.activeTripId ? [ws.activeTripId] : [];
+
+
+  const placeCards = (list: PlaceVM[]) => (
+    <Stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {list.map((p) => {
+        const m = PLACE_CATEGORY_META[p.category as PlaceCategory] ?? PLACE_CATEGORY_META.other;
+        return (
+          <StaggerItem key={p.id}>
+            <div role="button" tabIndex={0} onClick={() => setOpen(p.id)} onKeyDown={(e) => e.key === "Enter" && setOpen(p.id)} className="card card-hover block cursor-pointer overflow-hidden text-left">
+              <Cover src={p.cover_url} alt={p.name} seed={p.id} icon={m.icon} className="aspect-[4/3]">
+                <div className="photo-gradient absolute inset-0" />
+                <div className="absolute inset-x-3 top-3 flex items-start justify-between">
+                  {p.country_code ? <FlagChip code={p.country_code} size="sm" onPhoto /> : <span />}
+                  <PlaceStatusChip status={p.status as PlaceStatus} onPhoto size="sm" />
+                </div>
+                <div className="absolute inset-x-3.5 bottom-3 text-white">
+                  <p className="flex items-center gap-1.5 text-xs text-white/85">
+                    <m.icon className="size-3.5" /> {m.label} · {p.city_name}
+                  </p>
+                  <h3 className="line-clamp-2 text-lg font-semibold leading-tight">{p.name}</h3>
+                </div>
+              </Cover>
+              <div className="flex items-center justify-between gap-2 px-3.5 py-2.5">
+                <span className="flex items-center gap-1 text-sm text-muted">
+                  {p.rating ? (
+                    <>
+                      <Star className="size-3.5 fill-planned text-planned" /> {p.rating}
+                    </>
+                  ) : (
+                    "Not rated"
+                  )}
+                  {p.cost_estimate != null && <span className="num ml-2">≈ {formatMoney(Number(p.cost_estimate), p.cost_currency ?? "USD")}</span>}
+                </span>
+                <MarkVisitedButton place={p} className="size-8" />
+              </div>
+            </div>
+          </StaggerItem>
+        );
+      })}
+    </Stagger>
+  );
+
+  const placeTable = (list: PlaceVM[]) => (
+    <div className="card overflow-x-auto">
+      <table className="w-full min-w-[640px] text-sm">
+        <thead className="border-b border-border text-left text-xs uppercase tracking-wider text-muted">
+          <tr>
+            <th className="px-4 py-3 font-medium">Place</th>
+            <th className="px-4 py-3 font-medium">City</th>
+            <th className="px-4 py-3 font-medium">Category</th>
+            <th className="px-4 py-3 font-medium">Rating</th>
+            <th className="px-4 py-3 font-medium">Status</th>
+            <th className="px-4 py-3 text-right font-medium">Visited</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {list.map((p) => {
+            const m = PLACE_CATEGORY_META[p.category as PlaceCategory] ?? PLACE_CATEGORY_META.other;
+            return (
+              <tr key={p.id} onClick={() => setOpen(p.id)} className="cursor-pointer hover:bg-ink/[0.03]">
+                <td className="px-4 py-2">
+                  <span className="flex items-center gap-3">
+                    <PlaceThumb place={p} className="size-9 rounded-lg" />
+                    <span className="font-medium">{p.name}</span>
+                  </span>
+                </td>
+                <td className="px-4 py-2 text-muted">{p.city_name}</td>
+                <td className="px-4 py-2">
+                  <span className="flex items-center gap-1.5">
+                    <m.icon className="size-4" style={{ color: m.color }} /> {m.label}
+                  </span>
+                </td>
+                <td className="num px-4 py-2">{p.rating ? `★ ${p.rating}` : "—"}</td>
+                <td className="px-4 py-2">
+                  <PlaceStatusChip status={p.status as PlaceStatus} size="sm" />
+                </td>
+                <td className="px-4 py-2 text-right">
+                  <MarkVisitedButton place={p} className="ml-auto size-8" />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
 
   return (
     <PageTransition>
@@ -257,86 +351,62 @@ export function PlacesView({
 
           {!filtered.length ? (
             <EmptyState compact icon={Search} title="No matches" description="Try different filters." />
-          ) : view === "grid" ? (
-            <Stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filtered.map((p) => {
-                const m = PLACE_CATEGORY_META[p.category as PlaceCategory] ?? PLACE_CATEGORY_META.other;
+          ) : view !== "map" ? (
+            <div className="flex flex-col gap-3" data-testid="place-groups">
+              {groups.length > 1 && !revealed && (
+                <div className="flex justify-end">
+                  <button type="button" className="text-[13px] text-accent hover:underline" onClick={() => setAllOpen(allOpen ? [] : groups.map((g) => g.country.id))}>
+                    {allOpen ? "Close all countries" : "Open all countries"}
+                  </button>
+                </div>
+              )}
+              {groups.map((g) => {
+                const isOpen = revealed || openCountries.has(g.country.id);
+                // A city picked here narrows this country only. One that has nothing left under the filters gives way.
+                const picked = city === "all" && g.cities.some((c) => c.id === cityPick[g.country.id]) ? cityPick[g.country.id]! : "all";
+                const list = picked === "all" ? g.places : g.places.filter((p) => p.city_id === picked);
+                const visited = g.places.filter((p) => p.status === "visited").length;
                 return (
-                  <StaggerItem key={p.id}>
-                    <div role="button" tabIndex={0} onClick={() => setOpen(p.id)} onKeyDown={(e) => e.key === "Enter" && setOpen(p.id)} className="card card-hover block cursor-pointer overflow-hidden text-left">
-                      <Cover src={p.cover_url} alt={p.name} seed={p.id} icon={m.icon} className="aspect-[4/3]">
-                        <div className="photo-gradient absolute inset-0" />
-                        <div className="absolute inset-x-3 top-3 flex items-start justify-between">
-                          {p.country_code ? <FlagChip code={p.country_code} size="sm" onPhoto /> : <span />}
-                          <PlaceStatusChip status={p.status as PlaceStatus} onPhoto size="sm" />
-                        </div>
-                        <div className="absolute inset-x-3.5 bottom-3 text-white">
-                          <p className="flex items-center gap-1.5 text-xs text-white/85">
-                            <m.icon className="size-3.5" /> {m.label} · {p.city_name}
-                          </p>
-                          <h3 className="line-clamp-2 text-lg font-semibold leading-tight">{p.name}</h3>
-                        </div>
-                      </Cover>
-                      <div className="flex items-center justify-between gap-2 px-3.5 py-2.5">
-                        <span className="flex items-center gap-1 text-sm text-muted">
-                          {p.rating ? (
-                            <>
-                              <Star className="size-3.5 fill-planned text-planned" /> {p.rating}
-                            </>
-                          ) : (
-                            "Not rated"
-                          )}
-                          {p.cost_estimate != null && <span className="num ml-2">≈ {formatMoney(Number(p.cost_estimate), p.cost_currency ?? "USD")}</span>}
+                  <section key={g.country.id} aria-label={g.country.name} data-testid="place-country">
+                    <h2>
+                      <button
+                        type="button"
+                        onClick={() => toggleCountry(g.country.id)}
+                        disabled={revealed}
+                        aria-expanded={isOpen}
+                        aria-controls={`places-${g.country.id}`}
+                        className="card flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition-colors enabled:hover:bg-ink/[0.03]"
+                      >
+                        <span className="text-2xl leading-none">{g.country.flag}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-xl font-semibold">{g.country.name}</span>
+                          <span className="block truncate text-xs text-muted">
+                            {pluralize(g.places.length, "place")} · {visited} visited · {pluralize(g.cities.length, "city", "cities")}
+                          </span>
                         </span>
-                        <MarkVisitedButton place={p} className="size-8" />
+                        {!revealed && <ChevronDown className={cn("size-5 shrink-0 text-muted transition-transform", isOpen && "rotate-180")} />}
+                      </button>
+                    </h2>
+                    {isOpen && (
+                      <div id={`places-${g.country.id}`} className="flex flex-col gap-3 pb-4 pt-3">
+                        {city === "all" && g.cities.length > 1 && (
+                          <div role="group" aria-label={`Cities in ${g.country.name}`} className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
+                            <FilterChip active={picked === "all"} onClick={() => setCityPick((m) => ({ ...m, [g.country.id]: "all" }))}>
+                              All cities <span className="num text-xs opacity-60">{g.places.length}</span>
+                            </FilterChip>
+                            {g.cities.map((c) => (
+                              <FilterChip key={c.id} active={picked === c.id} onClick={() => setCityPick((m) => ({ ...m, [g.country.id]: c.id }))}>
+                                {c.name} <span className="num text-xs opacity-60">{c.count}</span>
+                              </FilterChip>
+                            ))}
+                          </div>
+                        )}
+                        {view === "grid" ? placeCards(list) : placeTable(list)}
                       </div>
-                    </div>
-                  </StaggerItem>
+                    )}
+                  </section>
                 );
               })}
-            </Stagger>
-          ) : view === "table" ? (
-            <div className="card overflow-x-auto">
-              <table className="w-full min-w-[640px] text-sm">
-                <thead className="border-b border-border text-left text-xs uppercase tracking-wider text-muted">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">Place</th>
-                    <th className="px-4 py-3 font-medium">City</th>
-                    <th className="px-4 py-3 font-medium">Category</th>
-                    <th className="px-4 py-3 font-medium">Rating</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 text-right font-medium">Visited</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {filtered.map((p) => {
-                    const m = PLACE_CATEGORY_META[p.category as PlaceCategory] ?? PLACE_CATEGORY_META.other;
-                    return (
-                      <tr key={p.id} onClick={() => setOpen(p.id)} className="cursor-pointer hover:bg-ink/[0.03]">
-                        <td className="px-4 py-2">
-                          <span className="flex items-center gap-3">
-                            <PlaceThumb place={p} className="size-9 rounded-lg" />
-                            <span className="font-medium">{p.name}</span>
-                          </span>
-                        </td>
-                        <td className="px-4 py-2 text-muted">{p.city_name}</td>
-                        <td className="px-4 py-2">
-                          <span className="flex items-center gap-1.5">
-                            <m.icon className="size-4" style={{ color: m.color }} /> {m.label}
-                          </span>
-                        </td>
-                        <td className="num px-4 py-2">{p.rating ? `★ ${p.rating}` : "—"}</td>
-                        <td className="px-4 py-2">
-                          <PlaceStatusChip status={p.status as PlaceStatus} size="sm" />
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          <MarkVisitedButton place={p} className="ml-auto size-8" />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
