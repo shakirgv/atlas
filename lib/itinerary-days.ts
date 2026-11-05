@@ -1,3 +1,5 @@
+import { datesInRange, fmtDate } from "@/lib/dates";
+
 type DayLike = { id: string; day_number: number; date: string | null };
 
 export type MissingDaysPlan = {
@@ -45,6 +47,33 @@ export function planMissingDays<T extends DayLike>(dates: string[], days: T[], h
   return plan;
 }
 
+/** Longest stay `generateDays` fills, in days. */
+export const MAX_GENERATED_DAYS = 120;
+
+export type MissingDaysPreview = {
+  /** Every date that gains a day, in order: new days, and empty undated days taking a date. */
+  dates: string[];
+  /** Empty undated days that take one of those dates instead of a new day being added. */
+  filled: number;
+  /** Existing days that only change number, to stay in date order. */
+  renumbered: number;
+  tooLong: boolean;
+};
+
+/** What "Generate missing days" will do to a stay, worked out with the same plan `generateDays` runs. */
+export function previewMissingDays<T extends DayLike>(arrive: string | null, depart: string | null, days: T[], hasContent: (day: T) => boolean): MissingDaysPreview {
+  const all = arrive && depart ? datesInRange(arrive, depart) : [];
+  if (all.length > MAX_GENERATED_DAYS) return { dates: [], filled: 0, renumbered: 0, tooLong: true };
+  const plan = planMissingDays(all, days, hasContent);
+  const filled = plan.renumber.filter((r) => r.date);
+  return {
+    dates: [...plan.insert.map((r) => r.date), ...filled.map((r) => r.date!)].sort(),
+    filled: filled.length,
+    renumbered: plan.renumber.length - filled.length,
+    tooLong: false,
+  };
+}
+
 export type DayGroup<T> = { cityId: string | null; name: string; days: T[] };
 
 /** Days under their city, in route order. Days with no city, or a city since removed, come last. */
@@ -60,4 +89,26 @@ export function stopTime(start: string | null | undefined, end: string | null | 
   const from = start?.slice(0, 5) ?? "";
   const to = end?.slice(0, 5) ?? "";
   return from && to ? `${from} – ${to}` : from || to;
+}
+
+/**
+ * How well a day fits what was typed into Jump to day, from 0 (hidden) to 1. A number is a day number first, then part of a date.
+ * Words match the date written out ("tue", "12 jan", "2037-01-12"), the day's title or its city, in any order.
+ */
+export function dayMatch(query: string, day: { day_number: number; date: string | null; title: string | null }, cityName: string | null): number {
+  const q = query.trim().toLowerCase().replace(/^day(?=\s|\d|$)\s*/, "");
+  if (!q) return 1;
+  const text = [
+    day.date ?? "",
+    day.date ? fmtDate(day.date, "EEEE EEE d dd MMMM MMM yyyy") : "",
+    day.title ?? "",
+    cityName ?? "",
+  ]
+    .join(" ")
+    .toLowerCase();
+  if (/^\d+$/.test(q)) {
+    if (String(day.day_number) === q) return 1;
+    return text.split(/[\s-]+/).includes(q) || text.split(/[\s-]+/).includes(q.padStart(2, "0")) ? 0.5 : 0;
+  }
+  return q.split(/\s+/).every((w) => text.includes(w)) ? 0.6 : 0;
 }

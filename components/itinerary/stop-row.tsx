@@ -18,7 +18,27 @@ import { Checkbox } from "@/components/ui/misc";
 import { useConfirm } from "@/components/ui/confirm";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-export function StopRow({ item, places, highlighted, onChanged }: { item: ItineraryItem; places: PlaceVM[]; highlighted?: boolean; onChanged?: (patch: Partial<ItineraryItem>) => void }) {
+/** A stop's marker on the day map: its number there and its colour. */
+export type StopPin = { number: number; color: string };
+
+const INTERACTIVE = "button, a, input, textarea, select, label, [role=checkbox], [role=menu], [data-radix-popper-content-wrapper]";
+
+export function StopRow({
+  item,
+  places,
+  highlighted,
+  pin,
+  onFocusPin,
+  onChanged,
+}: {
+  item: ItineraryItem;
+  places: PlaceVM[];
+  highlighted?: boolean;
+  pin?: StopPin | null;
+  /** Shows this stop's marker on the day map. */
+  onFocusPin?: () => void;
+  onChanged?: (patch: Partial<ItineraryItem>) => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id, data: { type: "stop", dayId: item.day_id } });
   const [editing, setEditing] = useState(false);
   const [pending, start] = useTransition();
@@ -87,8 +107,12 @@ export function StopRow({ item, places, highlighted, onChanged }: { item: Itiner
       ref={setNodeRef}
       id={`stop-${item.id}`}
       style={{ transform: CSS.Transform.toString(transform), transition }}
+      // Clicking the row anywhere but its controls finds the stop on the map.
+      onClick={pin && onFocusPin ? (e) => !(e.target as HTMLElement).closest(INTERACTIVE) && onFocusPin() : undefined}
       className={cn(
-        "group flex items-start gap-2 rounded-xl bg-surface px-1.5 py-1.5 ring-1 ring-transparent transition-shadow hover:ring-border",
+        "group flex scroll-mt-28 scroll-mb-6 items-start gap-2 rounded-xl bg-surface px-1.5 py-1.5 ring-1 ring-transparent transition-shadow",
+        !highlighted && "hover:ring-border",
+        pin && onFocusPin && "cursor-pointer",
         isDragging && "z-20 shadow-lift ring-accent/40",
         highlighted && "ring-2 ring-accent",
       )}
@@ -108,6 +132,18 @@ export function StopRow({ item, places, highlighted, onChanged }: { item: Itiner
       </span>
       <div className="min-w-0 flex-1 py-1">
         <div className="flex items-baseline gap-2">
+          {pin && (
+            <button
+              type="button"
+              onClick={onFocusPin}
+              aria-label={`Show ${item.title} on the map (marker ${pin.number})`}
+              title="Show on the map"
+              className="num grid size-5 shrink-0 translate-y-[3px] place-items-center self-start rounded-full text-[10px] font-semibold text-white ring-2 ring-surface transition-transform hover:scale-110"
+              style={{ background: pin.color }}
+            >
+              {pin.number}
+            </button>
+          )}
           {item.start_time && (
             <span className="num shrink-0 text-xs font-semibold text-muted">
               {fmtTime(item.start_time)}

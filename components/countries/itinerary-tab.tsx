@@ -74,7 +74,6 @@ export function ItineraryTab({ country, cities, days, items, places }: { country
   const params = useSearchParams();
   const [grouping, setGrouping] = useState<Grouping>(params.get("group") === "city" ? "city" : "day");
   const { open, toggle } = useOpenSections();
-  const hasDates = Boolean(country.arrive_date && country.depart_date);
   const changeGrouping = (next: Grouping) => {
     setGrouping(next);
     setUrlParam("group", next === "city" ? "city" : null);
@@ -107,7 +106,7 @@ export function ItineraryTab({ country, cities, days, items, places }: { country
                 ]}
               />
             )}
-            <GenerateDaysButton countryId={country.id} hasDates={hasDates} variant="secondary" />
+            <GenerateDaysButton country={country} days={days} dayIdsWithStops={items.map((i) => i.day_id)} variant="secondary" />
             {days.length > 0 && (
               <Button size="md" asChild>
                 <Link href={`/itinerary?country=${country.id}`}>
@@ -121,7 +120,7 @@ export function ItineraryTab({ country, cities, days, items, places }: { country
         {durationLabel(country.arrive_date, country.depart_date, days.length)}
       </SectionTitle>
       {!days.length ? (
-        <EmptyState icon={CalendarDays} title="No days yet" description={country.arrive_date ? "Generate one day per date, then fill them with stops." : "Set the country dates first, or create blank days."} action={<GenerateDaysButton countryId={country.id} hasDates={hasDates} />} />
+        <EmptyState icon={CalendarDays} title="No days yet" description={country.arrive_date ? "Generate one day per date, then fill them with stops." : "Set the country dates first, or create blank days."} action={<GenerateDaysButton country={country} />} />
       ) : grouping === "city" ? (
         <div className="flex flex-col gap-5">
           {groupDaysByCity(days, cities).map((g) => (

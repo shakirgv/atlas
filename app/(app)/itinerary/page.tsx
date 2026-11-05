@@ -35,7 +35,7 @@ export default async function ItineraryPage({ searchParams }: PageProps<"/itiner
     <ItineraryPlanner
       // Another country or a link to a day starts the view over: open days and the city filter belong to what was on screen.
       key={`${selected?.id}:${initialDayId}`}
-      countries={g.countries.map((c) => ({ id: c.id, name: c.name, flag: c.flag, trip_title: c.trip_title, hasDays: g.days.some((d) => d.trip_country_id === c.id) }))}
+      countries={g.countries.map((c) => ({ id: c.id, name: c.name, flag: c.flag, trip_id: c.trip_id, trip_title: c.trip_title, hasDays: g.days.some((d) => d.trip_country_id === c.id) }))}
       country={selected}
       days={days}
       items={g.items.filter((i) => dayIds.has(i.day_id))}

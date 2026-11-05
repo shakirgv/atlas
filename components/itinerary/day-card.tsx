@@ -14,7 +14,7 @@ import { cn, pluralize } from "@/lib/utils";
 import { Input, NativeSelect, Textarea } from "@/components/ui/input";
 import { useConfirm } from "@/components/ui/confirm";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { StopRow } from "./stop-row";
+import { StopRow, type StopPin } from "./stop-row";
 
 export function DayCard({
   day,
@@ -27,8 +27,10 @@ export function DayCard({
   selected,
   open,
   highlightedStop,
+  pins,
   onSelect,
   onToggle,
+  onFocusStop,
   onLocalChange,
 }: {
   day: ItineraryDay;
@@ -41,8 +43,11 @@ export function DayCard({
   selected: boolean;
   open: boolean;
   highlightedStop: string | null;
+  /** The day's stops that are on the map, by stop id. */
+  pins?: Map<string, StopPin>;
   onSelect: () => void;
   onToggle: () => void;
+  onFocusStop?: (itemId: string) => void;
   onLocalChange: (itemId: string, patch: Partial<ItineraryItem>) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `day:${day.id}`, data: { type: "day", dayId: day.id } });
@@ -244,7 +249,15 @@ export function DayCard({
               <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                 <ul className="flex flex-col gap-1">
                   {items.map((it) => (
-                    <StopRow key={it.id} item={it} places={places} highlighted={highlightedStop === it.id} onChanged={(patch) => onLocalChange(it.id, patch)} />
+                    <StopRow
+                      key={it.id}
+                      item={it}
+                      places={places}
+                      highlighted={highlightedStop === it.id}
+                      pin={pins?.get(it.id)}
+                      onFocusPin={onFocusStop && (() => onFocusStop(it.id))}
+                      onChanged={(patch) => onLocalChange(it.id, patch)}
+                    />
                   ))}
                 </ul>
               </SortableContext>
@@ -278,6 +291,47 @@ export function DayCard({
           </>
         )}
       </div>
+    </article>
+  );
+}
+
+/** A day folded to one line in the compact view: date, title, city and stops. It still takes a dragged stop. */
+export function CompactDayRow({ day, cityName, stops, selected, onSelect }: { day: ItineraryDay; cityName: string | null; stops: number; selected: boolean; onSelect: () => void }) {
+  const { setNodeRef, isOver } = useDroppable({ id: `day:${day.id}`, data: { type: "day", dayId: day.id } });
+  const isToday = day.date === todayIso();
+  return (
+    <article id={`day-${day.id}`} className="relative scroll-mt-24 pl-12 sm:pl-14" aria-label={`Day ${day.day_number}`}>
+      <span
+        aria-hidden
+        className={cn(
+          "absolute left-1 top-1/2 z-10 grid size-8 -translate-y-1/2 place-items-center rounded-full border-2 font-display text-sm font-semibold sm:left-1.5",
+          selected ? "border-accent bg-accent text-white" : isToday ? "border-accent bg-surface text-accent" : "border-border bg-surface text-ink",
+        )}
+      >
+        <span className="num">{day.day_number}</span>
+      </span>
+      <button
+        ref={setNodeRef}
+        type="button"
+        onClick={onSelect}
+        aria-expanded={false}
+        className={cn(
+          "card flex min-h-12 w-full items-center gap-2 px-3 py-2 text-left text-sm transition-shadow hover:ring-1 hover:ring-border sm:gap-3 sm:px-4",
+          selected && "ring-2 ring-accent/50",
+          isOver && "ring-2 ring-visited/60",
+        )}
+      >
+        <span className="num w-[4.6rem] shrink-0 text-xs font-semibold uppercase text-muted sm:w-[5.5rem] sm:tracking-wide">
+          {day.date ? fmtDate(day.date, "EEE dd MMM") : `Day ${day.day_number}`}
+        </span>
+        <span className="min-w-0 flex-1 truncate">
+          <span className={cn("font-medium", !day.title && "text-muted")}>{day.title || "Untitled day"}</span>
+          {cityName && <span className="text-muted"> · {cityName}</span>}
+        </span>
+        {isToday && <span className="shrink-0 rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-white">TODAY</span>}
+        <span className="num shrink-0 text-xs text-muted">{pluralize(stops, "stop")}</span>
+        <ChevronDown className="size-4 shrink-0 text-muted" />
+      </button>
     </article>
   );
 }

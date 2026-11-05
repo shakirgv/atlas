@@ -24,9 +24,11 @@ const WORKSPACE: Workspace = {
 };
 
 const COUNTRIES = [
-  { id: "jp", name: "Japan", flag: "🇯🇵", trip_title: "World Tour", hasDays: true },
-  { id: "it", name: "Italy", flag: "🇮🇹", trip_title: "World Tour", hasDays: false },
-  { id: "ge", name: "Georgia", flag: "🇬🇪", trip_title: "World Tour", hasDays: false },
+  { id: "jp", name: "Japan", flag: "🇯🇵", trip_id: "t", trip_title: "World Tour", hasDays: true },
+  { id: "it", name: "Italy", flag: "🇮🇹", trip_id: "t", trip_title: "World Tour", hasDays: false },
+  { id: "ge", name: "Georgia", flag: "🇬🇪", trip_id: "t", trip_title: "World Tour", hasDays: false },
+  { id: "tr", name: "Türkiye", flag: "🇹🇷", trip_id: "t", trip_title: "World Tour", hasDays: false },
+  { id: "ci", name: "Côte d'Ivoire", flag: "🇨🇮", trip_id: "t", trip_title: "World Tour", hasDays: false },
 ];
 
 const city = (id: string, trip_country_id: string, name: string, display: CityVM["display"], arrive_date: string | null, lat: number, lng: number) =>
@@ -41,7 +43,7 @@ const CITIES = [
   city("tbilisi", "ge", "Tbilisi", "visited", "2037-07-01", 41.72, 44.79),
 ];
 
-const JAPAN = { id: "jp", name: "Japan", flag: "🇯🇵", code: "JP", trip_id: "t", trip_title: "World Tour", arrive_date: "2037-05-01", depart_date: "2037-05-05", display: "ongoing", cover_url: null } as CountryVM;
+const JAPAN = { id: "jp", name: "Japan", flag: "🇯🇵", code: "JP", trip_id: "t", trip_title: "World Tour", arrive_date: "2037-05-01", depart_date: "2037-05-14", display: "ongoing", cover_url: null } as CountryVM;
 const JAPAN_CITIES = CITIES.filter((c) => c.trip_country_id === "jp");
 
 const day = (id: string, day_number: number, date: string | null, city_id: string | null, title: string | null) => ({ id, trip_country_id: "jp", day_number, date, city_id, title, notes: null }) as ItineraryDay;
@@ -52,6 +54,10 @@ const DAYS = [
   day("d3", 3, "2037-05-03", "tokyo", "Asakusa and Ueno"),
   day("d4", 4, "2037-05-04", "kyoto", "Temples"),
   day("d5", 5, "2037-05-05", null, null),
+  day("d6", 6, "2037-05-07", "kyoto", "Arashiyama"),
+  day("d7", 7, "2037-05-08", "kyoto", "Northern temples"),
+  day("d8", 8, "2037-05-10", "osaka", null),
+  day("d9", 9, null, null, null),
 ];
 
 const stop = (id: string, day_id: string, order_index: number, title: string, place_id: string | null, done = false) => ({ id, day_id, order_index, title, place_id, done, type: "activity", start_time: null, end_time: null, notes: null }) as ItineraryItem;
@@ -60,12 +66,26 @@ const ITEMS = [
   stop("s1", "d1", 0, "Haneda to hotel", null, true),
   stop("s2", "d1", 1, "Shibuya Crossing", "shibuya"),
   stop("s3", "d3", 0, "Senso-ji temple", "sensoji"),
-  stop("s4", "d3", 1, "Ueno park", null),
-  stop("s5", "d4", 0, "Fushimi Inari", null),
+  stop("s4", "d3", 1, "Ueno park", "ueno"),
+  stop("s4b", "d3", 2, "Lunch somewhere", null),
+  stop("s4c", "d3", 3, "Akihabara", "akiba"),
+  stop("s4d", "d3", 4, "Tokyo Tower at night", "tower"),
+  stop("s5", "d4", 0, "Fushimi Inari", "inari"),
+  stop("s6", "d4", 1, "Kiyomizu-dera", "kiyomizu"),
+  stop("s7", "d6", 0, "Bamboo grove", null),
+  stop("s8", "d7", 0, "Kinkaku-ji", null),
 ];
 
 const place = (id: string, name: string, lat: number, lng: number) => ({ id, name, lat, lng, city_id: "tokyo", category: "sight", cover_url: null, city_name: "Tokyo", country_code: "JP" }) as PlaceVM;
-const PLACES = [place("shibuya", "Shibuya Crossing", 35.6595, 139.7005), place("sensoji", "Senso-ji", 35.7148, 139.7967)];
+const PLACES = [
+  place("shibuya", "Shibuya Crossing", 35.6595, 139.7005),
+  place("sensoji", "Senso-ji", 35.7148, 139.7967),
+  place("ueno", "Ueno Park", 35.7156, 139.7745),
+  place("akiba", "Akihabara", 35.6984, 139.7731),
+  place("tower", "Tokyo Tower", 35.6586, 139.7454),
+  place("inari", "Fushimi Inari", 34.9671, 135.7727),
+  place("kiyomizu", "Kiyomizu-dera", 34.9949, 135.785),
+];
 
 export function ListsPreview({ view, initialDayId }: { view: "cities" | "itinerary"; initialDayId: string | null }) {
   return (

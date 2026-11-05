@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import type { ServerSupabase } from "@/lib/supabase/server";
 import { daySchema, stopSchema, type StopInput } from "@/lib/validation";
 import { datesInRange, shiftIso } from "@/lib/dates";
-import { planMissingDays } from "@/lib/itinerary-days";
+import { MAX_GENERATED_DAYS, planMissingDays } from "@/lib/itinerary-days";
 import { fail, must, mustMaybe, ok, refreshAll } from "@/actions/_util";
 import type { ActionResult, City, ItineraryDay, PlaceCategory, StopType } from "@/lib/types";
 
@@ -58,7 +58,7 @@ export async function generateDays(tripCountryId: string, blankCount?: number): 
     }
 
     const dates = datesInRange(tc.arrive_date, tc.depart_date);
-    if (dates.length > 120) throw new Error("That date range is too long (max 120 days).");
+    if (dates.length > MAX_GENERATED_DAYS) throw new Error(`That date range is too long (max ${MAX_GENERATED_DAYS} days).`);
     const plan = planMissingDays(dates, days, hasContent);
     if (plan.renumber.length) await renumber(supabase, plan.renumber);
     if (plan.insert.length) {
